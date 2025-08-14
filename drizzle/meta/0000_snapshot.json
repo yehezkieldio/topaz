@@ -1,0 +1,1108 @@
+{
+    "id": "a1dbad59-e803-4487-9096-4b4bc9f6f461",
+    "prevId": "00000000-0000-0000-0000-000000000000",
+    "version": "7",
+    "dialect": "postgresql",
+    "tables": {
+        "public.topaz_fandom": {
+            "name": "topaz_fandom",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "public_id": {
+                    "name": "public_id",
+                    "type": "varchar(128)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "name": {
+                    "name": "name",
+                    "type": "citext",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "default": "CURRENT_TIMESTAMP"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {
+                "fandom_pid_uidx": {
+                    "name": "fandom_pid_uidx",
+                    "columns": [
+                        {
+                            "expression": "public_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "fandom_name_uidx": {
+                    "name": "fandom_name_uidx",
+                    "columns": [
+                        {
+                            "expression": "name",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "fandom_created_idx": {
+                    "name": "fandom_created_idx",
+                    "columns": [
+                        {
+                            "expression": "created_at",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "fandom_updated_idx": {
+                    "name": "fandom_updated_idx",
+                    "columns": [
+                        {
+                            "expression": "updated_at",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "fandom_name_trgm_idx": {
+                    "name": "fandom_name_trgm_idx",
+                    "columns": [
+                        {
+                            "expression": "\"name\" gin_trgm_ops",
+                            "asc": true,
+                            "isExpression": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "gin",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.topaz_progress": {
+            "name": "topaz_progress",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "public_id": {
+                    "name": "public_id",
+                    "type": "varchar(128)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "user_id": {
+                    "name": "user_id",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "story_id": {
+                    "name": "story_id",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "reading_status": {
+                    "name": "reading_status",
+                    "type": "reading_status",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'Reading'"
+                },
+                "current_chapter": {
+                    "name": "current_chapter",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": 0
+                },
+                "rating": {
+                    "name": "rating",
+                    "type": "numeric(2, 1)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'0.0'"
+                },
+                "notes": {
+                    "name": "notes",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "default": "CURRENT_TIMESTAMP"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {
+                "prog_pid_uidx": {
+                    "name": "prog_pid_uidx",
+                    "columns": [
+                        {
+                            "expression": "public_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "prog_user_story_uidx": {
+                    "name": "prog_user_story_uidx",
+                    "columns": [
+                        {
+                            "expression": "user_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "story_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "prog_user_status_idx": {
+                    "name": "prog_user_status_idx",
+                    "columns": [
+                        {
+                            "expression": "user_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "reading_status",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "prog_user_idx": {
+                    "name": "prog_user_idx",
+                    "columns": [
+                        {
+                            "expression": "user_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "prog_story_idx": {
+                    "name": "prog_story_idx",
+                    "columns": [
+                        {
+                            "expression": "story_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "prog_status_idx": {
+                    "name": "prog_status_idx",
+                    "columns": [
+                        {
+                            "expression": "reading_status",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "prog_updated_idx": {
+                    "name": "prog_updated_idx",
+                    "columns": [
+                        {
+                            "expression": "updated_at",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "prog_created_idx": {
+                    "name": "prog_created_idx",
+                    "columns": [
+                        {
+                            "expression": "created_at",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "topaz_progress_user_id_topaz_user_id_fk": {
+                    "name": "topaz_progress_user_id_topaz_user_id_fk",
+                    "tableFrom": "topaz_progress",
+                    "tableTo": "topaz_user",
+                    "columnsFrom": ["user_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "topaz_progress_story_id_topaz_story_id_fk": {
+                    "name": "topaz_progress_story_id_topaz_story_id_fk",
+                    "tableFrom": "topaz_progress",
+                    "tableTo": "topaz_story",
+                    "columnsFrom": ["story_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {
+                "rating between 0 and 5": {
+                    "name": "rating between 0 and 5",
+                    "value": "\"topaz_progress\".\"rating\" >= 0 AND \"topaz_progress\".\"rating\" <= 5"
+                }
+            },
+            "isRLSEnabled": false
+        },
+        "public.topaz_story": {
+            "name": "topaz_story",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "public_id": {
+                    "name": "public_id",
+                    "type": "varchar(128)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "author": {
+                    "name": "author",
+                    "type": "citext",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'Unknown'"
+                },
+                "chapter_count": {
+                    "name": "chapter_count",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "description": {
+                    "name": "description",
+                    "type": "citext",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "is_nsfw": {
+                    "name": "is_nsfw",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": false
+                },
+                "word_count": {
+                    "name": "word_count",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "source": {
+                    "name": "source",
+                    "type": "source",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'Other'"
+                },
+                "status": {
+                    "name": "status",
+                    "type": "story_status",
+                    "typeSchema": "public",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'Ongoing'"
+                },
+                "summary": {
+                    "name": "summary",
+                    "type": "citext",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "title": {
+                    "name": "title",
+                    "type": "citext",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "url": {
+                    "name": "url",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "default": "CURRENT_TIMESTAMP"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {
+                "story_pid_uidx": {
+                    "name": "story_pid_uidx",
+                    "columns": [
+                        {
+                            "expression": "public_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "story_source_status_idx": {
+                    "name": "story_source_status_idx",
+                    "columns": [
+                        {
+                            "expression": "source",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "status",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "story_created_idx": {
+                    "name": "story_created_idx",
+                    "columns": [
+                        {
+                            "expression": "created_at",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "story_updated_idx": {
+                    "name": "story_updated_idx",
+                    "columns": [
+                        {
+                            "expression": "updated_at",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.topaz_story_fandom": {
+            "name": "topaz_story_fandom",
+            "schema": "",
+            "columns": {
+                "story_id": {
+                    "name": "story_id",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "fandom_id": {
+                    "name": "fandom_id",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {
+                "storyfandom_story_idx": {
+                    "name": "storyfandom_story_idx",
+                    "columns": [
+                        {
+                            "expression": "story_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "storyfandom_fandom_idx": {
+                    "name": "storyfandom_fandom_idx",
+                    "columns": [
+                        {
+                            "expression": "fandom_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "topaz_story_fandom_story_id_topaz_story_id_fk": {
+                    "name": "topaz_story_fandom_story_id_topaz_story_id_fk",
+                    "tableFrom": "topaz_story_fandom",
+                    "tableTo": "topaz_story",
+                    "columnsFrom": ["story_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "topaz_story_fandom_fandom_id_topaz_fandom_id_fk": {
+                    "name": "topaz_story_fandom_fandom_id_topaz_fandom_id_fk",
+                    "tableFrom": "topaz_story_fandom",
+                    "tableTo": "topaz_fandom",
+                    "columnsFrom": ["fandom_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {
+                "topaz_story_fandom_story_id_fandom_id_pk": {
+                    "name": "topaz_story_fandom_story_id_fandom_id_pk",
+                    "columns": ["story_id", "fandom_id"]
+                }
+            },
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.topaz_story_tag": {
+            "name": "topaz_story_tag",
+            "schema": "",
+            "columns": {
+                "story_id": {
+                    "name": "story_id",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "tag_id": {
+                    "name": "tag_id",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {
+                "storytag_story_idx": {
+                    "name": "storytag_story_idx",
+                    "columns": [
+                        {
+                            "expression": "story_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "storytag_tag_idx": {
+                    "name": "storytag_tag_idx",
+                    "columns": [
+                        {
+                            "expression": "tag_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "topaz_story_tag_story_id_topaz_story_id_fk": {
+                    "name": "topaz_story_tag_story_id_topaz_story_id_fk",
+                    "tableFrom": "topaz_story_tag",
+                    "tableTo": "topaz_story",
+                    "columnsFrom": ["story_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "topaz_story_tag_tag_id_topaz_tag_id_fk": {
+                    "name": "topaz_story_tag_tag_id_topaz_tag_id_fk",
+                    "tableFrom": "topaz_story_tag",
+                    "tableTo": "topaz_tag",
+                    "columnsFrom": ["tag_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {
+                "topaz_story_tag_story_id_tag_id_pk": {
+                    "name": "topaz_story_tag_story_id_tag_id_pk",
+                    "columns": ["story_id", "tag_id"]
+                }
+            },
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.topaz_tag": {
+            "name": "topaz_tag",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "public_id": {
+                    "name": "public_id",
+                    "type": "varchar(128)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "name": {
+                    "name": "name",
+                    "type": "citext",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "default": "CURRENT_TIMESTAMP"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {
+                "tag_pid_uidx": {
+                    "name": "tag_pid_uidx",
+                    "columns": [
+                        {
+                            "expression": "public_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "tag_name_uidx": {
+                    "name": "tag_name_uidx",
+                    "columns": [
+                        {
+                            "expression": "name",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "tag_created_idx": {
+                    "name": "tag_created_idx",
+                    "columns": [
+                        {
+                            "expression": "created_at",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                },
+                "tag_updated_idx": {
+                    "name": "tag_updated_idx",
+                    "columns": [
+                        {
+                            "expression": "updated_at",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": true,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.topaz_account": {
+            "name": "topaz_account",
+            "schema": "",
+            "columns": {
+                "user_id": {
+                    "name": "user_id",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "type": {
+                    "name": "type",
+                    "type": "varchar(255)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "provider": {
+                    "name": "provider",
+                    "type": "varchar(255)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "provider_account_id": {
+                    "name": "provider_account_id",
+                    "type": "varchar(255)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "refresh_token": {
+                    "name": "refresh_token",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "access_token": {
+                    "name": "access_token",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "expires_at": {
+                    "name": "expires_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "token_type": {
+                    "name": "token_type",
+                    "type": "varchar(255)",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "scope": {
+                    "name": "scope",
+                    "type": "varchar(255)",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "id_token": {
+                    "name": "id_token",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "session_state": {
+                    "name": "session_state",
+                    "type": "varchar(255)",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {
+                "account_user_id_idx": {
+                    "name": "account_user_id_idx",
+                    "columns": [
+                        {
+                            "expression": "user_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "topaz_account_user_id_topaz_user_id_fk": {
+                    "name": "topaz_account_user_id_topaz_user_id_fk",
+                    "tableFrom": "topaz_account",
+                    "tableTo": "topaz_user",
+                    "columnsFrom": ["user_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "no action",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {
+                "topaz_account_provider_provider_account_id_pk": {
+                    "name": "topaz_account_provider_provider_account_id_pk",
+                    "columns": ["provider", "provider_account_id"]
+                }
+            },
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.topaz_session": {
+            "name": "topaz_session",
+            "schema": "",
+            "columns": {
+                "session_token": {
+                    "name": "session_token",
+                    "type": "varchar(255)",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "user_id": {
+                    "name": "user_id",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "expires": {
+                    "name": "expires",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {
+                "t_user_id_idx": {
+                    "name": "t_user_id_idx",
+                    "columns": [
+                        {
+                            "expression": "user_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "topaz_session_user_id_topaz_user_id_fk": {
+                    "name": "topaz_session_user_id_topaz_user_id_fk",
+                    "tableFrom": "topaz_session",
+                    "tableTo": "topaz_user",
+                    "columnsFrom": ["user_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "no action",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.topaz_user": {
+            "name": "topaz_user",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "public_id": {
+                    "name": "public_id",
+                    "type": "varchar(128)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "name": {
+                    "name": "name",
+                    "type": "varchar(255)",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "email": {
+                    "name": "email",
+                    "type": "varchar(255)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "email_verified": {
+                    "name": "email_verified",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "default": "CURRENT_TIMESTAMP"
+                },
+                "image": {
+                    "name": "image",
+                    "type": "varchar(255)",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.topaz_verification_token": {
+            "name": "topaz_verification_token",
+            "schema": "",
+            "columns": {
+                "identifier": {
+                    "name": "identifier",
+                    "type": "varchar(255)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "token": {
+                    "name": "token",
+                    "type": "varchar(255)",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "expires": {
+                    "name": "expires",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {
+                "topaz_verification_token_identifier_token_pk": {
+                    "name": "topaz_verification_token_identifier_token_pk",
+                    "columns": ["identifier", "token"]
+                }
+            },
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        }
+    },
+    "enums": {
+        "public.reading_status": {
+            "name": "reading_status",
+            "schema": "public",
+            "values": ["NotStarted", "Reading", "Paused", "Completed", "Dropped"]
+        },
+        "public.source": {
+            "name": "source",
+            "schema": "public",
+            "values": [
+                "ArchiveOfOurOwn",
+                "FanFictionNet",
+                "Wattpad",
+                "SpaceBattles",
+                "SufficientVelocity",
+                "QuestionableQuesting",
+                "RoyalRoad",
+                "WebNovel",
+                "ScribbleHub",
+                "NovelBin",
+                "Other"
+            ]
+        },
+        "public.story_status": {
+            "name": "story_status",
+            "schema": "public",
+            "values": ["Ongoing", "Completed", "Hiatus", "Abandoned"]
+        }
+    },
+    "schemas": {},
+    "sequences": {},
+    "roles": {},
+    "policies": {},
+    "views": {
+        "public.library_mv": {
+            "columns": {},
+            "definition": "select \"topaz_progress\".\"public_id\" as \"progress_public_id\", \"topaz_user\".\"public_id\" as \"user_public_id\", \"topaz_story\".\"public_id\" as \"story_public_id\", \"topaz_story\".\"title\" as \"story_title\", \"topaz_story\".\"author\" as \"story_author\", \"topaz_story\".\"source\" as \"story_source\", \"topaz_story\".\"url\" as \"story_url\", \"topaz_story\".\"status\" as \"story_status\", \"topaz_story\".\"chapter_count\" as \"story_chapter_count\", \"topaz_story\".\"word_count\" as \"story_word_count\", \"topaz_story\".\"is_nsfw\" as \"story_is_nsfw\", \"topaz_story\".\"description\" as \"story_description\", \"topaz_progress\".\"reading_status\" as \"progress_status\", \"topaz_progress\".\"current_chapter\" as \"progress_current_chapter\", \"topaz_progress\".\"rating\" as \"progress_rating\", \"topaz_progress\".\"notes\" as \"progress_notes\", (\n                setweight(to_tsvector('english', \"topaz_story\".\"title\"), 'A') ||\n                setweight(to_tsvector('english', \"topaz_story\".\"author\"), 'B') ||\n                setweight(to_tsvector('english', coalesce(\"topaz_story\".\"description\", '')), 'C') ||\n                setweight(to_tsvector('english', coalesce(\"topaz_story\".\"summary\", '')), 'D') ||\n                setweight(to_tsvector('english', coalesce(string_agg(DISTINCT \"topaz_tag\".\"name\", ' '), '')), 'C') ||\n                setweight(to_tsvector('english', coalesce(string_agg(DISTINCT \"topaz_fandom\".\"name\", ' '), '')), 'C') ||\n                setweight(to_tsvector('english', coalesce(\"topaz_progress\".\"reading_status\"::text, 'Reading')), 'D') ||\n                setweight(to_tsvector('english', coalesce(\"topaz_progress\".\"notes\", '')), 'D')\n            ) as \"search_vector\", COALESCE(\n                json_agg(\n                    DISTINCT jsonb_build_object(\n                        'publicId', \"topaz_tag\".\"public_id\",\n                        'name', \"topaz_tag\".\"name\"\n                    )\n                ) FILTER (WHERE \"topaz_tag\".\"id\" IS NOT NULL),\n                '[]'::json\n            ) as \"tags\", COALESCE(\n                json_agg(\n                    DISTINCT jsonb_build_object(\n                        'publicId', \"topaz_fandom\".\"public_id\",\n                        'name', \"topaz_fandom\".\"name\"\n                    )\n                ) FILTER (WHERE \"topaz_fandom\".\"id\" IS NOT NULL),\n                '[]'::json\n            ) as \"fandoms\", \"topaz_progress\".\"updated_at\" as \"updated_at\", \"topaz_progress\".\"created_at\" as \"created_at\" from \"topaz_progress\" inner join \"topaz_user\" on \"topaz_user\".\"id\" = \"topaz_progress\".\"user_id\" inner join \"topaz_story\" on \"topaz_story\".\"id\" = \"topaz_progress\".\"story_id\" left join \"topaz_story_tag\" on \"topaz_story_tag\".\"story_id\" = \"topaz_story\".\"id\" left join \"topaz_tag\" on \"topaz_tag\".\"id\" = \"topaz_story_tag\".\"tag_id\" left join \"topaz_story_fandom\" on \"topaz_story_fandom\".\"story_id\" = \"topaz_story\".\"id\" left join \"topaz_fandom\" on \"topaz_fandom\".\"id\" = \"topaz_story_fandom\".\"fandom_id\" group by \"topaz_progress\".\"public_id\", \"topaz_user\".\"public_id\", \"topaz_story\".\"public_id\", \"topaz_story\".\"title\", \"topaz_story\".\"author\", \"topaz_story\".\"source\", \"topaz_story\".\"description\", \"topaz_story\".\"summary\", \"topaz_story\".\"url\", \"topaz_story\".\"status\", \"topaz_story\".\"chapter_count\", \"topaz_story\".\"word_count\", \"topaz_story\".\"is_nsfw\", \"topaz_progress\".\"reading_status\", \"topaz_progress\".\"current_chapter\", \"topaz_progress\".\"rating\", \"topaz_progress\".\"notes\", \"topaz_progress\".\"updated_at\", \"topaz_progress\".\"created_at\"",
+            "name": "library_mv",
+            "schema": "public",
+            "isExisting": false,
+            "materialized": true
+        },
+        "public.library_stats_mv": {
+            "columns": {},
+            "definition": "select COALESCE(SUM(\"topaz_story\".\"word_count\"), 0) as \"total_words_read\", COALESCE(SUM(\"topaz_story\".\"chapter_count\"), 0) as \"total_chapters_read\", COUNT(DISTINCT \"topaz_fandom\".\"id\") as \"fandom_count\", COUNT(DISTINCT \"topaz_story\".\"id\") as \"story_count\", COUNT(CASE WHEN \"topaz_progress\".\"reading_status\" = 'Completed' THEN 1 END) as \"completed\", COUNT(CASE WHEN \"topaz_progress\".\"reading_status\" = 'Paused' THEN 1 END) as \"paused\", COUNT(CASE WHEN \"topaz_progress\".\"reading_status\" = 'Dropped' THEN 1 END) as \"dropped\", COUNT(CASE WHEN \"topaz_progress\".\"reading_status\" = 'Reading' THEN 1 END) as \"reading\", COALESCE(AVG(\"topaz_progress\".\"rating\"), 0) as \"average_rating\" from \"topaz_progress\" inner join \"topaz_story\" on \"topaz_story\".\"id\" = \"topaz_progress\".\"story_id\" left join \"topaz_story_fandom\" on \"topaz_story_fandom\".\"story_id\" = \"topaz_story\".\"id\" left join \"topaz_fandom\" on \"topaz_fandom\".\"id\" = \"topaz_story_fandom\".\"fandom_id\"",
+            "name": "library_stats_mv",
+            "schema": "public",
+            "isExisting": false,
+            "materialized": true
+        }
+    },
+    "_meta": {
+        "columns": {},
+        "schemas": {},
+        "tables": {}
+    }
+}

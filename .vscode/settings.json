@@ -1,0 +1,42 @@
+{
+    "[javascript][typescript][javascriptreact][typescriptreact][json][jsonc][css][graphql]": {
+        "editor.defaultFormatter": "biomejs.biome"
+    },
+    "[yaml]": {
+        "editor.defaultFormatter": "redhat.vscode-yaml",
+        "editor.tabSize": 4
+    },
+    "github.copilot.chat.commitMessageGeneration.instructions": [
+        {
+            "file": ".github/copilot-commit-instructions.md"
+        }
+    ],
+    "editor.codeActionsOnSave": {
+        "source.fixAll.biome": "explicit",
+        "source.organizeImports.biome": "explicit"
+    },
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": true,
+    "files.associations": {
+        "*.css": "tailwindcss"
+    },
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "typescript.preferences.autoImportFileExcludePatterns": [
+        "lucide-react",
+        "next/router",
+        "next/dist",
+        "@radix-ui/react-*",
+        "drizzle-orm/gel-core",
+        "drizzle-orm/mysql-core",
+        "drizzle-orm/sqlite-core",
+        "drizzle-orm/singlestore-core"
+    ],
+    "typescript.preferences.autoImportSpecifierExcludeRegexes": [
+        "^drizzle-orm/(gel-core|mysql-core|sqlite-core|singlestore-core)$"
+    ],
+    "typescript.preferences.importModuleSpecifier": "non-relative",
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "[jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    }
+}

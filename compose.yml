@@ -1,0 +1,41 @@
+name: topaz-dev
+services:
+  topaz-dev-db:
+    image: postgres:latest
+    container_name: topaz-dev-db
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+          limits:
+              cpus: "1"
+              memory: 1G
+    env_file:
+      - ./.env
+    environment:
+      POSTGRES_USER: elizielx
+      POSTGRES_PASSWORD: elizielx
+      POSTGRES_DB: topaz
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+        - topaz-dev-network
+  dragonfly:
+    image: 'docker.dragonflydb.io/dragonflydb/dragonfly'
+    container_name: topaz-dev-dragonfly
+    ulimits:
+      memlock: -1
+    ports:
+      - "6379:6379"
+    volumes:
+      - dragonfly_data:/data
+    networks:
+      - topaz-dev-network
+volumes:
+  postgres_data:
+    name: postgres_data
+  dragonfly_data:
+    name: dragonfly_data
+networks:
+  topaz-dev-network:
+    driver: bridge
