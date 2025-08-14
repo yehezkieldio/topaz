@@ -8,7 +8,7 @@ import { type ProgressSortBy, progressSortByEnum, progressStatusEnum, progresses
 import { sourceEnum } from "#/server/db/schema/story";
 import { getSortColumn, libraryMaterializedView } from "#/server/db/schema/view";
 
-type ProgressQueryResult = {
+export type ProgressQueryResult = {
     data: Array<{
         progressPublicId: string;
         storyPublicId: string;
