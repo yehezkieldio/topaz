@@ -22,11 +22,14 @@ export type LibraryItemValues = {
 
 export function useLibraryItemValues(item: LibraryItem): LibraryItemValues {
     return useMemo(() => {
+        const PROGRESS_PERCENTAGE_MAX = 100;
         const totalChapters = item.storyChapterCount || 0;
         const currentChapter = Math.max(0, item.progressCurrentChapter || 0);
         const hasValidChapterData = totalChapters > 0 && currentChapter > 0;
         const hasCurrentChapterOnly = totalChapters === 0 && currentChapter > 0;
-        const progressPercentage = hasValidChapterData ? Math.round((currentChapter / totalChapters) * 100) : 0;
+        const progressPercentage = hasValidChapterData
+            ? Math.round((currentChapter / totalChapters) * PROGRESS_PERCENTAGE_MAX)
+            : 0;
         const isComplete = item.storyStatus?.toLowerCase() === "complete";
         const hasWordCount = (item.storyWordCount ?? 0) > 0;
         const wordCount = estimateWordCount(item.storyWordCount);
