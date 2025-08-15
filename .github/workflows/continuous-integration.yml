@@ -11,18 +11,19 @@ jobs:
         if: ${{ contains(github.event.head_commit.message, format('chore(release){0} release topaz@', ':')) }}
         runs-on: ubuntu-latest
         permissions:
-            contents: read
+            contents: write
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-            - name: Fast-forward stable from master
+            - name: Force-sync stable from master
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
                   git config --global user.name "github-actions[bot]"
                   git config --global user.email "github-actions[bot]@users.noreply.github.com"
-                  git fetch origin stable
-                  git checkout stable
-                  git merge --ff-only origin/master
-                  git push origin stable
+                  git fetch origin master
+                  git checkout -B stable origin/master
+                  git push --force origin stable
