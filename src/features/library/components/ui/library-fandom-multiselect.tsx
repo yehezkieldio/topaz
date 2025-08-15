@@ -6,14 +6,14 @@ import { type SelectedItem, useFandomSearch } from "#/features/library/api/use-f
 
 type LibraryFandomMultiselectProps = {
     selectedFandoms: SelectedItem[];
-    onFandomsChange: (fandoms: SelectedItem[]) => void;
+    onFandomsChangeAction: (fandoms: SelectedItem[]) => void;
     placeholder?: string;
     className?: string;
 };
 
 export function LibraryFandomMultiselect({
     selectedFandoms,
-    onFandomsChange,
+    onFandomsChangeAction,
     placeholder = "Select fandoms...",
     className,
 }: LibraryFandomMultiselectProps) {
@@ -24,12 +24,12 @@ export function LibraryFandomMultiselect({
         async (name: string) => {
             try {
                 const newFandom = await createFandom(name);
-                onFandomsChange([...selectedFandoms, newFandom]);
+                onFandomsChangeAction([...selectedFandoms, newFandom]);
             } catch (error) {
                 console.error("Failed to create fandom:", error);
             }
         },
-        [createFandom, selectedFandoms, onFandomsChange],
+        [createFandom, selectedFandoms, onFandomsChangeAction],
     );
 
     return (
@@ -43,7 +43,7 @@ export function LibraryFandomMultiselect({
             keepOpenOnSelect={true}
             onCreate={handleCreateFandom}
             onSearch={setFandomSearch}
-            onSelectionChange={onFandomsChange}
+            onSelectionChange={onFandomsChangeAction}
             options={fandomOptions}
             placeholder={placeholder}
             selectedValues={selectedFandoms}
