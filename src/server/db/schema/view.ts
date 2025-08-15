@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { type SQL, sql } from "drizzle-orm";
 import { pgMaterializedView } from "drizzle-orm/pg-core";
 import { fandoms } from "#/server/db/schema/fandom";
 import { type ProgressSortBy, progresses } from "#/server/db/schema/progress";
@@ -115,7 +115,10 @@ export const libraryStatsMaterializedView = pgMaterializedView("library_stats_mv
         .leftJoin(fandoms, sql`${fandoms.id} = ${storyFandoms.fandomId}`);
 });
 
-const sortColumnMap: Record<ProgressSortBy, unknown> = {
+const sortColumnMap: Record<
+    ProgressSortBy,
+    SQL<unknown> | SQL.Aliased<string> | SQL.Aliased<number> | SQL.Aliased<Date>
+> = {
     title: libraryMaterializedView.storyTitle,
     author: libraryMaterializedView.storyAuthor,
     status: libraryMaterializedView.progressStatus,
@@ -131,6 +134,8 @@ const sortColumnMap: Record<ProgressSortBy, unknown> = {
     chapterCount: libraryMaterializedView.storyChapterCount,
 };
 
-export function getSortColumn(sortBy: ProgressSortBy) {
+export function getSortColumn(
+    sortBy: ProgressSortBy,
+): SQL<unknown> | SQL.Aliased<string> | SQL.Aliased<number> | SQL.Aliased<Date> {
     return sortColumnMap[sortBy];
 }
