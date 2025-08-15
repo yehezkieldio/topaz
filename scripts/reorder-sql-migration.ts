@@ -95,7 +95,7 @@ async function reorderSqlMigration(inputFilePath: string, outputFilePath: string
     ].join("\n");
 
     let finalContent = modifiedContent;
-    if (commitBlock) {
+    if (commitBlock.length > 0) {
         finalContent = `${finalContent}\n${commitBlock}`;
     }
     if (finalIndexes) {
