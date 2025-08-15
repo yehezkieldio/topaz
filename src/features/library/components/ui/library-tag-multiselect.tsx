@@ -6,14 +6,14 @@ import { type SelectedItem, useTagSearch } from "#/features/library/api/use-tag-
 
 type LibraryTagMultiselectProps = {
     selectedTags: SelectedItem[];
-    onTagsChange: (tags: SelectedItem[]) => void;
+    onTagsChangeAction: (tags: SelectedItem[]) => void;
     placeholder?: string;
     className?: string;
 };
 
 export function LibraryTagMultiselect({
     selectedTags,
-    onTagsChange,
+    onTagsChangeAction,
     placeholder = "Select tags...",
     className,
 }: LibraryTagMultiselectProps) {
@@ -23,12 +23,12 @@ export function LibraryTagMultiselect({
         async (name: string) => {
             try {
                 const newTag = await createTag(name);
-                onTagsChange([...selectedTags, newTag]);
+                onTagsChangeAction([...selectedTags, newTag]);
             } catch (error) {
                 console.error("Failed to create tag:", error);
             }
         },
-        [createTag, selectedTags, onTagsChange],
+        [createTag, selectedTags, onTagsChangeAction],
     );
 
     return (
@@ -42,7 +42,7 @@ export function LibraryTagMultiselect({
             keepOpenOnSelect={true}
             onCreate={handleCreateTag}
             onSearch={setTagSearch}
-            onSelectionChange={onTagsChange}
+            onSelectionChange={onTagsChangeAction}
             options={tagOptions}
             placeholder={placeholder}
             selectedValues={selectedTags}
