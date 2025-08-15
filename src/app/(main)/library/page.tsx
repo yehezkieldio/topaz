@@ -8,7 +8,10 @@ import { LibraryControls } from "#/features/library/components/ui/library-contro
 
 export default async function Library() {
     return (
-        <div className="relative min-h-dvh overflow-hidden bg-background text-foreground">
+        <div className="relative min-h-dvh overflow-hidden bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.08),transparent_60%),radial-gradient(circle_at_70%_80%,hsl(var(--muted-foreground)/0.08),transparent_55%)]">
+            <div className="pointer-events-none absolute inset-0 [mask-image:radial-gradient(circle_at_center,black,transparent)]">
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.15]" />
+            </div>
             <div className="relative z-10">
                 <div className="flex min-h-screen flex-col">
                     <div className="hidden sm:block">
