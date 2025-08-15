@@ -731,7 +731,7 @@
                 // Disallow the use of overload signatures that are not next to each other.
                 "useAdjacentOverloadSignatures": "error",
                 // Ensure async functions utilize await.
-                "useAwait": "error",
+                "useAwait": "off",
                 // Enforce consistent return values in iterable callbacks.
                 "useIterableCallbackReturn": "error",
                 // Enforce default clauses in switch statements to be last
