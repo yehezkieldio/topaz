@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.1.1-beta.4 (August 15, 2025)
+
+### <!-- 3 -->🚀 New Features
+- [`a6913c6`](https://github.com/yehezkieldio/topaz/commit/a6913c68518f81ada1c53d23f6e014d3802d76ff) ui: Add cache invalidation button in library filter
+- [`d12024c`](https://github.com/yehezkieldio/topaz/commit/d12024c18e2e53fc74d6fded11bb3824a532691f) api: Add refetch interval for library data
 ## topaz@0.1.1-beta.3 (August 15, 2025)
 
 ### <!-- 11 -->🛠️ Miscellaneous
