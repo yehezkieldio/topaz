@@ -15,6 +15,7 @@ import {
     storyUpdateSchema,
 } from "#/server/db/schema/story";
 import { tags } from "#/server/db/schema/tag";
+import { incrementUserLibraryVersion } from "#/server/lib/version-sync";
 
 // Constants for validation
 const RATING_MIN = 0;
@@ -101,6 +102,7 @@ export const storyRouter = createTRPCRouter({
     }),
     updateWithRelations: protectedProcedure.input(storyCreateWithProgressSchema).mutation(async ({ ctx, input }) => {
         const { storyPublicId, progressPublicId, tagIds, fandomIds, ...rest } = input;
+        const userId = ctx.session.user.id;
 
         return await ctx.db.transaction(async (tx) => {
             let resolvedTags: { publicId: string; name: string; id: string }[] = [];
@@ -239,6 +241,9 @@ export const storyRouter = createTRPCRouter({
 
             await CacheManager.invalidateStory(storyPublicId);
             await CacheManager.invalidateView();
+
+            // Increment user library version for cache sync across devices
+            await incrementUserLibraryVersion(userId);
 
             return result;
         });
@@ -422,6 +427,9 @@ export const storyRouter = createTRPCRouter({
                 }
 
                 await Promise.all([CacheManager.invalidateStory(), CacheManager.invalidateView()]);
+
+                // Increment user library version for cache sync across devices
+                await incrementUserLibraryVersion(userId);
 
                 return {
                     story: newStory,

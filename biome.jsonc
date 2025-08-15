@@ -2,7 +2,8 @@
     "$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
     "files": {
         "ignoreUnknown": true,
-        "includes": ["**", "!dist", "!.next", "!node_modules", "!bun.lock"]
+        "includes": ["**", "!dist", "!.next", "!node_modules", "!bun.lock"],
+        "ignore": ["public/sw.js"]
     },
     "formatter": {
         "enabled": true,

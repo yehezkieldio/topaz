@@ -1,5 +1,7 @@
+import { eq } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
 import { CacheManager } from "#/server/cache/manager";
+import { users } from "#/server/db/schema/user";
 import { libraryMaterializedView, libraryStatsMaterializedView } from "#/server/db/schema/view";
 
 export const viewRouter = createTRPCRouter({
@@ -39,5 +41,15 @@ export const viewRouter = createTRPCRouter({
             { ttl: 300 },
             ["view", "stats"],
         );
+    }),
+    getVersion: protectedProcedure.query(async ({ ctx }) => {
+        const userId = ctx.session.user.id;
+        const [user] = await ctx.db
+            .select({ libraryVersion: users.libraryVersion })
+            .from(users)
+            .where(eq(users.id, userId))
+            .limit(1);
+
+        return { version: user?.libraryVersion || 1 };
     }),
 });

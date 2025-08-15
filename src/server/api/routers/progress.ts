@@ -7,6 +7,7 @@ import { type CacheConfig, CacheKeys, CacheManager } from "#/server/cache/manage
 import { type ProgressSortBy, progressSortByEnum, progressStatusEnum, progresses } from "#/server/db/schema/progress";
 import { sourceEnum } from "#/server/db/schema/story";
 import { getSortColumn, libraryMaterializedView } from "#/server/db/schema/view";
+import { incrementUserLibraryVersion } from "#/server/lib/version-sync";
 
 const MAX_SEARCH_LENGTH = 255;
 const MIN_RATING = 0;
@@ -327,6 +328,7 @@ export const progressRouter = createTRPCRouter({
             }),
         )
         .mutation(async ({ ctx, input }) => {
+            const userId = ctx.session.user.id;
             const [deletedProgress] = await ctx.db
                 .delete(progresses)
                 .where(eq(progresses.publicId, input.publicId))
@@ -343,6 +345,9 @@ export const progressRouter = createTRPCRouter({
             }
 
             await CacheManager.invalidateView();
+
+            // Increment user library version for cache sync across devices
+            await incrementUserLibraryVersion(userId);
 
             return deletedProgress;
         }),

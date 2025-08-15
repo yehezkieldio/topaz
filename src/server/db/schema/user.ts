@@ -14,6 +14,7 @@ export const users = createTable("user", (d) => ({
         })
         .default(sql`CURRENT_TIMESTAMP`),
     image: d.varchar({ length: 255 }),
+    libraryVersion: d.integer().notNull().default(1),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({

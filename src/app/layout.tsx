@@ -7,6 +7,7 @@ import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next";
 import { ThemeProvider } from "#/app/theme-provider";
 import { Toaster } from "#/app/toaster";
+import { LibraryVersionSyncProvider } from "#/components/library-version-sync-provider";
 import { cn } from "#/lib/utils";
 import { TRPCReactProvider } from "#/trpc/react";
 
@@ -88,10 +89,12 @@ export default function RootLayout({
                 <TRPCReactProvider>
                     <NuqsAdapter>
                         <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange enableSystem>
-                            {children}
-                            <SpeedInsights />
-                            <Analytics />
-                            <Toaster />
+                            <LibraryVersionSyncProvider>
+                                {children}
+                                <SpeedInsights />
+                                <Analytics />
+                                <Toaster />
+                            </LibraryVersionSyncProvider>
                         </ThemeProvider>
                     </NuqsAdapter>
                 </TRPCReactProvider>
