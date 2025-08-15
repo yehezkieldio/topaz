@@ -1,13 +1,26 @@
-import "./src/env.ts";
 import type { NextConfig } from "next";
+import packageJson from "./package.json" with { type: "json" };
 
 const nextConfig: NextConfig = {
-    reactStrictMode: true,
     typescript: {
         ignoreBuildErrors: true,
     },
     eslint: {
         ignoreDuringBuilds: true,
+    },
+    images: {
+        remotePatterns: [
+            {
+                protocol: "https",
+                hostname: "cdn.discordapp.com",
+            },
+        ],
+    },
+    env: {
+        NEXT_PUBLIC_VERSION: packageJson.version,
+    },
+    experimental: {
+        clientSegmentCache: true,
     },
 };
 
