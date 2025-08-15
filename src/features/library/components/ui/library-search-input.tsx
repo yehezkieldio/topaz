@@ -26,7 +26,7 @@ export function LibrarySearchInput() {
         <div className="relative w-full max-w-sm">
             <SearchIcon className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-foreground" />
             <Input
-                className="rounded-md pr-9 pl-9 font-serif focus-visible:border-accent focus-visible:ring-0"
+                className="rounded-md pr-9 pl-9 focus-visible:border-accent focus-visible:ring-0"
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={handleInputKeyDown}
                 placeholder="Search the library..."

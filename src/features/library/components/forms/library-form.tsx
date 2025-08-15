@@ -47,7 +47,7 @@ interface LibraryFormInfoProps {
 function LibraryFormInfo({ children }: LibraryFormInfoProps) {
     return (
         <div className="space-y-4">
-            <h3 className="font-medium font-serif text-lg">Information</h3>
+            <h3 className="font-medium text-lg">Information</h3>
             {children}
         </div>
     );
@@ -60,7 +60,7 @@ interface LibraryFormDetailsProps {
 function LibraryFormDetails({ children }: LibraryFormDetailsProps) {
     return (
         <div className="space-y-4">
-            <h3 className="font-medium font-serif text-lg">Details</h3>
+            <h3 className="font-medium text-lg">Details</h3>
             {children}
         </div>
     );
@@ -79,7 +79,7 @@ function LibraryFormCategories({
 }: LibraryFormCategoriesProps) {
     return (
         <div className="space-y-4">
-            <h3 className="font-medium font-serif text-lg">Categories</h3>
+            <h3 className="font-medium text-lg">Categories</h3>
             {children}
         </div>
     );
@@ -92,7 +92,7 @@ interface LibraryFormProgressProps {
 function LibraryFormProgress({ children }: LibraryFormProgressProps) {
     return (
         <div className="space-y-4">
-            <h3 className="font-medium font-serif text-lg">Reading Progress</h3>
+            <h3 className="font-medium text-lg">Reading Progress</h3>
             {children}
         </div>
     );

@@ -1,3 +1,5 @@
+"use client";
+
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { type ReactNode, createContext, useContext, useMemo } from "react";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
@@ -88,7 +90,7 @@ export function useLibraryData({ search, status, sortBy, sortOrder }: UseLibrary
                 refetchOnMount: false,
                 refetchOnReconnect: false,
                 staleTime: Number.POSITIVE_INFINITY,
-                gcTime: 1000 * 60 * 30,
+                gcTime: 1000 * 60 * 30, // 30 minutes
                 retry: 3,
                 retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30_000),
                 structuralSharing: true,

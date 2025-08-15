@@ -171,7 +171,7 @@ export function LibraryStoryCategoriesForm<T extends Categories & FieldValues>({
 
     return (
         <div className="space-y-4">
-            <h3 className="font-medium font-serif text-lg">Categories</h3>
+            <h3 className="font-medium text-lg">Categories</h3>
             {formFields}
         </div>
     );

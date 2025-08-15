@@ -202,7 +202,7 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
 
     return (
         <div className="space-y-4">
-            <h3 className="font-medium font-serif text-lg">Information</h3>
+            <h3 className="font-medium text-lg">Information</h3>
             {formFields}
         </div>
     );

@@ -193,7 +193,7 @@ export function LibraryStoryDetailsForm<T extends StoryDetails>({
 
     return (
         <div className="space-y-4">
-            <h3 className="font-medium font-serif text-lg">Details</h3>
+            <h3 className="font-medium text-lg">Details</h3>
             {formFields}
         </div>
     );

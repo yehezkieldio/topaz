@@ -186,7 +186,7 @@ export function LibraryStoryProgressForm<T extends ProgressFormFields>({
 
     return (
         <div className="space-y-4">
-            <h3 className="font-medium font-serif text-lg">Reading Progress</h3>
+            <h3 className="font-medium text-lg">Reading Progress</h3>
             {formFields}
         </div>
     );

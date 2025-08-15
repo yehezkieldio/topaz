@@ -23,7 +23,7 @@ export function LibraryControls({ isAdministratorUser = false }: LibraryControls
     return (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <LibrarySearchInput />
-            <div className="flex flex-col items-center gap-2 font-serif sm:flex-row sm:items-center sm:gap-2">
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:gap-2">
                 {isAdministratorUser ? <LibraryCreate /> : <div aria-hidden style={{ width: 0, height: 0 }} />}
                 <LibraryFilterSheet />
             </div>
