@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.1.1-beta.2 (August 15, 2025)
+
+### <!-- 16 -->🤖 CI/CD
+- [`eb28d2a`](https://github.com/yehezkieldio/topaz/commit/eb28d2a1cda0d0e641d0a55b5b70870a428255ec)  Update permissions and sync stable branch
 ## topaz@0.1.1-beta.1 (August 15, 2025)
 
 ### <!-- 16 -->🤖 CI/CD
