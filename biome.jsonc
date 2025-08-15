@@ -259,8 +259,6 @@
                 "useSingleJsDocAsterisk": "error",
                 // Disallow comparison of expressions modifying the string case with non-compliant value.
                 "noStringCaseMismatch": "error",
-                // Disallow destructuring props inside JSX components in Solid projects.
-                "noSolidDestructuredProps": "error",
                 // Disallow lexical declarations in switch clauses.
                 "noSwitchDeclarations": "error",
                 // Prevents the usage of variables that haven't been declared inside the document.
