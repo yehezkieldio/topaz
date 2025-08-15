@@ -202,7 +202,7 @@ function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
                             <LibraryEditSheet
                                 isOpen={isEditSheetOpen}
                                 item={selectedItem}
-                                onClose={() => {
+                                onCloseAction={() => {
                                     setIsEditSheetOpen(false);
                                     setSelectedItem(null);
                                     parentRef.current?.scrollTo({ top: 0, behavior: "smooth" });

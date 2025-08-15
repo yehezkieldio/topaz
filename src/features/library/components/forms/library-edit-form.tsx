@@ -13,11 +13,11 @@ import { useIsMobile } from "#/hooks/use-mobile";
 
 type LibraryEditFormProps = {
     item: LibraryItem;
-    onClose: () => void;
+    onCloseAction: () => void;
 };
 
-export function LibraryEditForm({ item, onClose }: LibraryEditFormProps) {
-    const { form, onSubmit, isLoading } = useStoryEdit({ item, onClose });
+export function LibraryEditForm({ item, onCloseAction }: LibraryEditFormProps) {
+    const { form, onSubmit, isLoading } = useStoryEdit({ item, onCloseAction });
     const isMobile = useIsMobile();
 
     const currentChapter = form.watch("current_chapter");
@@ -60,8 +60,8 @@ export function LibraryEditForm({ item, onClose }: LibraryEditFormProps) {
                                             <FormControl>
                                                 <ProgressControls
                                                     currentChapter={currentChapter}
-                                                    onDecrement={handleChapterDecrement}
-                                                    onIncrement={handleChapterIncrement}
+                                                    onDecrementAction={handleChapterDecrement}
+                                                    onIncrementAction={handleChapterIncrement}
                                                     totalChapters={totalChapters}
                                                 />
                                             </FormControl>
@@ -94,7 +94,7 @@ export function LibraryEditForm({ item, onClose }: LibraryEditFormProps) {
                         {isLoading ? "Updating..." : "Update Entry"}
                     </Button>
                     <SheetClose asChild>
-                        <Button disabled={isLoading} onClick={onClose} type="button" variant="outline">
+                        <Button disabled={isLoading} onClick={onCloseAction} type="button" variant="outline">
                             Cancel
                         </Button>
                     </SheetClose>

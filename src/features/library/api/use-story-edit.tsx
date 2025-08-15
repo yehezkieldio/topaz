@@ -22,10 +22,10 @@ export type EditStoryFormData = z.infer<typeof editStorySchema>;
 
 type UseStoryEditProps = {
     item: LibraryItem;
-    onClose: () => void;
+    onCloseAction: () => void;
 };
 
-export function useStoryEdit({ item, onClose }: UseStoryEditProps) {
+export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
     const trpc = useTRPC();
     const refetchLibrary = useLibraryRefetch();
 
@@ -87,7 +87,7 @@ export function useStoryEdit({ item, onClose }: UseStoryEditProps) {
                 fandomIds: data.fandomIds,
             });
 
-            onClose();
+            onCloseAction();
 
             await refreshViews.mutateAsync();
             form.reset();

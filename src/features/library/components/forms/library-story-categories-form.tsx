@@ -115,7 +115,7 @@ export function LibraryStoryCategoriesForm<T extends Categories & FieldValues>({
                         <FormLabel>Fandoms</FormLabel>
                         <FormControl>
                             <LibraryFandomMultiselect
-                                onFandomsChange={(fandoms: SelectedItem[]) => {
+                                onFandomsChangeAction={(fandoms: SelectedItem[]) => {
                                     handleFandomsChange(fandoms);
                                     field.onChange(fandoms.map((fandom) => fandom.value));
                                 }}
@@ -143,7 +143,7 @@ export function LibraryStoryCategoriesForm<T extends Categories & FieldValues>({
                         <FormLabel>Tags</FormLabel>
                         <FormControl>
                             <LibraryTagMultiselect
-                                onTagsChange={(tags: SelectedItem[]) => {
+                                onTagsChangeAction={(tags: SelectedItem[]) => {
                                     handleTagsChange(tags);
                                     field.onChange(tags.map((tag) => tag.value));
                                 }}
