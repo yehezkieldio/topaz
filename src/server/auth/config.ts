@@ -67,5 +67,4 @@ export const authConfig = {
         strategy: "jwt",
         maxAge: 60 * 60 * 24 * 30, // 30 days
     },
-    debug: !!process.env.DEBUG_NEXT_AUTH,
 } satisfies NextAuthConfig;
