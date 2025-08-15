@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpDownIcon, ChevronDownIcon, FilterIcon } from "lucide-react";
+import { ArrowUpDownIcon, ChevronDownIcon, FilterIcon, RefreshCwIcon } from "lucide-react";
 import * as React from "react";
 import { useCallback } from "react";
 import { Button } from "#/components/ui/button";
@@ -11,6 +11,7 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
+import { useLibraryRefetch } from "#/features/library/api/use-library-data";
 import { useLibraryFilter } from "#/features/library/hooks/use-library-filter";
 import { type ProgressSortBy, type ProgressStatus, progressStatusLabels } from "#/server/db/schema";
 
@@ -53,6 +54,7 @@ export const LibraryFilterContent = React.memo(function FilterContent({
     currentStatusLabel,
 }: LibraryFilterContentProps) {
     const { status, setStatus, sortBy, setSortBy, sortOrder, setSortOrder } = useLibraryFilter();
+    const refetchLibrary = useLibraryRefetch();
 
     const handleSortOrderToggle = useCallback(() => {
         setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -96,7 +98,6 @@ export const LibraryFilterContent = React.memo(function FilterContent({
                     </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
             </DropdownMenu>
-
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button
@@ -119,7 +120,6 @@ export const LibraryFilterContent = React.memo(function FilterContent({
                     </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
             </DropdownMenu>
-
             <Button
                 className="group gap-2 rounded-md focus-visible:border-transparent focus-visible:ring-0"
                 onClick={handleSortOrderToggle}
@@ -131,6 +131,15 @@ export const LibraryFilterContent = React.memo(function FilterContent({
                 <span className="text-foreground sm:hidden">
                     {sortOrder === "asc" ? "Ascending (A-Z)" : "Descending (Z-A)"}
                 </span>
+            </Button>
+            <Button
+                className="group gap-2 rounded-md focus-visible:border-transparent focus-visible:ring-0"
+                onClick={refetchLibrary}
+                size="default"
+                variant="outline"
+            >
+                <RefreshCwIcon className="size-4 text-foreground" />
+                Invalidate Cache
             </Button>
         </div>
     );
