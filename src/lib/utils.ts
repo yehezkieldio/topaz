@@ -2,6 +2,11 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import z from "zod/v4";
 
+export const DEBOUNCE_DELAY_MS = 300;
+export const WORD_COUNT_THRESHOLD = 1000;
+export const MIN_RATING = 0;
+export const MAX_RATING = 5;
+
 export const sortByEnum = z.enum(["createdAt", "updatedAt"]);
 export type SortBy = z.infer<typeof sortByEnum>;
 
@@ -27,7 +32,7 @@ export function estimateWordCount(value?: number | null): string {
     const sign = value < 0 ? "-" : "";
     const n = Math.abs(value);
 
-    if (n < 1000) return `${sign}${Math.round(n).toString()}`;
+    if (n < WORD_COUNT_THRESHOLD) return `${sign}${Math.round(n).toString()}`;
 
     const units = [
         { v: 1e18, s: "E" },
@@ -51,7 +56,7 @@ export function estimateWordCount(value?: number | null): string {
 }
 
 export function formatRating(value: number): string {
-    if (typeof value !== "number" || Number.isNaN(value) || value < 0 || value > 5) {
+    if (typeof value !== "number" || Number.isNaN(value) || value < MIN_RATING || value > MAX_RATING) {
         throw new Error("Invalid rating value");
     }
     return value.toFixed(1);
