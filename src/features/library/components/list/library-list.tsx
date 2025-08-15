@@ -3,13 +3,12 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import dynamic from "next/dynamic";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LibraryDataProvider, useLibraryDataContext } from "#/features/library/api/use-library-data";
+import { useLibraryDataContext } from "#/features/library/api/use-library-data";
 import { LibraryListItem } from "#/features/library/components/list/library-list-item";
 import { ListItemSkeleton } from "#/features/library/components/skeletons/library-list-skeleton";
 import { EmptyState } from "#/features/library/components/states/empty-state";
 import { ErrorState } from "#/features/library/components/states/error-state";
 import { LoadingSpinner } from "#/features/library/components/states/loading-spinner";
-import { useLibraryFilter } from "#/features/library/hooks/use-library-filter";
 import type { LibraryItem as LibraryItemType } from "#/features/library/hooks/use-library-item";
 import { useSearchQuery } from "#/features/library/hooks/use-search-query";
 import { useIsMobile } from "#/hooks/use-mobile";
@@ -53,8 +52,6 @@ export interface LibraryListProps {
 }
 
 export const LibraryList = memo(function LibraryList({ isAdministratorUser }: LibraryListProps) {
-    const [search] = useSearchQuery();
-    const { status, sortBy, sortOrder } = useLibraryFilter();
     const [hydrated, setHydrated] = useState(false);
 
     useEffect(() => {
@@ -65,11 +62,7 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
         return <ListItemSkeleton count={6} />;
     }
 
-    return (
-        <LibraryDataProvider search={search} sortBy={sortBy} sortOrder={sortOrder} status={status}>
-            <LibraryListInner isAdministratorUser={isAdministratorUser} />
-        </LibraryDataProvider>
-    );
+    return <LibraryListInner isAdministratorUser={isAdministratorUser} />;
 });
 
 interface LibraryListInnerProps {
