@@ -366,13 +366,6 @@
                 "noVueReservedProps": "error",
                 // Enforces href attribute for <a> elements.
                 "useAnchorHref": "error",
-                //Enforce type definitions to consistently use either interface or type.
-                "useConsistentTypeDefinitions": {
-                    "level": "error",
-                    "options": {
-                        "style": "type"
-                    }
-                },
                 // Require switch-case statements to be exhaustive.
                 "useExhaustiveSwitchCases": "error",
                 // Enforces that <img> elements have both width and height attributes.
