@@ -16,6 +16,11 @@ import {
 } from "#/server/db/schema/story";
 import { tags } from "#/server/db/schema/tag";
 
+// Constants for validation
+const RATING_MIN = 0;
+const RATING_MAX = 5;
+const NOTES_MAX_LENGTH = 10_000;
+
 export const storyRouter = createTRPCRouter({
     delete: protectedProcedure
         .input(
@@ -319,7 +324,7 @@ export const storyRouter = createTRPCRouter({
             storyCreateSchema.extend({
                 progressStatus: z.enum(progressStatusEnum.enumValues),
                 current_chapter: z.number().min(0),
-                rating: z.number().min(0).max(5),
+                rating: z.number().min(RATING_MIN).max(RATING_MAX),
                 notes: z.string().optional(),
             }),
         )
@@ -399,7 +404,7 @@ export const storyRouter = createTRPCRouter({
                     status: progressStatus,
                     current_chapter: Math.max(0, Number(current_chapter)),
                     rating: rating != null ? formatRating(rating) : "0.0",
-                    notes: notes?.slice(0, 10_000),
+                    notes: notes?.slice(0, NOTES_MAX_LENGTH),
                     userId,
                     storyId: newStory.id,
                 };

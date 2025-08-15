@@ -6,6 +6,18 @@ import { type CacheConfig, CacheKeys, CacheManager } from "#/server/cache/manage
 import { storyTags } from "#/server/db/schema/story";
 import { tagCreateSchema, tagUpdateSchema, tags } from "#/server/db/schema/tag";
 
+// Tag router configuration constants
+const TAG_LIMIT_MIN = 1;
+const TAG_LIMIT_MAX = 50;
+const TAG_LIMIT_DEFAULT = 10;
+const TAG_HOT_LIMIT_MIN = 1;
+const TAG_HOT_LIMIT_MAX = 20;
+const TAG_HOT_LIMIT_DEFAULT = 8;
+const FIVE_MINUTES = 5;
+const TAG_TTL_SECONDS = 60 * FIVE_MINUTES;
+const TAG_NAME_MIN_LENGTH = 1;
+const TAG_NAME_MAX_LENGTH = 255;
+
 export const tagRouter = createTRPCRouter({
     delete: protectedProcedure
         .input(
@@ -112,9 +124,9 @@ export const tagRouter = createTRPCRouter({
         .input(
             z.object({
                 search: z.string().optional(),
-                limit: z.number().min(1).max(50).default(10),
+                limit: z.number().min(TAG_LIMIT_MIN).max(TAG_LIMIT_MAX).default(TAG_LIMIT_DEFAULT),
                 includeHot: z.boolean().default(true),
-                hotLimit: z.number().min(1).max(20).default(8),
+                hotLimit: z.number().min(TAG_HOT_LIMIT_MIN).max(TAG_HOT_LIMIT_MAX).default(TAG_HOT_LIMIT_DEFAULT),
             }),
         )
         .query(async ({ ctx, input }) => {
@@ -123,7 +135,7 @@ export const tagRouter = createTRPCRouter({
             const cacheKey = CacheKeys.tag.forMultiselect(search || "", limit, includeHot, hotLimit);
             const cacheTags = ["tag", "multiselect"];
             const cacheConfig: CacheConfig = {
-                ttl: 60 * 5,
+                ttl: TAG_TTL_SECONDS,
                 jitter: true,
             };
 
@@ -197,7 +209,7 @@ export const tagRouter = createTRPCRouter({
     createForMultiselect: protectedProcedure
         .input(
             z.object({
-                name: z.string().min(1).max(255),
+                name: z.string().min(TAG_NAME_MIN_LENGTH).max(TAG_NAME_MAX_LENGTH),
             }),
         )
         .mutation(async ({ ctx, input }) => {

@@ -6,6 +6,17 @@ import { type CacheConfig, CacheKeys, CacheManager } from "#/server/cache/manage
 import { fandomCreateSchema, fandomUpdateSchema, fandoms } from "#/server/db/schema/fandom";
 import { storyFandoms } from "#/server/db/schema/story";
 
+// Magic numbers extracted to constants
+const MULTISELECT_LIMIT_MIN = 1;
+const MULTISELECT_LIMIT_MAX = 50;
+const MULTISELECT_LIMIT_DEFAULT = 10;
+const HOT_LIMIT_MIN = 1;
+const HOT_LIMIT_MAX = 20;
+const HOT_LIMIT_DEFAULT = 8;
+const CACHE_TTL_SECONDS_FIVE_MINUTES = 300; // 5 minutes
+const FANDOM_NAME_MIN = 1;
+const FANDOM_NAME_MAX = 255;
+
 export const fandomRouter = createTRPCRouter({
     delete: protectedProcedure
         .input(
@@ -120,9 +131,13 @@ export const fandomRouter = createTRPCRouter({
         .input(
             z.object({
                 search: z.string().optional(),
-                limit: z.number().min(1).max(50).default(10),
+                limit: z
+                    .number()
+                    .min(MULTISELECT_LIMIT_MIN)
+                    .max(MULTISELECT_LIMIT_MAX)
+                    .default(MULTISELECT_LIMIT_DEFAULT),
                 includeHot: z.boolean().default(true),
-                hotLimit: z.number().min(1).max(20).default(8),
+                hotLimit: z.number().min(HOT_LIMIT_MIN).max(HOT_LIMIT_MAX).default(HOT_LIMIT_DEFAULT),
             }),
         )
         .query(async ({ ctx, input }) => {
@@ -131,7 +146,7 @@ export const fandomRouter = createTRPCRouter({
             const cacheKey = CacheKeys.fandom.forMultiselect(search || "", limit, includeHot, hotLimit);
             const cacheTags = ["fandom", "multiselect"];
             const cacheConfig: CacheConfig = {
-                ttl: 60 * 5,
+                ttl: CACHE_TTL_SECONDS_FIVE_MINUTES,
                 jitter: true,
             };
 
@@ -205,7 +220,7 @@ export const fandomRouter = createTRPCRouter({
     createForMultiselect: protectedProcedure
         .input(
             z.object({
-                name: z.string().min(1).max(255),
+                name: z.string().min(FANDOM_NAME_MIN).max(FANDOM_NAME_MAX),
             }),
         )
         .mutation(async ({ ctx, input }) => {

@@ -8,6 +8,30 @@ import { type ProgressSortBy, progressSortByEnum, progressStatusEnum, progresses
 import { sourceEnum } from "#/server/db/schema/story";
 import { getSortColumn, libraryMaterializedView } from "#/server/db/schema/view";
 
+const MAX_SEARCH_LENGTH = 255;
+const MIN_RATING = 0;
+const MAX_RATING = 5;
+
+const MIN_LIMIT = 1;
+const MAX_LIMIT = 100;
+const DEFAULT_LIMIT = 20;
+
+const PUBLIC_ID_MIN = 1;
+const PUBLIC_ID_MAX = 50;
+
+const TTL_BASE = 60; // seconds
+const TTL_FILTER_MULTIPLIER = 3;
+const TTL_FIRST_PAGE_MULTIPLIER = 5;
+const TTL_DEFAULT_MULTIPLIER = 2;
+
+const TTL_FILTER = TTL_BASE * TTL_FILTER_MULTIPLIER;
+const TTL_FIRST_PAGE = TTL_BASE * TTL_FIRST_PAGE_MULTIPLIER;
+const TTL_DEFAULT = TTL_BASE * TTL_DEFAULT_MULTIPLIER;
+const TTL_SEARCH = TTL_BASE;
+
+const SWR_SEARCH = 30; // stale-while-revalidate for search
+const SWR_DEFAULT = 60;
+
 export type ProgressQueryResult = {
     data: Array<{
         progressPublicId: string;
@@ -48,13 +72,14 @@ function sanitizeSearchInput(search: string): string {
         .trim()
         .replace(/[^\w\s'-]/g, " ")
         .replace(/\s+/g, " ")
-        .slice(0, 255);
+        .slice(0, MAX_SEARCH_LENGTH);
 }
 
 function createCursor(sortBy: ProgressSortBy, sortValue: unknown, id: string): string {
     let cursorData: CursorData;
 
-    switch (sortBy) {
+    const sortByStr = String(sortBy);
+    switch (sortByStr) {
         case "progress":
         case "rating":
         case "wordCount":
@@ -113,7 +138,8 @@ function createCursorPredicate(cursorData: CursorData, sortBy: ProgressSortBy, s
     const { type, value, id } = cursorData;
 
     let typedValue: SQL;
-    switch (type) {
+    const typeStr = String(type);
+    switch (typeStr) {
         case "number":
             typedValue = sql`${Number(value)}`;
             break;
@@ -213,11 +239,11 @@ function buildWhereConditions(
     }
 
     if (input.minRating !== undefined) {
-        const minRating = Math.max(0, Math.min(5, Number(input.minRating)));
+        const minRating = Math.max(MIN_RATING, Math.min(MAX_RATING, Number(input.minRating)));
         whereConditions.push(sql`${libraryMaterializedView.progressRating} >= ${minRating}`);
     }
     if (input.maxRating !== undefined) {
-        const maxRating = Math.max(0, Math.min(5, Number(input.maxRating)));
+        const maxRating = Math.max(MIN_RATING, Math.min(MAX_RATING, Number(input.maxRating)));
         whereConditions.push(sql`${libraryMaterializedView.progressRating} <= ${maxRating}`);
     }
 
@@ -262,16 +288,16 @@ function generateNextCursor(items: Record<string, unknown>[], sortBy: ProgressSo
 
 const progressQuerySchema = z
     .object({
-        limit: z.number().min(1).max(100).default(20),
+        limit: z.number().min(MIN_LIMIT).max(MAX_LIMIT).default(DEFAULT_LIMIT),
         cursor: z.string().optional(),
-        search: z.string().max(255).optional(),
+        search: z.string().max(MAX_SEARCH_LENGTH).optional(),
         sortBy: progressSortByEnum.default("updatedAt"),
         sortOrder: sortOrderEnum.nullable().default("asc"),
         status: z.array(z.enum(progressStatusEnum.enumValues)).max(10).optional(),
         source: z.array(z.enum(sourceEnum.enumValues)).max(10).optional(),
         isNsfw: z.boolean().optional(),
-        minRating: z.number().min(0).max(5).optional(),
-        maxRating: z.number().min(0).max(5).optional(),
+        minRating: z.number().min(MIN_RATING).max(MAX_RATING).optional(),
+        maxRating: z.number().min(MIN_RATING).max(MAX_RATING).optional(),
         hasNotes: z.boolean().optional(),
         completedOnly: z.boolean().optional(),
         inProgressOnly: z.boolean().optional(),
@@ -297,7 +323,7 @@ export const progressRouter = createTRPCRouter({
     delete: protectedProcedure
         .input(
             z.object({
-                publicId: z.string().min(1).max(50),
+                publicId: z.string().min(PUBLIC_ID_MIN).max(PUBLIC_ID_MAX),
             }),
         )
         .mutation(async ({ ctx, input }) => {
@@ -323,7 +349,7 @@ export const progressRouter = createTRPCRouter({
     all: publicProcedure.input(progressQuerySchema).query(async ({ ctx, input }): Promise<ProgressQueryResult> => {
         const { limit, cursor, search, sortBy, sortOrder: inputSortOrder, ...filterInput } = input;
         const sortOrder = inputSortOrder ?? "asc";
-        const effectiveLimit = Math.min(limit, 100);
+        const effectiveLimit = Math.min(limit, MAX_LIMIT);
 
         const sanitizedSearch = search?.trim() ? sanitizeSearchInput(search) : undefined;
         if (sanitizedSearch && sanitizedSearch.length < 2) {
@@ -366,10 +392,10 @@ export const progressRouter = createTRPCRouter({
         const hasSearch = Boolean(sanitizedSearch);
 
         const cacheConfig: CacheConfig = {
-            ttl: hasSearch ? 60 : hasFilters ? 60 * 3 : isFirstPage ? 60 * 5 : 60 * 2,
+            ttl: hasSearch ? TTL_SEARCH : hasFilters ? TTL_FILTER : isFirstPage ? TTL_FIRST_PAGE : TTL_DEFAULT,
             compress: true,
             jitter: true,
-            staleWhileRevalidate: hasSearch ? 30 : 60,
+            staleWhileRevalidate: hasSearch ? SWR_SEARCH : SWR_DEFAULT,
             snapshot: false,
         };
 
