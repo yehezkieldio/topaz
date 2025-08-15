@@ -4,12 +4,12 @@ import * as React from "react";
 import { MultiSelect } from "#/components/ui/multiselect";
 import { type SelectedItem, useFandomSearch } from "#/features/library/api/use-fandom-search";
 
-interface LibraryFandomMultiselectProps {
+type LibraryFandomMultiselectProps = {
     selectedFandoms: SelectedItem[];
     onFandomsChange: (fandoms: SelectedItem[]) => void;
     placeholder?: string;
     className?: string;
-}
+};
 
 export function LibraryFandomMultiselect({
     selectedFandoms,

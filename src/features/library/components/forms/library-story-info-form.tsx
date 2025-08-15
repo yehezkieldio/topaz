@@ -9,17 +9,17 @@ import { Textarea } from "#/components/ui/textarea";
 import { useLibraryFormContext } from "#/features/library/components/forms/library-form";
 import { sourceEnum, sourceLabels } from "#/server/db/schema";
 
-interface StoryInfo {
+type StoryInfo = {
     title: string;
     author: string;
     url: string;
     source: string;
     description?: string;
-}
+};
 
-interface LibraryStoryInfoFormProps<T extends StoryInfo> {
+type LibraryStoryInfoFormProps<T extends StoryInfo> = {
     control?: Control<T>;
-}
+};
 
 export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl }: LibraryStoryInfoFormProps<T>) {
     const context = useLibraryFormContext<T>();

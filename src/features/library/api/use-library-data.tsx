@@ -7,14 +7,14 @@ import type { SortOrder } from "#/lib/utils";
 import type { ProgressSortBy, ProgressStatus } from "#/server/db/schema";
 import { useTRPC } from "#/trpc/react";
 
-interface UseLibraryDataParams {
+type UseLibraryDataParams = {
     search?: string;
     status?: ProgressStatus | "all" | undefined;
     sortBy: ProgressSortBy;
     sortOrder: SortOrder;
-}
+};
 
-interface LibraryDataContextValue {
+type LibraryDataContextValue = {
     allItems: LibraryItem[];
     error: unknown;
     fetchNextPage: () => void;
@@ -23,7 +23,7 @@ interface LibraryDataContextValue {
     isFetchingNextPage: boolean;
     isLoading: boolean;
     refetch: () => void;
-}
+};
 
 const LibraryDataContext = createContext<LibraryDataContextValue | null>(null);
 

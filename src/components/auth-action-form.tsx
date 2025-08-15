@@ -2,9 +2,9 @@ import { Icons } from "#/components/icons";
 import { Button } from "#/components/ui/button";
 import { signIn, signOut } from "#/server/auth";
 
-interface AuthActionFormProps {
+type AuthActionFormProps = {
     isAdministratorUser: boolean;
-}
+};
 
 export function AuthActionForm({ isAdministratorUser }: AuthActionFormProps) {
     return isAdministratorUser ? (

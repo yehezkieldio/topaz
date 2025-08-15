@@ -18,12 +18,12 @@ import { LibraryItemProvider } from "#/features/library/components/item/library-
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
 import { useTRPC } from "#/trpc/react";
 
-export interface LibraryItemDeleteDialogProps {
+export type LibraryItemDeleteDialogProps = {
     item: LibraryItem;
     isOpen: boolean;
     onClose: () => void;
     onDelete?: (item: LibraryItem) => void;
-}
+};
 
 function _LibraryItemDeleteDialog({ item, isOpen, onClose, onDelete }: LibraryItemDeleteDialogProps) {
     const trpc = useTRPC();

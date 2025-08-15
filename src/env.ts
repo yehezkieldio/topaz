@@ -44,6 +44,6 @@ export const env = createEnv({
 
         NEXT_PUBLIC_VERSION: process.env.NEXT_PUBLIC_VERSION,
     },
-    skipValidation: !!process.env.SKIP_ENV_VALIDATION,
+    skipValidation: Boolean(process.env.SKIP_ENV_VALIDATION),
     emptyStringAsUndefined: true,
 });

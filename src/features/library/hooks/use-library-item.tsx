@@ -4,7 +4,7 @@ import type { RouterOutputs } from "#/trpc/react";
 
 export type LibraryItem = RouterOutputs["progress"]["all"]["data"][number];
 
-export interface LibraryItemValues {
+export type LibraryItemValues = {
     totalChapters: number;
     currentChapter: number;
     hasValidChapterData: boolean;
@@ -18,7 +18,7 @@ export interface LibraryItemValues {
     hasDescription: boolean;
     lastUpdated: string | null;
     isNsfw?: boolean;
-}
+};
 
 export function useLibraryItemValues(item: LibraryItem): LibraryItemValues {
     return useMemo(() => {

@@ -11,10 +11,10 @@ import {
     DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
 
-interface AdminControlsProps {
+type AdminControlsProps = {
     onEdit: () => void;
     onDelete: () => void;
-}
+};
 
 function _AdminControls({ onEdit, onDelete }: AdminControlsProps) {
     return (

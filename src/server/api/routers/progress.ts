@@ -137,7 +137,7 @@ function createCursorPredicate(cursorData: CursorData, sortBy: ProgressSortBy, s
     )`;
 }
 
-interface BuildWhereConditionsInput {
+type BuildWhereConditionsInput = {
     search?: string;
     status?: string[];
     source?: string[];
@@ -147,7 +147,7 @@ interface BuildWhereConditionsInput {
     hasNotes?: boolean;
     completedOnly?: boolean;
     inProgressOnly?: boolean;
-}
+};
 
 function buildWhereConditions(
     input: BuildWhereConditionsInput,
@@ -241,10 +241,10 @@ function buildWhereConditions(
 }
 
 function generateNextCursor(items: Record<string, unknown>[], sortBy: ProgressSortBy): string | undefined {
-    if (items.length === 0) return undefined;
+    if (items.length === 0) return;
 
     const lastItem = items.at(-1);
-    if (!lastItem) return undefined;
+    if (!lastItem) return;
 
     let sortValue: unknown;
     if (sortBy === "progress") {

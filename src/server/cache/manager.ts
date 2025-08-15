@@ -6,7 +6,7 @@ import { isCacheEnabled, redis } from "#/server/cache";
 const compress = promisify(brotliCompress);
 const decompress = promisify(brotliDecompress);
 
-export interface CacheConfig {
+export type CacheConfig = {
     ttl?: number;
     compress?: boolean;
     jitter?: boolean;
@@ -15,7 +15,7 @@ export interface CacheConfig {
     probabilisticExpiration?: number;
     scanBatchSize?: number;
     snapshot?: boolean;
-}
+};
 
 const DEFAULT_TTL = 60 * 5; // 5 minutes
 const VERSION = "v1";

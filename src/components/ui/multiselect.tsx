@@ -8,12 +8,12 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "#/components/ui/popover";
 import { cn } from "#/lib/utils";
 
-interface MultiSelectOption {
+type MultiSelectOption = {
     value: string;
     label: string;
-}
+};
 
-interface MultiSelectProps {
+type MultiSelectProps = {
     options: MultiSelectOption[];
     selectedValues: MultiSelectOption[];
     onSelectionChange: (selected: MultiSelectOption[]) => void;
@@ -27,7 +27,7 @@ interface MultiSelectProps {
     className?: string;
     disableClientFilter?: boolean;
     keepOpenOnSelect?: boolean;
-}
+};
 
 export function MultiSelect({
     options,

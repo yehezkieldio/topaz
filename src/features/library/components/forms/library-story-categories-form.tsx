@@ -7,18 +7,18 @@ import { useLibraryFormContext } from "#/features/library/components/forms/libra
 import { LibraryFandomMultiselect } from "#/features/library/components/ui/library-fandom-multiselect";
 import { LibraryTagMultiselect } from "#/features/library/components/ui/library-tag-multiselect";
 
-interface Categories {
+type Categories = {
     fandomIds?: string[];
     tagIds?: string[];
-}
+};
 
-interface LibraryStoryCategoriesFormProps<T extends Categories & FieldValues> {
+type LibraryStoryCategoriesFormProps<T extends Categories & FieldValues> = {
     control?: Control<T>;
     fandomsField?: Path<T>;
     tagsField?: Path<T>;
     initialFandoms?: Array<{ publicId: string; name: string }>;
     initialTags?: Array<{ publicId: string; name: string }>;
-}
+};
 
 export function LibraryStoryCategoriesForm<T extends Categories & FieldValues>({
     control: propControl,

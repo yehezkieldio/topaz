@@ -7,7 +7,7 @@ import { LibraryItem } from "#/features/library/components/item/library-item";
 import { ListItemSkeleton } from "#/features/library/components/skeletons/library-list-skeleton";
 import type { LibraryItem as LibraryItemType } from "#/features/library/hooks/use-library-item";
 
-interface LibraryListItemProps {
+type LibraryListItemProps = {
     virtualItem: TanStackVirtualItem;
     item?: LibraryItemType;
     isLoaderRow: boolean;
@@ -20,7 +20,7 @@ interface LibraryListItemProps {
     handleDelete: (item: LibraryItemType) => void;
     measureElement: (element: Element | null) => void;
     onInView?: () => void;
-}
+};
 
 export const LibraryListItem = memo(function LibraryListItem({
     virtualItem,

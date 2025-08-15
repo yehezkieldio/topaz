@@ -15,9 +15,9 @@ const LibraryCreate = dynamic(
     },
 );
 
-interface LibraryControlsProps {
+type LibraryControlsProps = {
     isAdministratorUser?: boolean;
-}
+};
 
 export function LibraryControls({ isAdministratorUser = false }: LibraryControlsProps) {
     return (

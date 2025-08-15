@@ -1,8 +1,8 @@
-interface ErrorStateProps {
+type ErrorStateProps = {
     title: string;
     message: string;
     onRetry?: () => void;
-}
+};
 
 export function ErrorState({ title, message, onRetry }: ErrorStateProps) {
     return (

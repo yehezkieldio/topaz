@@ -11,10 +11,10 @@ import { LibraryStoryProgressForm } from "#/features/library/components/forms/li
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
 import { useIsMobile } from "#/hooks/use-mobile";
 
-interface LibraryEditFormProps {
+type LibraryEditFormProps = {
     item: LibraryItem;
     onClose: () => void;
-}
+};
 
 export function LibraryEditForm({ item, onClose }: LibraryEditFormProps) {
     const { form, onSubmit, isLoading } = useStoryEdit({ item, onClose });

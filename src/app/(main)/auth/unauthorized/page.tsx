@@ -14,13 +14,13 @@ export default function UnauthorizedPage() {
                             <ShieldAlertIcon className="h-5 w-5" />
                         </div>
                         <div className="space-y-3">
-                            <h1 className="font-medium tracking-tight text-xl font-serif">Access Denied</h1>
+                            <h1 className="font-medium font-serif text-xl tracking-tight">Access Denied</h1>
                             <p className="text-muted-foreground text-sm leading-relaxed">
                                 You are not authorized to authenticate.
                             </p>
                         </div>
 
-                        <div className="pt-2 space-y-2">
+                        <div className="space-y-2 pt-2">
                             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-2 text-destructive text-sm">
                                 Unauthorized
                             </div>
@@ -28,7 +28,7 @@ export default function UnauthorizedPage() {
 
                         <div>
                             <Link
-                                className="inline-flex items-center justify-center rounded-md border border-border/60 bg-background/40 px-4 py-2 text-xs font-medium text-foreground/90 shadow-sm backdrop-blur transition hover:bg-background/60"
+                                className="inline-flex items-center justify-center rounded-md border border-border/60 bg-background/40 px-4 py-2 font-medium text-foreground/90 text-xs shadow-sm backdrop-blur transition hover:bg-background/60"
                                 href="/"
                             >
                                 ← Return Home

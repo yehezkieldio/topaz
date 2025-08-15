@@ -4,10 +4,10 @@ import { memo } from "react";
 import { Badge } from "#/components/ui/badge";
 import { useLibraryItemContext } from "#/features/library/components/item/library-item-context";
 
-interface LibraryItemTagsProps {
+type LibraryItemTagsProps = {
     showAllFandoms?: boolean;
     showAllTags?: boolean;
-}
+};
 
 function _LibraryItemTags({ showAllFandoms = false, showAllTags = false }: LibraryItemTagsProps) {
     const { item } = useLibraryItemContext();

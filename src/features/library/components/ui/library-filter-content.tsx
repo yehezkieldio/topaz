@@ -14,10 +14,10 @@ import {
 import { useLibraryFilter } from "#/features/library/hooks/use-library-filter";
 import { type ProgressSortBy, type ProgressStatus, progressStatusLabels } from "#/server/db/schema";
 
-export interface SortOption {
+export type SortOption = {
     value: ProgressSortBy;
     label: string;
-}
+};
 
 export const SORT_OPTIONS: SortOption[] = [
     { value: "updatedAt", label: "Date Updated" },
@@ -31,10 +31,10 @@ export const SORT_OPTIONS: SortOption[] = [
     { value: "chapterCount", label: "Chapter Count" },
 ] as const;
 
-export interface StatusOption {
+export type StatusOption = {
     value: ProgressStatus | "all";
     label: string;
-}
+};
 
 export const STATUS_OPTIONS: StatusOption[] = [
     { value: "all", label: "All" },
@@ -45,9 +45,9 @@ export const STATUS_OPTIONS: StatusOption[] = [
     { value: "Dropped", label: progressStatusLabels.Dropped },
 ] as const;
 
-interface LibraryFilterContentProps {
+type LibraryFilterContentProps = {
     currentStatusLabel: string;
-}
+};
 
 export const LibraryFilterContent = React.memo(function FilterContent({
     currentStatusLabel,

@@ -6,16 +6,16 @@ import { db } from "#/server/db";
 import { accounts, sessions, users, verificationTokens } from "#/server/db/schema";
 
 declare module "next-auth" {
-    interface Session {
+    type Session = {
         user: {
             id: string;
             publicId: string;
         } & DefaultSession["user"];
-    }
-    interface User {
+    };
+    type User = {
         id: string;
         publicId: string;
-    }
+    };
 }
 
 export const authConfig = {
@@ -27,7 +27,7 @@ export const authConfig = {
     }),
     callbacks: {
         authorized: ({ auth }) => {
-            return !!auth;
+            return Boolean(auth);
         },
         session: ({ session, token }) => ({
             ...session,

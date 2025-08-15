@@ -417,7 +417,7 @@
                 // Prevent usage of <img> element in a Next.js project.
                 "noImgElement": "error",
                 // Disallow the use of namespace imports.
-                "noNamespaceImport": "error",
+                "noNamespaceImport": "off",
                 // Prevent duplicate polyfills from Polyfill.io.
                 "noUnwantedPolyfillio": "error",
                 // Ensure the preconnect attribute is used when using Google Fonts.

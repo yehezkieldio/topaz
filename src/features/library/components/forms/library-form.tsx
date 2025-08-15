@@ -1,10 +1,10 @@
 import * as React from "react";
 import type { Control, FieldValues } from "react-hook-form";
 
-interface LibraryFormContextValue {
+type LibraryFormContextValue = {
     control: Control<FieldValues>;
     isLoading?: boolean;
-}
+};
 
 const LibraryFormContext = React.createContext<LibraryFormContextValue | null>(null);
 
@@ -40,9 +40,9 @@ function LibraryFormRoot<T extends FieldValues = FieldValues>({
     );
 }
 
-interface LibraryFormInfoProps {
+type LibraryFormInfoProps = {
     children?: React.ReactNode;
-}
+};
 
 function LibraryFormInfo({ children }: LibraryFormInfoProps) {
     return (
@@ -53,9 +53,9 @@ function LibraryFormInfo({ children }: LibraryFormInfoProps) {
     );
 }
 
-interface LibraryFormDetailsProps {
+type LibraryFormDetailsProps = {
     children?: React.ReactNode;
-}
+};
 
 function LibraryFormDetails({ children }: LibraryFormDetailsProps) {
     return (
@@ -66,11 +66,11 @@ function LibraryFormDetails({ children }: LibraryFormDetailsProps) {
     );
 }
 
-interface LibraryFormCategoriesProps {
+type LibraryFormCategoriesProps = {
     children?: React.ReactNode;
     initialFandoms?: Array<{ publicId: string; name: string }>;
     initialTags?: Array<{ publicId: string; name: string }>;
-}
+};
 
 function LibraryFormCategories({
     children,
@@ -85,9 +85,9 @@ function LibraryFormCategories({
     );
 }
 
-interface LibraryFormProgressProps {
+type LibraryFormProgressProps = {
     children?: React.ReactNode;
-}
+};
 
 function LibraryFormProgress({ children }: LibraryFormProgressProps) {
     return (

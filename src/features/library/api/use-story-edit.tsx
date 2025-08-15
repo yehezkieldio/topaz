@@ -20,10 +20,10 @@ export const editStorySchema = storyCreateWithProgressSchema;
 
 export type EditStoryFormData = z.infer<typeof editStorySchema>;
 
-interface UseStoryEditProps {
+type UseStoryEditProps = {
     item: LibraryItem;
     onClose: () => void;
-}
+};
 
 export function useStoryEdit({ item, onClose }: UseStoryEditProps) {
     const trpc = useTRPC();

@@ -1,12 +1,12 @@
 import * as React from "react";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
 
-interface LibraryItemContextValue {
+type LibraryItemContextValue = {
     item: LibraryItem;
     onView?: (item: LibraryItem) => void;
     onEdit?: (item: LibraryItem) => void;
     onDelete?: (item: LibraryItem) => void;
-}
+};
 
 const LibraryItemContext = React.createContext<LibraryItemContextValue | null>(null);
 
@@ -18,10 +18,10 @@ export function useLibraryItemContext() {
     return context;
 }
 
-interface LibraryItemProviderProps {
+type LibraryItemProviderProps = {
     children: React.ReactNode;
     value: LibraryItemContextValue;
-}
+};
 
 export function LibraryItemProvider({ children, value }: LibraryItemProviderProps) {
     const contextValue = React.useMemo(() => value, [value]);

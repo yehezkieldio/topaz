@@ -8,9 +8,9 @@ import { LibraryStoryDetailsForm } from "#/features/library/components/forms/lib
 import { LibraryStoryInfoForm } from "#/features/library/components/forms/library-story-info-form";
 import { LibraryStoryProgressForm } from "#/features/library/components/forms/library-story-progress-form";
 
-interface LibraryCreateFormProps {
+type LibraryCreateFormProps = {
     onClose: () => void;
-}
+};
 
 export function LibraryCreateForm({ onClose }: LibraryCreateFormProps) {
     const { form, onSubmit, isLoading } = useStoryCreate({ onClose });

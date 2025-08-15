@@ -24,18 +24,18 @@ const LibraryItemAdminControls = dynamic(
     },
 );
 
-export interface LibraryItemProps {
+export type LibraryItemProps = {
     item: LibraryItemType;
     showAdminControls?: boolean;
     onView?: (item: LibraryItemType) => void;
     onEdit?: (item: LibraryItemType) => void;
     onDelete?: (item: LibraryItemType) => void;
     children?: React.ReactNode;
-}
+};
 
-interface LibraryItemHeaderProps {
+type LibraryItemHeaderProps = {
     children?: React.ReactNode;
-}
+};
 
 function LibraryItemHeaderComponent({ children }: LibraryItemHeaderProps) {
     return (
@@ -46,9 +46,9 @@ function LibraryItemHeaderComponent({ children }: LibraryItemHeaderProps) {
     );
 }
 
-interface LibraryItemMetadataProps {
+type LibraryItemMetadataProps = {
     children?: React.ReactNode;
-}
+};
 
 function LibraryItemMetadataComponent({ children }: LibraryItemMetadataProps) {
     return (
@@ -59,9 +59,9 @@ function LibraryItemMetadataComponent({ children }: LibraryItemMetadataProps) {
     );
 }
 
-interface LibraryItemProgressProps {
+type LibraryItemProgressProps = {
     children?: React.ReactNode;
-}
+};
 
 function LibraryItemProgressComponent({ children }: LibraryItemProgressProps) {
     return (
@@ -72,9 +72,9 @@ function LibraryItemProgressComponent({ children }: LibraryItemProgressProps) {
     );
 }
 
-interface LibraryItemRatingProps {
+type LibraryItemRatingProps = {
     children?: React.ReactNode;
-}
+};
 
 function LibraryItemRatingComponent({ children }: LibraryItemRatingProps) {
     const { item } = useLibraryItemContext();
@@ -86,9 +86,9 @@ function LibraryItemRatingComponent({ children }: LibraryItemRatingProps) {
     );
 }
 
-interface LibraryItemTagsProps {
+type LibraryItemTagsProps = {
     children?: React.ReactNode;
-}
+};
 
 function LibraryItemTagsComponent({ children }: LibraryItemTagsProps) {
     return (
@@ -99,9 +99,9 @@ function LibraryItemTagsComponent({ children }: LibraryItemTagsProps) {
     );
 }
 
-interface LibraryItemNotesProps {
+type LibraryItemNotesProps = {
     children?: React.ReactNode;
-}
+};
 
 function LibraryItemNotesComponent({ children }: LibraryItemNotesProps) {
     return (
@@ -112,9 +112,9 @@ function LibraryItemNotesComponent({ children }: LibraryItemNotesProps) {
     );
 }
 
-interface LibraryItemAdminControlsProps {
+type LibraryItemAdminControlsProps = {
     children?: React.ReactNode;
-}
+};
 
 function LibraryItemAdminControlsComponent({ children }: LibraryItemAdminControlsProps) {
     const { item, onEdit, onDelete } = useLibraryItemContext();
@@ -135,10 +135,10 @@ function LibraryItemAdminControlsComponent({ children }: LibraryItemAdminControl
     );
 }
 
-interface LibraryItemActionsProps {
+type LibraryItemActionsProps = {
     showAdminControls?: boolean;
     children?: React.ReactNode;
-}
+};
 
 function LibraryItemActionsComponent({ showAdminControls = false, children }: LibraryItemActionsProps) {
     const { item, onView } = useLibraryItemContext();

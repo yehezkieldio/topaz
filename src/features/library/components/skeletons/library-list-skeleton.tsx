@@ -1,8 +1,8 @@
 import { Skeleton } from "#/components/ui/skeleton";
 
-interface ListItemSkeletonProps {
+type ListItemSkeletonProps = {
     count?: number;
-}
+};
 
 export const ListItemSkeleton = ({ count = 1 }: ListItemSkeletonProps) => (
     <>

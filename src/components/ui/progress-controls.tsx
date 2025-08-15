@@ -3,7 +3,7 @@
 import { MinusIcon, PlusIcon } from "lucide-react";
 import { Button } from "#/components/ui/button";
 
-interface ProgressControlsProps {
+type ProgressControlsProps = {
     currentChapter: number;
     totalChapters?: number;
     onIncrement: () => void;
@@ -11,7 +11,7 @@ interface ProgressControlsProps {
     disabled?: boolean;
     size?: "sm" | "default" | "lg";
     showProgress?: boolean;
-}
+};
 
 export function ProgressControls({
     currentChapter,

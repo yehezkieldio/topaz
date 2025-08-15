@@ -4,12 +4,12 @@ import * as React from "react";
 import { MultiSelect } from "#/components/ui/multiselect";
 import { type SelectedItem, useTagSearch } from "#/features/library/api/use-tag-search";
 
-interface LibraryTagMultiselectProps {
+type LibraryTagMultiselectProps = {
     selectedTags: SelectedItem[];
     onTagsChange: (tags: SelectedItem[]) => void;
     placeholder?: string;
     className?: string;
-}
+};
 
 export function LibraryTagMultiselect({
     selectedTags,

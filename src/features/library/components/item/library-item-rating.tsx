@@ -1,12 +1,12 @@
 import { SparkleIcon } from "lucide-react";
 import { memo } from "react";
 
-interface LibraryItemRatingProps {
+type LibraryItemRatingProps = {
     value: number; // 0-5, supports decimals
     onChange?: (value: number) => void;
     readOnly?: boolean;
     "aria-label"?: string;
-}
+};
 
 export const LibraryItemRating = memo(function LibraryItemRating({
     value,

@@ -1,6 +1,6 @@
-interface LoadingSpinnerProps {
+type LoadingSpinnerProps = {
     message?: string;
-}
+};
 
 export function LoadingSpinner({ message = "Loading..." }: LoadingSpinnerProps) {
     return (

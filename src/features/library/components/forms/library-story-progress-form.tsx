@@ -6,20 +6,20 @@ import { Textarea } from "#/components/ui/textarea";
 import { useLibraryFormContext } from "#/features/library/components/forms/library-form";
 import { progressStatusEnum, progressStatusLabels } from "#/server/db/schema";
 
-interface ProgressFormFields {
+type ProgressFormFields = {
     progressStatus?: string;
     current_chapter?: number;
     rating?: number | string;
     notes?: string;
-}
+};
 
-interface LibraryStoryProgressFormProps<T extends ProgressFormFields> {
+type LibraryStoryProgressFormProps<T extends ProgressFormFields> = {
     control?: Control<T>;
     progressStatusField?: Path<T>;
     currentChapterField?: Path<T>;
     ratingField?: Path<T>;
     notesField?: Path<T>;
-}
+};
 
 export function LibraryStoryProgressForm<T extends ProgressFormFields>({
     control: propControl,

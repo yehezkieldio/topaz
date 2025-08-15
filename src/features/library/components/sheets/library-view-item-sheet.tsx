@@ -21,11 +21,11 @@ import { LibraryItemProgress } from "#/features/library/components/item/library-
 import { LibraryItemTags } from "#/features/library/components/item/library-item-tags";
 import { type LibraryItem, useLibraryItemValues } from "#/features/library/hooks/use-library-item";
 
-export interface ViewSheetProps {
+export type ViewSheetProps = {
     item: LibraryItem;
     isOpen: boolean;
     onClose: () => void;
-}
+};
 
 function _LibraryItemViewSheet({ item, isOpen, onClose }: ViewSheetProps) {
     const { hasDescription, hasNotes, hasValidUrl } = useLibraryItemValues(item);

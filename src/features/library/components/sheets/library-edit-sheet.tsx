@@ -4,12 +4,12 @@ import { Sheet, SheetContent, SheetTrigger } from "#/components/ui/sheet";
 import { LibraryEditForm } from "#/features/library/components/forms/library-edit-form";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
 
-interface LibraryEditSheetProps {
+type LibraryEditSheetProps = {
     item: LibraryItem;
     children?: React.ReactNode;
     isOpen: boolean;
     onClose: () => void;
-}
+};
 
 export function LibraryEditSheet({ item, children, isOpen, onClose }: LibraryEditSheetProps) {
     return (

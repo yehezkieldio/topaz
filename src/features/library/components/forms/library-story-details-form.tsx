@@ -6,16 +6,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#
 import { useLibraryFormContext } from "#/features/library/components/forms/library-form";
 import { storyStatusEnum, storyStatusLabels } from "#/server/db/schema";
 
-interface StoryDetails {
+type StoryDetails = {
     word_count?: number;
     chapter_count?: number;
     status?: string;
     is_nsfw?: boolean;
-}
+};
 
-interface LibraryStoryDetailsFormProps<T extends StoryDetails> {
+type LibraryStoryDetailsFormProps<T extends StoryDetails> = {
     control?: Control<T>;
-}
+};
 
 export function LibraryStoryDetailsForm<T extends StoryDetails>({
     control: propControl,
