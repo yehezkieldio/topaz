@@ -3,6 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { useDebounce } from "#/hooks/use-debounce";
+import { DEBOUNCE_DELAY_MS } from "#/lib/utils";
+import { FIVE_MINUTES, THIRTY_MINUTES } from "#/trpc/query-client";
 import { useTRPC } from "#/trpc/react";
 
 export type SelectedItem = {
@@ -15,7 +17,7 @@ export const useFandomSearch = (initialSearch = "") => {
     const queryClient = useQueryClient();
 
     const [fandomSearch, setFandomSearch] = React.useState<string>(initialSearch);
-    const debouncedFandomSearch = useDebounce(fandomSearch, 300);
+    const debouncedFandomSearch = useDebounce(fandomSearch, DEBOUNCE_DELAY_MS);
     const normalizedDebounced = React.useMemo(() => debouncedFandomSearch.trim(), [debouncedFandomSearch]);
 
     // Prefetch hot fandoms on mount for snappy UX
@@ -43,8 +45,8 @@ export const useFandomSearch = (initialSearch = "") => {
             hotLimit: 20,
         }),
         enabled: normalizedDebounced === debouncedFandomSearch,
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 30 * 60 * 1000, // 30 minutes
+        staleTime: FIVE_MINUTES,
+        gcTime: THIRTY_MINUTES,
     });
 
     const createFandomForMultiselect = useMutation(trpc.fandom.createForMultiselect.mutationOptions());

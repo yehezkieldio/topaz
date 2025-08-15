@@ -3,6 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { useDebounce } from "#/hooks/use-debounce";
+import { DEBOUNCE_DELAY_MS } from "#/lib/utils";
+import { FIVE_MINUTES, THIRTY_MINUTES } from "#/trpc/query-client";
 import { useTRPC } from "#/trpc/react";
 
 export type SelectedItem = {
@@ -15,7 +17,7 @@ export const useTagSearch = (initialSearch = "") => {
     const queryClient = useQueryClient();
 
     const [tagSearch, setTagSearch] = React.useState<string>(initialSearch);
-    const debouncedTagSearch = useDebounce(tagSearch, 300);
+    const debouncedTagSearch = useDebounce(tagSearch, DEBOUNCE_DELAY_MS);
     const normalizedDebounced = React.useMemo(() => debouncedTagSearch.trim(), [debouncedTagSearch]);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: This is a dependency for the query.
@@ -42,8 +44,8 @@ export const useTagSearch = (initialSearch = "") => {
             hotLimit: 20,
         }),
         enabled: normalizedDebounced === debouncedTagSearch,
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 30 * 60 * 1000, // 30 minutes
+        staleTime: FIVE_MINUTES,
+        gcTime: THIRTY_MINUTES,
     });
 
     const createTagForMultiselect = useMutation(trpc.tag.createForMultiselect.mutationOptions());

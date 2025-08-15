@@ -5,6 +5,7 @@ import { type ReactNode, createContext, useContext, useMemo } from "react";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
 import type { SortOrder } from "#/lib/utils";
 import type { ProgressSortBy, ProgressStatus } from "#/server/db/schema";
+import { THIRTY_MINUTES } from "#/trpc/query-client";
 import { useTRPC } from "#/trpc/react";
 
 type UseLibraryDataParams = {
@@ -68,6 +69,9 @@ export const useLibraryRefetch = () => {
     return context.refetch;
 };
 
+const RETRY_DELAY_BASE_MS = 1000;
+const RETRY_DELAY_MAX_MS = 30_000;
+
 export function useLibraryData({ search, status, sortBy, sortOrder }: UseLibraryDataParams) {
     const trpc = useTRPC();
 
@@ -90,9 +94,9 @@ export function useLibraryData({ search, status, sortBy, sortOrder }: UseLibrary
                 refetchOnMount: false,
                 refetchOnReconnect: false,
                 staleTime: Number.POSITIVE_INFINITY,
-                gcTime: 1000 * 60 * 30, // 30 minutes
+                gcTime: THIRTY_MINUTES,
                 retry: 3,
-                retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30_000),
+                retryDelay: (attemptIndex) => Math.min(RETRY_DELAY_BASE_MS * 2 ** attemptIndex, RETRY_DELAY_MAX_MS),
                 structuralSharing: true,
                 notifyOnChangeProps: [
                     "data",
