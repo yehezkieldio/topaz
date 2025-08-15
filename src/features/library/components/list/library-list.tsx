@@ -47,9 +47,9 @@ const DESKTOP_ITEM_HEIGHT = 380;
 const MOBILE_ITEM_HEIGHT = 420;
 const OVERSCAN = 5;
 
-export interface LibraryListProps {
+export type LibraryListProps = {
     isAdministratorUser: boolean;
-}
+};
 
 export const LibraryList = memo(function LibraryList({ isAdministratorUser }: LibraryListProps) {
     const [hydrated, setHydrated] = useState(false);
@@ -65,9 +65,9 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
     return <LibraryListInner isAdministratorUser={isAdministratorUser} />;
 });
 
-interface LibraryListInnerProps {
+type LibraryListInnerProps = {
     isAdministratorUser: boolean;
-}
+};
 
 function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
     const [search] = useSearchQuery();
