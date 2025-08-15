@@ -5,6 +5,8 @@ import type * as React from "react";
 
 import { cn } from "#/lib/utils";
 
+const MAX_PROGRESS_PERCENTAGE = 100;
+
 function Progress({ className, value, ...props }: React.ComponentProps<typeof ProgressPrimitive.Root>) {
     return (
         <ProgressPrimitive.Root
@@ -13,9 +15,8 @@ function Progress({ className, value, ...props }: React.ComponentProps<typeof Pr
             {...props}
         >
             <ProgressPrimitive.Indicator
-                className="h-full w-full flex-1 bg-primary transition-all"
                 data-slot="progress-indicator"
-                style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+                style={{ transform: `translateX(-${MAX_PROGRESS_PERCENTAGE - (value || 0)}%)` }}
             />
         </ProgressPrimitive.Root>
     );
