@@ -19,7 +19,7 @@ export default async function Authentication() {
                             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-border/60 bg-background/50 shadow-sm backdrop-blur">
                                 <Icons.discord className="h-5 w-5 text-white" />
                             </div>
-                            <h1 className="font-medium tracking-tight text-xl">Authentication</h1>
+                            <h1 className="font-medium tracking-tight text-xl font-serif">Authentication</h1>
                             <p className="text-muted-foreground text-sm leading-relaxed">
                                 Administrator or owner access only.
                             </p>

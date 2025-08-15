@@ -14,7 +14,7 @@ export default function UnauthorizedPage() {
                             <ShieldAlertIcon className="h-5 w-5" />
                         </div>
                         <div className="space-y-3">
-                            <h1 className="font-medium tracking-tight text-xl">Access Denied</h1>
+                            <h1 className="font-medium tracking-tight text-xl font-serif">Access Denied</h1>
                             <p className="text-muted-foreground text-sm leading-relaxed">
                                 You are not authorized to authenticate.
                             </p>
