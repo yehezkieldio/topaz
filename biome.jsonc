@@ -2,13 +2,7 @@
     "$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
     "files": {
         "ignoreUnknown": true,
-        "includes": [
-            "**",
-            "!dist",
-            "!.next",
-            "!node_modules",
-            "!bun.lock"
-        ]
+        "includes": ["**", "!dist", "!.next", "!node_modules", "!bun.lock"]
     },
     "formatter": {
         "enabled": true,
@@ -400,18 +394,8 @@
                     "fix": "safe",
                     "level": "error",
                     "options": {
-                        "attributes": [
-                            "className"
-                        ],
-                        "functions": [
-                            "clsx",
-                            "cva",
-                            "tw",
-                            "twMerge",
-                            "cn",
-                            "twJoin",
-                            "tv"
-                        ]
+                        "attributes": ["className"],
+                        "functions": ["clsx", "cva", "tw", "twMerge", "cn", "twJoin", "tv"]
                     }
                 },
                 /** ------ These rules should be enabled but Scanner makes them too slow ------ **/
@@ -525,9 +509,7 @@
                     "level": "error",
                     "options": {
                         "requireAscii": true,
-                        "filenameCases": [
-                            "kebab-case"
-                        ],
+                        "filenameCases": ["kebab-case"],
                         "match": "[\\-$]?(.+?)[.](.+)"
                     }
                 },
@@ -639,7 +621,7 @@
                 // Disallow void type outside of generic or return types.
                 "noConfusingVoidType": "error",
                 // Disallow the use of console.
-                "noConsole": "error",
+                "noConsole": "off",
                 // Disallow TypeScript const enum
                 "noConstEnum": "error",
                 // Prevents from having control characters and some escape sequences that match control characters in regular expression literals.

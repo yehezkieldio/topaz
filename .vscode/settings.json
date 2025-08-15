@@ -2,6 +2,9 @@
     "[javascript][typescript][javascriptreact][typescriptreact][json][jsonc][css][graphql]": {
         "editor.defaultFormatter": "biomejs.biome"
     },
+    "[jsonc]": {
+        "editor.defaultFormatter": "biomejs.biome"
+    },
     "[yaml]": {
         "editor.defaultFormatter": "redhat.vscode-yaml",
         "editor.tabSize": 4
@@ -35,8 +38,5 @@
         "^drizzle-orm/(gel-core|mysql-core|sqlite-core|singlestore-core)$"
     ],
     "typescript.preferences.importModuleSpecifier": "non-relative",
-    "typescript.tsdk": "node_modules/typescript/lib",
-    "[jsonc]": {
-        "editor.defaultFormatter": "vscode.json-language-features"
-    }
+    "typescript.tsdk": "node_modules/typescript/lib"
 }
