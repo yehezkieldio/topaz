@@ -17,14 +17,29 @@ export type CacheConfig = {
     snapshot?: boolean;
 };
 
-const DEFAULT_TTL = 60 * 5; // 5 minutes
-const VERSION = "v1";
-const COMPRESSION_THRESHOLD = 512;
-const MIN_ENTROPY_FOR_COMPRESSION = 0.6; // Skip compression if entropy is too low
-const MAX_KEY_LENGTH = 150;
-const MAX_CACHE_SIZE = 1024 * 1024; // 1MB limit per cache entry
-const DEFAULT_SCAN_BATCH_SIZE = 500;
-const DEFAULT_PROBABILISTIC_EXPIRATION = 0.01; // 1% of keys expire early
+const SECONDS_IN_MINUTE: number = 60;
+const DEFAULT_TTL_MINUTES: number = 5;
+const DEFAULT_TTL: number = SECONDS_IN_MINUTE * DEFAULT_TTL_MINUTES;
+
+const BYTES_IN_KB: number = 1024;
+const KB_IN_MB: number = 1024;
+const BYTES_IN_MB: number = BYTES_IN_KB * KB_IN_MB;
+const MAX_CACHE_SIZE_MB: number = 1;
+const MAX_CACHE_SIZE: number = BYTES_IN_MB * MAX_CACHE_SIZE_MB;
+
+const JITTER_FACTOR: number = 0.1;
+const EARLY_EXPIRATION_MIN_FACTOR: number = 0.7;
+const COMPRESSION_THRESHOLD: number = 512;
+const MAX_KEY_LENGTH: number = 150;
+const EARLY_EXPIRATION_RANGE: number = 0.25;
+const COMPRESSION_RATIO_THRESHOLD: number = 0.8;
+const ONE_HOUR_IN_SECONDS: number = 3600;
+const CURSOR_SLICE_LENGTH: number = 50;
+const MIN_ENTROPY_FOR_COMPRESSION = 0.6;
+const HASH_SLICE_LENGTH: number = 12;
+const DEFAULT_SCAN_BATCH_SIZE: number = 500;
+const DEFAULT_PROBABILISTIC_EXPIRATION: number = 0.01; // 1% of keys expire early
+const VERSION: string = "v1";
 
 const pendingRequests = new Map<string, Promise<unknown>>();
 const keyCache = new Map<string, string>(); // Cache computed keys
@@ -89,14 +104,13 @@ async function deserializeValue<T>(payload: string, isCompressed: boolean): Prom
 }
 
 function addTTLJitter(ttl: number): number {
-    const jitter = Math.floor(Math.random() * (ttl * 0.1));
+    const jitter = Math.floor(Math.random() * (ttl * JITTER_FACTOR));
     return ttl + jitter;
 }
 
 function applyProbabilisticExpiration(ttl: number, probabilisticRate: number): number {
     if (Math.random() < probabilisticRate) {
-        // Expire early, between 70% and 95% of original TTL
-        const earlyFactor = 0.7 + Math.random() * 0.25;
+        const earlyFactor = EARLY_EXPIRATION_MIN_FACTOR + Math.random() * EARLY_EXPIRATION_RANGE;
         return Math.floor(ttl * earlyFactor);
     }
     return ttl;
@@ -104,7 +118,7 @@ function applyProbabilisticExpiration(ttl: number, probabilisticRate: number): n
 
 export const CacheManager = {
     async get<T>(prefix: string, key: string, config: CacheConfig = {}): Promise<T | null> {
-        if (!(isCacheEnabled && redis)) {
+        if (!isCacheEnabled || redis === null) {
             return null;
         }
 
@@ -129,7 +143,7 @@ export const CacheManager = {
     async getMultiple<T>(prefix: string, keys: string[], config: CacheConfig = {}): Promise<Map<string, T | null>> {
         const result = new Map<string, T | null>();
 
-        if (!(isCacheEnabled && redis) || keys.length === 0) {
+        if (!isCacheEnabled || redis === null || keys.length === 0) {
             for (const key of keys) {
                 result.set(key, null);
             }
@@ -172,7 +186,7 @@ export const CacheManager = {
     },
 
     async set<T>(prefix: string, key: string, value: T, config: CacheConfig = {}): Promise<void> {
-        if (!(isCacheEnabled && redis)) {
+        if (!isCacheEnabled || redis === null) {
             return;
         }
 
@@ -198,7 +212,7 @@ export const CacheManager = {
                 const compressed = await compress(Buffer.from(payload, "utf8"));
                 const compressedPayload = `c:${compressed.toString("base64")}`;
 
-                if (compressedPayload.length < payload.length * 0.8) {
+                if (compressedPayload.length < payload.length * COMPRESSION_RATIO_THRESHOLD) {
                     payload = compressedPayload;
                 }
             }
@@ -285,7 +299,7 @@ export const CacheManager = {
     },
 
     async invalidate(prefix: string, pattern?: string, config: CacheConfig = {}): Promise<void> {
-        if (!(isCacheEnabled && redis)) {
+        if (!isCacheEnabled || redis === null) {
             return;
         }
 
@@ -317,7 +331,7 @@ export const CacheManager = {
     },
 
     async invalidateByTags(tags: string[], config: CacheConfig = {}): Promise<void> {
-        if (!(isCacheEnabled && redis) || tags.length === 0) {
+        if (!isCacheEnabled || redis === null || tags.length === 0) {
             return;
         }
 
@@ -382,14 +396,14 @@ export const CacheManager = {
     ): Promise<void> {
         await this.set(prefix, key, value, config);
 
-        if (!(isCacheEnabled && redis) || tags.length === 0) {
+        if (!isCacheEnabled || redis === null || tags.length === 0) {
             return;
         }
 
         try {
             const cacheKey = buildKey(prefix, key, config.version);
             const keyTTL = config.ttl ?? DEFAULT_TTL;
-            const desiredTagTTL = keyTTL + 3600; // 1 hour buffer
+            const desiredTagTTL = keyTTL + ONE_HOUR_IN_SECONDS;
 
             // Single pipeline for both SADD and EXPIRE operations
             const pipeline = redis.pipeline();
@@ -408,7 +422,7 @@ export const CacheManager = {
     },
 
     async invalidateMultiple(patterns: string[], config: CacheConfig = {}): Promise<void> {
-        if (!(isCacheEnabled && redis)) {
+        if (!isCacheEnabled || redis === null) {
             return;
         }
 
@@ -503,10 +517,10 @@ export const CacheKeys = {
                 st: status || "[]",
                 sb: sortBy,
                 so: sortOrder,
-                c: cursor.slice(0, 50),
+                c: cursor.slice(0, CURSOR_SLICE_LENGTH),
             };
 
-            const hash = createHash("md5").update(JSON.stringify(params)).digest("hex").slice(0, 12);
+            const hash = createHash("md5").update(JSON.stringify(params)).digest("hex").slice(0, HASH_SLICE_LENGTH);
             return `all:${hash}`;
         },
         byUser: (userId: string) => `u:${sanitizeKeyComponent(userId)}`,
