@@ -6,17 +6,20 @@ import { db } from "#/server/db";
 import { accounts, sessions, users, verificationTokens } from "#/server/db/schema";
 
 declare module "next-auth" {
-    type Session = {
+    interface Session {
         user: {
             id: string;
             publicId: string;
         } & DefaultSession["user"];
-    };
-    type User = {
+    }
+    interface User {
         id: string;
         publicId: string;
-    };
+    }
 }
+
+const THIRTY_DAYS = 30;
+const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * THIRTY_DAYS;
 
 export const authConfig = {
     adapter: DrizzleAdapter(db, {
@@ -65,6 +68,6 @@ export const authConfig = {
     ],
     session: {
         strategy: "jwt",
-        maxAge: 60 * 60 * 24 * 30, // 30 days
+        maxAge: THIRTY_DAYS_IN_SECONDS, // 30 days
     },
 } satisfies NextAuthConfig;
