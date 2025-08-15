@@ -378,7 +378,12 @@
                 // Enforces that <img> elements have both width and height attributes.
                 "useImageSize": "error",
                 // Enforce a maximum number of parameters in function definitions.
-                "useMaxParams": "error",
+                "useMaxParams": {
+                    "level": "error",
+                    "options": {
+                        "max": 5
+                    }
+                },
                 // Prefer using the class prop as a classlist over the classnames helper.
                 "useQwikClasslist": "error",
                 // Enforce that components are defined as functions and never as classes.
