@@ -92,6 +92,8 @@ export const storyUpdateSchema = createUpdateSchema(stories).required({ publicId
 export type StoryValues = z.infer<typeof storyCreateSchema>;
 
 const ratingRegex = /^\d*\.?\d*$/;
+const MIN_RATING = 0;
+const MAX_RATING = 5;
 
 export const storyCreateWithProgressSchema = z.object({
     title: z.string().min(1, "Title is required"),
@@ -111,7 +113,10 @@ export const storyCreateWithProgressSchema = z.object({
         .refine(
             (val) =>
                 val === "" ||
-                (!Number.isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 5 && ratingRegex.test(val)),
+                (!Number.isNaN(Number(val)) &&
+                    Number(val) >= MIN_RATING &&
+                    Number(val) <= MAX_RATING &&
+                    ratingRegex.test(val)),
             {
                 message: "Rating must be a number between 0 and 5",
             },
