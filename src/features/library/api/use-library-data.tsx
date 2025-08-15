@@ -1,7 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { type ReactNode, createContext, useContext, useMemo } from "react";
+import type { LibraryItem } from "#/features/library/hooks/use-library-item";
 import type { SortOrder } from "#/lib/utils";
-import type { ProgressQueryResult } from "#/server/api/routers/progress";
 import type { ProgressSortBy, ProgressStatus } from "#/server/db/schema";
 import { useTRPC } from "#/trpc/react";
 
@@ -12,18 +12,14 @@ interface UseLibraryDataParams {
     sortOrder: SortOrder;
 }
 
-interface LibraryDataResult {
-    allItems: ProgressQueryResult["data"];
+interface LibraryDataContextValue {
+    allItems: LibraryItem[];
     error: unknown;
     fetchNextPage: () => void;
     hasNextPage: boolean;
     isFetching: boolean;
     isFetchingNextPage: boolean;
     isLoading: boolean;
-    refetch: () => void;
-}
-
-interface LibraryDataContextValue {
     refetch: () => void;
 }
 
@@ -34,13 +30,21 @@ interface LibraryDataProviderProps extends UseLibraryDataParams {
 }
 
 export function LibraryDataProvider({ children, search, status, sortBy, sortOrder }: LibraryDataProviderProps) {
-    const { refetch } = useLibraryData({ search, status, sortBy, sortOrder });
+    const { allItems, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, refetch } =
+        useLibraryData({ search, status, sortBy, sortOrder });
 
     const contextValue = useMemo(
         () => ({
+            allItems,
+            error,
+            fetchNextPage,
+            hasNextPage,
+            isFetching,
+            isFetchingNextPage,
+            isLoading,
             refetch,
         }),
-        [refetch],
+        [allItems, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, refetch],
     );
 
     return <LibraryDataContext.Provider value={contextValue}>{children}</LibraryDataContext.Provider>;
@@ -62,7 +66,7 @@ export const useLibraryRefetch = () => {
     return context.refetch;
 };
 
-export function useLibraryData({ search, status, sortBy, sortOrder }: UseLibraryDataParams): LibraryDataResult {
+export function useLibraryData({ search, status, sortBy, sortOrder }: UseLibraryDataParams) {
     const trpc = useTRPC();
 
     const queryInput = useMemo(
