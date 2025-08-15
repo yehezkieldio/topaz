@@ -1,0 +1,28 @@
+name: Continuous Integration
+
+on:
+    push:
+        branches:
+            - master
+
+jobs:
+    promote-release-to-stable:
+        name: Promote release commit to stable
+        if: ${{ contains(github.event.head_commit.message, format('chore(release){0} release topaz@', ':')) }}
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Fast-forward stable from master
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  git config --global user.name "github-actions[bot]"
+                  git config --global user.email "github-actions[bot]@users.noreply.github.com"
+                  git fetch origin stable
+                  git checkout stable
+                  git merge --ff-only origin/master
+                  git push origin stable
