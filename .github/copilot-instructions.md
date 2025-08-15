@@ -16,6 +16,7 @@
 - **Clear Module Boundaries:** Each module has a single, well-defined purpose, ownership, and dependency scope.
 - **Validation:** Use **Zod v4** for both runtime validation and compile-time type inference.
 - **Immutable State:** Prefer immutability; only mutate when modeling inherently mutable behavior.
+- **Extract Complex Expressions:** Break down complex expressions into well-named intermediate variables or functions.
 
 ## 3. Architectural Patterns
 
