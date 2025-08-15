@@ -1,7 +1,8 @@
 import "./globals.css";
 
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { NuqsAdapter } from "nuqs/adapters/next";
 import { ThemeProvider } from "#/app/theme-provider";
 import { Toaster } from "#/app/toaster";
 import { cn } from "#/lib/utils";
@@ -14,6 +15,11 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
     variable: "--font-geist-mono",
+    subsets: ["latin"],
+});
+
+const playfairDisplay = Playfair_Display({
+    variable: "--font-playfair-display",
     subsets: ["latin"],
 });
 
@@ -76,12 +82,14 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className={cn(geistSans.variable, geistMono.variable, "antialiased")}>
+            <body className={cn(geistSans.variable, geistMono.variable, playfairDisplay.variable, "antialiased")}>
                 <TRPCReactProvider>
-                    <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange enableSystem>
-                        {children}
-                        <Toaster />
-                    </ThemeProvider>
+                    <NuqsAdapter>
+                        <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange enableSystem>
+                            {children}
+                            <Toaster />
+                        </ThemeProvider>
+                    </NuqsAdapter>
                 </TRPCReactProvider>
             </body>
         </html>
