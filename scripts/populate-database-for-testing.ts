@@ -16,7 +16,6 @@ import {
     users,
 } from "#/server/db/schema";
 
-// Parse command line arguments
 const { values } = parseArgs({
     options: {
         depopulate: {
@@ -32,7 +31,23 @@ const { values } = parseArgs({
     },
 });
 
-// Dummy data generators
+const SHUFFLE_RANDOM_OFFSET = 0.5;
+const NSFW_PROBABILITY = 0.3;
+const MIN_CHAPTERS = 1;
+const MAX_CHAPTERS = 200;
+const MIN_WORDS = 1000;
+const MAX_WORDS = 500_000;
+const MIN_FANDOMS_PER_STORY = 1;
+const MAX_FANDOMS_PER_STORY = 3;
+const MIN_TAGS_PER_STORY = 2;
+const MAX_TAGS_PER_STORY = 8;
+const TRACKED_STORIES_RATIO = 0.8;
+const PAUSED_DROPPED_CHAPTER_RATIO = 0.7;
+const MIN_RATING = 1;
+const MAX_RATING = 5;
+const RATING_DECIMAL_PRECISION = 1;
+const NOTES_PROBABILITY = 0.3;
+
 const SOURCES: Source[] = [
     "ArchiveOfOurOwn",
     "FanFictionNet",
@@ -338,7 +353,7 @@ function randomChoice<T>(array: T[]): T {
 }
 
 function randomChoices<T>(array: T[], count: number): T[] {
-    const shuffled = [...array].sort(() => 0.5 - Math.random());
+    const shuffled = [...array].sort(() => SHUFFLE_RANDOM_OFFSET - Math.random());
     return shuffled.slice(0, count);
 }
 
@@ -440,9 +455,9 @@ function generateRandomStory(index: number) {
     const author = randomChoice(AUTHORS);
     const source = randomChoice(SOURCES);
     const status = randomChoice(STATUSES);
-    const isNsfw = Math.random() < 0.3; // 30% chance
-    const chapterCount = randomInt(1, 200);
-    const wordCount = randomInt(1000, 500_000);
+    const isNsfw = Math.random() < NSFW_PROBABILITY;
+    const chapterCount = randomInt(MIN_CHAPTERS, MAX_CHAPTERS);
+    const wordCount = randomInt(MIN_WORDS, MAX_WORDS);
     const description = `This is a test story about ${title.toLowerCase()}. It contains various elements of ${randomChoice(TAGS).toLowerCase()} and ${randomChoice(TAGS).toLowerCase()}.`;
     const summary = `A brief summary of ${title}.`;
 
@@ -511,7 +526,7 @@ async function populate(): Promise<void> {
 
     const storyFandomsToInsert: (typeof storyFandoms.$inferInsert)[] = [];
     for (const story of insertedStories) {
-        const fandomCount = randomInt(1, 3);
+        const fandomCount = randomInt(MIN_FANDOMS_PER_STORY, MAX_FANDOMS_PER_STORY);
         const selectedFandoms = randomChoices(insertedFandoms, fandomCount);
 
         for (const fandom of selectedFandoms) {
@@ -526,7 +541,7 @@ async function populate(): Promise<void> {
 
     const storyTagsToInsert: (typeof storyTags.$inferInsert)[] = [];
     for (const story of insertedStories) {
-        const tagCount = randomInt(2, 8);
+        const tagCount = randomInt(MIN_TAGS_PER_STORY, MAX_TAGS_PER_STORY);
         const selectedTags = randomChoices(insertedTags, tagCount);
 
         for (const tag of selectedTags) {
@@ -540,7 +555,7 @@ async function populate(): Promise<void> {
     console.log(`   ✓ Created ${storyTagsToInsert.length} story-tag relationships`);
 
     const progressesToInsert: (typeof progresses.$inferInsert)[] = [];
-    const storiesToTrack = randomChoices(insertedStories, Math.floor(insertedStories.length * 0.8));
+    const storiesToTrack = randomChoices(insertedStories, Math.floor(insertedStories.length * TRACKED_STORIES_RATIO));
 
     for (const story of storiesToTrack) {
         const status = randomChoice(PROGRESS_STATUSES);
@@ -552,10 +567,12 @@ async function populate(): Promise<void> {
         } else if (status === "Completed") {
             currentChapter = maxChapter;
         } else if (status === "Paused" || status === "Dropped") {
-            currentChapter = randomInt(1, Math.max(1, Math.floor(maxChapter * 0.7)));
+            currentChapter = randomInt(1, Math.max(1, Math.floor(maxChapter * PAUSED_DROPPED_CHAPTER_RATIO)));
         }
 
-        const randomDecimalRating = (Math.random() * 4 + 1).toFixed(1);
+        const randomDecimalRating = (Math.random() * (MAX_RATING - MIN_RATING) + MIN_RATING).toFixed(
+            RATING_DECIMAL_PRECISION,
+        );
 
         progressesToInsert.push({
             userId: firstUser.id,
@@ -563,7 +580,7 @@ async function populate(): Promise<void> {
             status,
             current_chapter: currentChapter,
             rating: randomDecimalRating,
-            notes: Math.random() < 0.3 ? `Random note for ${story.title}` : null,
+            notes: Math.random() < NOTES_PROBABILITY ? `Random note for ${story.title}` : null,
         });
     }
     await db.insert(progresses).values(progressesToInsert);
