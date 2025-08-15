@@ -39,7 +39,7 @@ export const env = createEnv({
         AUTH_DISCORD_SECRET: devUse(process.env.DEVELOPMENT_AUTH_DISCORD_SECRET, process.env.AUTH_DISCORD_SECRET),
         REDIS_URL:
             process.env.USE_UPSTASH === "true"
-                ? process.env.UPSTASH_URL
+                ? process.env.REDIS_URL
                 : devUse(process.env.DEVELOPMENT_REDIS_URL, process.env.REDIS_URL),
 
         NEXT_PUBLIC_VERSION: process.env.NEXT_PUBLIC_VERSION,
