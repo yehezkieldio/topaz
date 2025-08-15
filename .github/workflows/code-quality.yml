@@ -2,7 +2,11 @@ name: Code Quality
 
 on:
   push:
+    branches-ignore:
+      - stable
   pull_request:
+    branches-ignore:
+      - stable
 
 jobs:
   biome:
