@@ -84,7 +84,6 @@ function _LibraryItemViewSheet({ item, isOpen, onClose }: ViewSheetProps) {
                                         disabled
                                         readOnly
                                         ref={(el) => {
-                                            // biome-ignore lint/style/noParameterAssign: We need to set the height dynamically
                                             const textarea = el;
                                             if (textarea) {
                                                 textarea.style.height = "0px";
