@@ -3,11 +3,13 @@
 import { MinusIcon, PlusIcon } from "lucide-react";
 import { Button } from "#/components/ui/button";
 
+const MAX_PROGRESS_PERCENTAGE = 100;
+
 type ProgressControlsProps = {
     currentChapter: number;
     totalChapters?: number;
-    onIncrement: () => void;
-    onDecrement: () => void;
+    onIncrementAction: () => void;
+    onDecrementAction: () => void;
     disabled?: boolean;
     size?: "sm" | "default" | "lg";
     showProgress?: boolean;
@@ -16,20 +18,21 @@ type ProgressControlsProps = {
 export function ProgressControls({
     currentChapter,
     totalChapters = 0,
-    onIncrement,
-    onDecrement,
+    onIncrementAction,
+    onDecrementAction,
     disabled = false,
     size = "sm",
     showProgress = true,
 }: ProgressControlsProps) {
-    const progressPercentage = totalChapters > 0 ? Math.round((currentChapter / totalChapters) * 100) : 0;
+    const progressPercentage =
+        totalChapters > 0 ? Math.round((currentChapter / totalChapters) * MAX_PROGRESS_PERCENTAGE) : 0;
 
     return (
         <div className="space-y-3">
             <div className="flex items-center gap-3">
                 <Button
                     disabled={disabled || currentChapter <= 0}
-                    onClick={onDecrement}
+                    onClick={onDecrementAction}
                     size={size}
                     type="button"
                     variant="outline"
@@ -42,7 +45,7 @@ export function ProgressControls({
                 </div>
                 <Button
                     disabled={disabled || (totalChapters > 0 && currentChapter >= totalChapters)}
-                    onClick={onIncrement}
+                    onClick={onIncrementAction}
                     size={size}
                     type="button"
                     variant="outline"
@@ -57,7 +60,7 @@ export function ProgressControls({
                         <div
                             className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-300 ease-out"
                             style={{
-                                width: `${Math.min(progressPercentage, 100)}%`,
+                                width: `${Math.min(progressPercentage, MAX_PROGRESS_PERCENTAGE)}%`,
                             }}
                         />
                     </div>
