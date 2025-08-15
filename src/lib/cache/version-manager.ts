@@ -19,6 +19,7 @@ interface VersionStorage {
  * IndexedDB-based version storage for Service Worker updates
  */
 class IndexedDBVersionStorage implements VersionStorage {
+    // biome-ignore lint/style/useReadonlyClassProperties: db is lazily initialized in getDB()
     private db: IDBDatabase | null = null;
 
     private async getDB(): Promise<IDBDatabase> {
