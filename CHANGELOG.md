@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.1.1-beta.1 (August 15, 2025)
+
+### <!-- 16 -->🤖 CI/CD
+- [`8393c3e`](https://github.com/yehezkieldio/topaz/commit/8393c3e88142ed7e743bb13f2894c0e138c3a2c2)  Add continuous integration workflow
+
+### <!-- 3 -->🚀 New Features
+- [`a318eff`](https://github.com/yehezkieldio/topaz/commit/a318eff4bbca416bbb624e287313d3be08f64799) layout: Add analytics and speed insights components
+
+### <!-- 4 -->🐛 Bug Fixes
+- [`800b590`](https://github.com/yehezkieldio/topaz/commit/800b590d99e349ef05f022971e7005c6778a6a39) env: Correct redis URL assignment in runtime environment
 ## topaz@0.1.1-beta.0 (August 15, 2025)
 
 ### <!-- 11 -->🛠️ Miscellaneous
