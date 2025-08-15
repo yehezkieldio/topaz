@@ -115,31 +115,22 @@ export const libraryStatsMaterializedView = pgMaterializedView("library_stats_mv
         .leftJoin(fandoms, sql`${fandoms.id} = ${storyFandoms.fandomId}`);
 });
 
+const sortColumnMap: Record<ProgressSortBy, unknown> = {
+    title: libraryMaterializedView.storyTitle,
+    author: libraryMaterializedView.storyAuthor,
+    status: libraryMaterializedView.progressStatus,
+    rating: libraryMaterializedView.progressRating,
+    progress: sql`CASE
+        WHEN ${libraryMaterializedView.storyChapterCount} > 0
+        THEN (${libraryMaterializedView.progressCurrentChapter}::float / ${libraryMaterializedView.storyChapterCount}::float)
+        ELSE 0
+    END`,
+    updatedAt: libraryMaterializedView.updatedAt,
+    createdAt: libraryMaterializedView.createdAt,
+    wordCount: libraryMaterializedView.storyWordCount,
+    chapterCount: libraryMaterializedView.storyChapterCount,
+};
+
 export function getSortColumn(sortBy: ProgressSortBy) {
-    switch (sortBy) {
-        case "title":
-            return libraryMaterializedView.storyTitle;
-        case "author":
-            return libraryMaterializedView.storyAuthor;
-        case "status":
-            return libraryMaterializedView.progressStatus;
-        case "rating":
-            return libraryMaterializedView.progressRating;
-        case "progress":
-            return sql`CASE
-                WHEN ${libraryMaterializedView.storyChapterCount} > 0
-                THEN (${libraryMaterializedView.progressCurrentChapter}::float / ${libraryMaterializedView.storyChapterCount}::float)
-                ELSE 0
-            END`;
-        case "updatedAt":
-            return libraryMaterializedView.updatedAt;
-        case "createdAt":
-            return libraryMaterializedView.createdAt;
-        case "wordCount":
-            return libraryMaterializedView.storyWordCount;
-        case "chapterCount":
-            return libraryMaterializedView.storyChapterCount;
-        default:
-            return libraryMaterializedView.updatedAt;
-    }
+    return sortColumnMap[sortBy];
 }
