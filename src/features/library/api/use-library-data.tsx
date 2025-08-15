@@ -93,6 +93,7 @@ export function useLibraryData({ search, status, sortBy, sortOrder }: UseLibrary
                 refetchOnWindowFocus: false,
                 refetchOnMount: false,
                 refetchOnReconnect: false,
+                refetchInterval: 900_000, // 15 minutes
                 staleTime: Number.POSITIVE_INFINITY,
                 gcTime: THIRTY_MINUTES,
                 retry: 3,
