@@ -6,6 +6,47 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.1.1-beta.3 (August 15, 2025)
+
+### <!-- 11 -->🛠️ Miscellaneous
+- [`dc97838`](https://github.com/yehezkieldio/topaz/commit/dc97838a0cbf61a3862485dbdaa99f199e274933) biome: Enhance linter configuration
+- [`658eecb`](https://github.com/yehezkieldio/topaz/commit/658eecb6e2ebda0ef6010ce029eff94cc8438e6d) biome: Disable useAwait rule
+- [`669fe96`](https://github.com/yehezkieldio/topaz/commit/669fe9679ce025cb9f877d5ae8d3ce14fe9fa0fd) biome: Lint fix
+- [`8571ac4`](https://github.com/yehezkieldio/topaz/commit/8571ac4d74e70e8331fcd5a0e9667c9d9a33cf31) biome: Update useMaxParams rule to to 5 max
+- [`0f284d3`](https://github.com/yehezkieldio/topaz/commit/0f284d33ae6c8dc95e734586badbd13bcf66d69d) biome: Remove useConsistentTypeDefinitions rule
+
+### <!-- 16 -->🤖 CI/CD
+- [`9ce26b4`](https://github.com/yehezkieldio/topaz/commit/9ce26b4708eccd7d7acd673be2d2b602ebc32619)  Ignore stable branch for push and pull requests
+
+### <!-- 17 -->🛠️ Miscellaneous
+- [`7bea6a0`](https://github.com/yehezkieldio/topaz/commit/7bea6a0ee650a3d6cf80b017638386e004aea270) biome: Remove noSolidDestructuredProps rule
+
+### <!-- 7 -->🚜 Refactor
+- [`7925c8e`](https://github.com/yehezkieldio/topaz/commit/7925c8e3d4bda6188d0bac3eae776fa32e0b9132) library: Change interface to type for props
+- [`3f70634`](https://github.com/yehezkieldio/topaz/commit/3f70634e6166eb2bac57da420fa8ebca894f0b80) populate: Replace magic numbers with constants
+- [`e45c198`](https://github.com/yehezkieldio/topaz/commit/e45c19838ec7d5cecf6760ad246103853c656066) migration: Simplify commit block check
+- [`72d1fc6`](https://github.com/yehezkieldio/topaz/commit/72d1fc6208b81db3c3e60ebd8840115d435bf874) ui: Rename increment and decrement props
+- [`38c03e3`](https://github.com/yehezkieldio/topaz/commit/38c03e36b81a9766f585b6f834920ee86533bff2) ui: Use constant for max progress percentage
+- [`16dbd60`](https://github.com/yehezkieldio/topaz/commit/16dbd605db540b7a9da658601c34798d85b416a6) trpc: Replace gcTime with constant for clarity
+- [`3ef95eb`](https://github.com/yehezkieldio/topaz/commit/3ef95eb59b572528e301b7b009bd0bd292fb666d) trpc: Define DEFAULT_PORT for base URL
+- [`d491578`](https://github.com/yehezkieldio/topaz/commit/d4915783760bce9f1c7b3b30a133febdf143109b) utils: Replace magic numbers with constants
+- [`f48cf51`](https://github.com/yehezkieldio/topaz/commit/f48cf51ae4f6bcf64f43253a5a58feeb81f30f60) api: Replace magic numbers with constants
+- [`a66a4df`](https://github.com/yehezkieldio/topaz/commit/a66a4df56219b66cbe48bbc7dab93e7eb281c2a3) db: Simplify getSortColumn using sortColumnMap
+- [`aeb6257`](https://github.com/yehezkieldio/topaz/commit/aeb62572941665c772808aca6bd381c5d116978d) db: Replace magic numbers with constants for rating
+- [`b3cd097`](https://github.com/yehezkieldio/topaz/commit/b3cd097f86fad38f828fed56ace144724ec5dddd) copilot: Add guideline for extracting complex expressions
+- [`80dd270`](https://github.com/yehezkieldio/topaz/commit/80dd27078f05db5ebaa5c16c0003e7bd7af9b293) cache: Reorganize constants and improve readability
+- [`c9babe2`](https://github.com/yehezkieldio/topaz/commit/c9babe2c8e56b316096273451f3e694e596e59ba) auth: Change type declarations to interfaces
+- [`d322dba`](https://github.com/yehezkieldio/topaz/commit/d322dba13223a06f3c86c3e88400e71cd9914f12) db: Update SQL type declarations for clarity
+- [`2d6e269`](https://github.com/yehezkieldio/topaz/commit/2d6e2695f8c25942c1b39f8f2e4ff31eda7f2ec8) api: Extract magic numbers to constants
+- [`c5aae41`](https://github.com/yehezkieldio/topaz/commit/c5aae41e52b733b3e96dddd8ec8d88cb277649a3) library: Extract magic number to constant
+- [`e0d9493`](https://github.com/yehezkieldio/topaz/commit/e0d9493a47e20fb9b904c9878778bc856ba1337d) ui: Rename onFandomsChange to onFandomsChangeAction
+- [`a16d113`](https://github.com/yehezkieldio/topaz/commit/a16d113b39a6ac72199a9aa030f975a9e2a8a881) ui: Rename onTagsChange to onTagsChangeAction
+- [`e3162db`](https://github.com/yehezkieldio/topaz/commit/e3162dbbde6de65f00769de9fe0a0390b22c0d8a) library: Rename onClose to onCloseAction
+- [`05fccb9`](https://github.com/yehezkieldio/topaz/commit/05fccb9b68a89f9d3761b48d3836797dbfeccf93) library: Replace magic numbers with constants
+- [`053ee7d`](https://github.com/yehezkieldio/topaz/commit/053ee7d108bc025a77516f3cf30ffe29f4bb43ba) copilot: Simplify commit message guidelines
+
+### <!-- 9 -->🎨 Code Styling
+- [`2ac7408`](https://github.com/yehezkieldio/topaz/commit/2ac7408eef6c504b63f93a5ce23af47f8964d198) biome: Format includes and options for consistency
 ## topaz@0.1.1-beta.2 (August 15, 2025)
 
 ### <!-- 16 -->🤖 CI/CD
