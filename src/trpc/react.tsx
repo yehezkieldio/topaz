@@ -86,5 +86,6 @@ function getBaseUrl() {
         return process.env.AUTH_URL;
     }
 
-    return `http://localhost:${process.env.PORT ?? 3000}`;
+    const DEFAULT_PORT = 3000;
+    return `http://localhost:${process.env.PORT ?? DEFAULT_PORT}`;
 }
