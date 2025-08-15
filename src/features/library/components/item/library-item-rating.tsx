@@ -1,6 +1,12 @@
 import { SparkleIcon } from "lucide-react";
 import { memo } from "react";
 
+const MIN_RATING = 0;
+const MAX_RATING = 5;
+const STAR_COUNT = 5;
+const MIN_PERCENTAGE = 0;
+const MAX_PERCENTAGE = 100;
+
 type LibraryItemRatingProps = {
     value: number; // 0-5, supports decimals
     onChange?: (value: number) => void;
@@ -14,12 +20,15 @@ export const LibraryItemRating = memo(function LibraryItemRating({
     readOnly = false,
     "aria-label": ariaLabel = "Rating",
 }: LibraryItemRatingProps) {
-    const clampedValue = Math.max(0, Math.min(5, value));
+    const clampedValue = Math.max(MIN_RATING, Math.min(MAX_RATING, value));
 
     return (
         <div aria-label={ariaLabel} className="flex items-center gap-1" role="radiogroup">
-            {[1, 2, 3, 4, 5].map((star) => {
-                const fillPercentage = Math.max(0, Math.min(100, (clampedValue - (star - 1)) * 100));
+            {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map((star) => {
+                const fillPercentage = Math.max(
+                    MIN_PERCENTAGE,
+                    Math.min(MAX_PERCENTAGE, (clampedValue - (star - 1)) * MAX_PERCENTAGE),
+                );
 
                 return (
                     <button

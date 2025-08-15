@@ -9,6 +9,9 @@ type LibraryItemTagsProps = {
     showAllTags?: boolean;
 };
 
+const MAX_FANDOMS_TO_SHOW = 3;
+const MAX_TAGS_TO_SHOW = 6;
+
 function _LibraryItemTags({ showAllFandoms = false, showAllTags = false }: LibraryItemTagsProps) {
     const { item } = useLibraryItemContext();
 
@@ -16,8 +19,8 @@ function _LibraryItemTags({ showAllFandoms = false, showAllTags = false }: Libra
         return null;
     }
 
-    const fandomsToShow = showAllFandoms ? item.fandoms : item.fandoms?.slice(0, 3);
-    const tagsToShow = showAllTags ? item.tags : item.tags?.slice(0, 6);
+    const fandomsToShow = showAllFandoms ? item.fandoms : item.fandoms?.slice(0, MAX_FANDOMS_TO_SHOW);
+    const tagsToShow = showAllTags ? item.tags : item.tags?.slice(0, MAX_TAGS_TO_SHOW);
 
     return (
         <div className="space-y-2 lg:space-y-3">
@@ -28,9 +31,9 @@ function _LibraryItemTags({ showAllFandoms = false, showAllTags = false }: Libra
                             {fandom.name || "Unknown Fandom"}
                         </Badge>
                     ))}
-                    {!showAllFandoms && item.fandoms.length > 3 && (
+                    {!showAllFandoms && item.fandoms.length > MAX_FANDOMS_TO_SHOW && (
                         <Badge className="rounded-md text-muted-foreground text-xs lg:text-xs" variant="outline">
-                            +{item.fandoms.length - 3} more
+                            +{item.fandoms.length - MAX_FANDOMS_TO_SHOW} more
                         </Badge>
                     )}
                 </div>
@@ -43,9 +46,9 @@ function _LibraryItemTags({ showAllFandoms = false, showAllTags = false }: Libra
                             {tag.name || "Unknown Tag"}
                         </Badge>
                     ))}
-                    {!showAllTags && item.tags.length > 6 && (
+                    {!showAllTags && item.tags.length > MAX_TAGS_TO_SHOW && (
                         <Badge className="rounded-md text-muted-foreground text-xs lg:text-xs" variant="secondary">
-                            +{item.tags.length - 6}
+                            +{item.tags.length - MAX_TAGS_TO_SHOW}
                         </Badge>
                     )}
                 </div>
