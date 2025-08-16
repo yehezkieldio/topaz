@@ -5,7 +5,7 @@ import { type ReactNode, createContext, useContext, useMemo } from "react";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
 import type { SortOrder } from "#/lib/utils";
 import type { ProgressSortBy, ProgressStatus } from "#/server/db/schema";
-import { THIRTY_MINUTES } from "#/trpc/query-client";
+import { FIVE_MINUTES, THIRTY_MINUTES } from "#/trpc/query-client";
 import { useTRPC } from "#/trpc/react";
 
 type UseLibraryDataParams = {
@@ -91,10 +91,10 @@ export function useLibraryData({ search, status, sortBy, sortOrder }: UseLibrary
             trpc.progress.all.infiniteQueryOptions(queryInput, {
                 getNextPageParam: (lastPage) => lastPage.meta.nextCursor,
                 refetchOnWindowFocus: false,
-                refetchOnMount: false,
+                refetchOnMount: "always",
                 refetchOnReconnect: false,
-                refetchInterval: 900_000, // 15 minutes
-                staleTime: Number.POSITIVE_INFINITY,
+                refetchInterval: false,
+                staleTime: FIVE_MINUTES,
                 gcTime: THIRTY_MINUTES,
                 retry: 3,
                 retryDelay: (attemptIndex) => Math.min(RETRY_DELAY_BASE_MS * 2 ** attemptIndex, RETRY_DELAY_MAX_MS),

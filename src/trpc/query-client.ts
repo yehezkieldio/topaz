@@ -15,7 +15,7 @@ export const createQueryClient = () =>
     new QueryClient({
         defaultOptions: {
             queries: {
-                gcTime: FIVE_MINUTES, // 5 minutes
+                gcTime: FIVE_MINUTES,
             },
             dehydrate: {
                 serializeData: SuperJSON.serialize,
