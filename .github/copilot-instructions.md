@@ -1,4 +1,4 @@
-# Topaz Development Guidelines
+# Development Instructions
 
 ## 1. Technology Stack
 
