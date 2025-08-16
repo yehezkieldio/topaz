@@ -6,6 +6,20 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.1.1-beta.5 (August 16, 2025)
+
+### <!-- 11 -->🛠️ Miscellaneous
+- [`d448f2a`](https://github.com/yehezkieldio/topaz/commit/d448f2a202b7ba74a2a34b6795fee473467906ef) docker-compose: Update volume names
+
+### <!-- 4 -->🐛 Bug Fixes
+- [`16ff663`](https://github.com/yehezkieldio/topaz/commit/16ff663d846e14c0abe37320276491d30eb7d918) api: Update refetch behavior and stale time
+
+### <!-- 5 -->📚 Documentation
+- [`5fda0b7`](https://github.com/yehezkieldio/topaz/commit/5fda0b784e5983b9968473a27389a3cbe11c496a) copilot: Update commit message generation instructions
+- [`ba87a6d`](https://github.com/yehezkieldio/topaz/commit/ba87a6d388bda4276a8773bc8c562d048277beeb) copilot: Update title of development instructions
+
+### <!-- 7 -->🚜 Refactor
+- [`f2e074f`](https://github.com/yehezkieldio/topaz/commit/f2e074f6fa51a90c6a1fff17a4f91fe7a939f4a2) ui: Remove unused library refetch functionality
 ## topaz@0.1.1-beta.4 (August 15, 2025)
 
 ### <!-- 3 -->🚀 New Features
