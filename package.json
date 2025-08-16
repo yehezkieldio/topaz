@@ -71,7 +71,7 @@
         "@tailwindcss/postcss": "^4",
         "@tanstack/react-query-devtools": "^5.85.2",
         "@total-typescript/ts-reset": "^0.6.1",
-        "@types/node": "^20.19.10",
+        "@types/node": "^20.19.11",
         "@types/react": "^19.1.10",
         "@types/react-dom": "^19",
         "@yehezkieldio/firefly": "^2.1.2",
