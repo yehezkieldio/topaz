@@ -17,7 +17,7 @@ services:
       POSTGRES_PASSWORD: elizielx
       POSTGRES_DB: topaz
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - topaz_postgres_data:/var/lib/postgresql/data
     networks:
         - topaz-dev-network
   dragonfly:
@@ -28,14 +28,14 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - dragonfly_data:/data
+      - topaz_dragonfly_data:/data
     networks:
       - topaz-dev-network
 volumes:
-  postgres_data:
-    name: postgres_data
-  dragonfly_data:
-    name: dragonfly_data
+  topaz_postgres_data:
+    name: topaz_postgres_data
+  topaz_dragonfly_data:
+    name: topaz_dragonfly_data
 networks:
   topaz-dev-network:
     driver: bridge
