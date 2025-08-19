@@ -6,6 +6,28 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.1.1-beta.6 (August 19, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`43582dc`](https://github.com/yehezkieldio/topaz/commit/43582dc999df7599f497385bb2e24730f718dc37) deps: Update dependency @types/node to ^20.19.11 ([#3](https://github.com/yehezkieldio/topaz/issues/3)) by renovate[bot]
+- [`89c5429`](https://github.com/yehezkieldio/topaz/commit/89c5429ecddda5ef5afdc09d0d809ccf28489a9f) deps: Update dependency nuqs to v2.5.0-beta.5 ([#4](https://github.com/yehezkieldio/topaz/issues/4)) by renovate[bot]
+- [`bd05436`](https://github.com/yehezkieldio/topaz/commit/bd05436a7fef35d2c6d206037c0bbda6bbc11f2e) deps: Update dependency @yehezkieldio/firefly to ^2.1.3 ([#5](https://github.com/yehezkieldio/topaz/issues/5)) by renovate[bot]
+- [`de5c1b4`](https://github.com/yehezkieldio/topaz/commit/de5c1b46596a7caa54c0b77276941bffce26d4f0) deps: Update tanstack-query monorepo to ^5.85.3 ([#6](https://github.com/yehezkieldio/topaz/issues/6)) by renovate[bot]
+- [`e6c0742`](https://github.com/yehezkieldio/topaz/commit/e6c0742661b3d4204a62ef2bd1ce9847da5d836d) deps: Update dependency tw-animate-css to ^1.3.7 ([#7](https://github.com/yehezkieldio/topaz/issues/7)) by renovate[bot]
+- [`a99ef57`](https://github.com/yehezkieldio/topaz/commit/a99ef579f97d7dfa2f2c5eb089d6e44109528ea8) deps: Update dependency @types/react-dom to ^19.1.7 ([#8](https://github.com/yehezkieldio/topaz/issues/8)) by renovate[bot]
+- [`b011ede`](https://github.com/yehezkieldio/topaz/commit/b011ede63f615f870d23042701a775ec24b86aa9) deps: Update tailwindcss monorepo to ^4.1.12 ([#9](https://github.com/yehezkieldio/topaz/issues/9)) by renovate[bot]
+- [`a314d42`](https://github.com/yehezkieldio/topaz/commit/a314d425e121155be1d24900dfdc2d01810d2070) deps: Update dependency @yehezkieldio/firefly to ^2.1.4 ([#11](https://github.com/yehezkieldio/topaz/issues/11)) by renovate[bot]
+- [`4e80ae7`](https://github.com/yehezkieldio/topaz/commit/4e80ae7dcea4440f4ce69e7f3e043c0f14c46935) deps: Update dependency nuqs to v2.5.0-beta.6 ([#12](https://github.com/yehezkieldio/topaz/issues/12)) by renovate[bot]
+- [`8d4a0fd`](https://github.com/yehezkieldio/topaz/commit/8d4a0fd0c41190655927454f8b8f886985a03877) deps: Update dependency lucide-react to ^0.540.0 ([#13](https://github.com/yehezkieldio/topaz/issues/13)) by renovate[bot]
+- [`ac18054`](https://github.com/yehezkieldio/topaz/commit/ac18054def9e050a396d8950e06e141be8973d29) deps: Update dependency next to v15.4.7 ([#14](https://github.com/yehezkieldio/topaz/issues/14)) by renovate[bot]
+- [`ffde5c8`](https://github.com/yehezkieldio/topaz/commit/ffde5c8f849f1e2bbf6af2c22906a2d332ac4f42) deps: Update tanstack-query monorepo to ^5.85.5 ([#15](https://github.com/yehezkieldio/topaz/issues/15)) by renovate[bot]
+
+### <!-- 4 -->🐛 Bug Fixes
+- [`6fe5ba8`](https://github.com/yehezkieldio/topaz/commit/6fe5ba8e2e37db56f2154a8cc7ab9b0bcda7cf65) api: Reset search query on story creation and edit
+- [`a2634ac`](https://github.com/yehezkieldio/topaz/commit/a2634ac5b614e768ec25982f818040f9ca3b463d) library: Handle paste input in story form fields
+
+### <!-- 9 -->🎨 Code Styling
+- [`d88f7c1`](https://github.com/yehezkieldio/topaz/commit/d88f7c16040a9cd2cacd510bc910e2254676c97c) library: Remove unnecessary class from notes container
 ## topaz@0.1.1-beta.5 (August 16, 2025)
 
 ### <!-- 11 -->🛠️ Miscellaneous
