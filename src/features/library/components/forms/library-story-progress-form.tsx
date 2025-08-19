@@ -168,7 +168,7 @@ export function LibraryStoryProgressForm<T extends ProgressFormFields>({
                         <FormLabel>Notes</FormLabel>
                         <FormControl>
                             <Textarea
-                                className="min-h-[80px] resize-none rounded-none"
+                                className="min-h-[80px] resize-none"
                                 placeholder="Personal notes about this story..."
                                 {...field}
                             />

@@ -13,7 +13,7 @@ function _LibraryItemNotes() {
     }
 
     return (
-        <div className="rounded-none border-primary/30 border-l-2 bg-muted/30 p-3">
+        <div className="border-primary/30 border-l-2 bg-muted/30 p-3">
             <p className="line-clamp-2 text-muted-foreground text-xs lg:text-sm">{(item.progressNotes ?? "").trim()}</p>
         </div>
     );
