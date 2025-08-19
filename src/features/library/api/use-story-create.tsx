@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod/v4";
 import { useLibraryRefetch } from "#/features/library/api/use-library-data";
+import { useSearchQuery } from "#/features/library/hooks/use-search-query";
 import { storyCreateWithProgressSchema } from "#/server/db/schema";
 import { useTRPC } from "#/trpc/react";
 
@@ -17,6 +18,7 @@ export type CreateStoryFormData = z.infer<typeof createStorySchema>;
 export function useStoryCreate({ onClose }: { onClose: () => void }) {
     const trpc = useTRPC();
     const refetchLibrary = useLibraryRefetch();
+    const [, setSearch] = useSearchQuery();
 
     const form = useForm<CreateStoryFormData>({
         resolver: zodResolver(createStorySchema),
@@ -68,6 +70,8 @@ export function useStoryCreate({ onClose }: { onClose: () => void }) {
             form.reset();
 
             refetchLibrary();
+
+            setSearch("");
 
             toast.success("Story added to library!");
         } catch (error) {

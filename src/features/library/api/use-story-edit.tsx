@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import type z from "zod/v4";
 import { useLibraryRefetch } from "#/features/library/api/use-library-data";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
+import { useSearchQuery } from "#/features/library/hooks/use-search-query";
 import {
     type ProgressStatus,
     type Source,
@@ -28,6 +29,7 @@ type UseStoryEditProps = {
 export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
     const trpc = useTRPC();
     const refetchLibrary = useLibraryRefetch();
+    const [, setSearch] = useSearchQuery();
 
     const storySourceDefault = sourceEnum.enumValues.includes(item.storySource as Source)
         ? (item.storySource as Source)
@@ -93,6 +95,8 @@ export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
             form.reset();
 
             refetchLibrary();
+
+            setSearch("");
 
             toast.success("Library entry updated!");
         } catch (error) {
