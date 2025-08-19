@@ -60,9 +60,14 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
                                     {...field}
                                     onPaste={(e) => {
                                         e.preventDefault();
-                                        const text = e.clipboardData.getData("text");
-                                        const cleaned = text.replace(/\s+/g, " ").trim();
-                                        field.onChange(cleaned);
+                                        const pasteText = e.clipboardData.getData("text").replace(/\s+/g, " ").trim();
+                                        const target = e.target as HTMLInputElement;
+                                        const { selectionStart, selectionEnd, value } = target;
+                                        const newValue =
+                                            value.slice(0, selectionStart ?? 0) +
+                                            pasteText +
+                                            value.slice(selectionEnd ?? value.length);
+                                        field.onChange(newValue);
                                     }}
                                 />
                             </FormControl>
@@ -86,9 +91,14 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
                                     {...field}
                                     onPaste={(e) => {
                                         e.preventDefault();
-                                        const text = e.clipboardData.getData("text");
-                                        const cleaned = text.replace(/\s+/g, " ").trim();
-                                        field.onChange(cleaned);
+                                        const pasteText = e.clipboardData.getData("text").replace(/\s+/g, " ").trim();
+                                        const target = e.target as HTMLInputElement;
+                                        const { selectionStart, selectionEnd, value } = target;
+                                        const newValue =
+                                            value.slice(0, selectionStart ?? 0) +
+                                            pasteText +
+                                            value.slice(selectionEnd ?? value.length);
+                                        field.onChange(newValue);
                                     }}
                                 />
                             </FormControl>
@@ -115,9 +125,17 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
                                         {...field}
                                         onPaste={(e) => {
                                             e.preventDefault();
-                                            const text = e.clipboardData.getData("text");
-                                            const cleaned = text.replace(/\s+/g, " ").trim();
-                                            field.onChange(cleaned);
+                                            const pasteText = e.clipboardData
+                                                .getData("text")
+                                                .replace(/\s+/g, " ")
+                                                .trim();
+                                            const target = e.target as HTMLInputElement;
+                                            const { selectionStart, selectionEnd, value } = target;
+                                            const newValue =
+                                                value.slice(0, selectionStart ?? 0) +
+                                                pasteText +
+                                                value.slice(selectionEnd ?? value.length);
+                                            field.onChange(newValue);
                                         }}
                                     />
                                     <Button
@@ -181,11 +199,19 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
                                 className="min-h-[80px] resize-none rounded-md"
                                 placeholder="Story description or summary..."
                                 {...field}
-                                onPaste={async (e) => {
+                                onPaste={(e) => {
                                     e.preventDefault();
-                                    const text = e.clipboardData.getData("text");
-                                    const cleaned = text.trim().replace(/(\r?\n){3,}/g, "\n\n");
-                                    field.onChange(cleaned);
+                                    const pasteText = e.clipboardData
+                                        .getData("text")
+                                        .trim()
+                                        .replace(/(\r?\n){3,}/g, "\n\n");
+                                    const target = e.target as HTMLTextAreaElement;
+                                    const { selectionStart, selectionEnd, value } = target;
+                                    const newValue =
+                                        value.slice(0, selectionStart ?? 0) +
+                                        pasteText +
+                                        value.slice(selectionEnd ?? value.length);
+                                    field.onChange(newValue);
                                 }}
                             />
                         </FormControl>
