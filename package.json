@@ -74,7 +74,7 @@
         "@types/node": "^20.19.11",
         "@types/react": "^19.1.10",
         "@types/react-dom": "^19.1.7",
-        "@yehezkieldio/firefly": "^2.1.4",
+        "@yehezkieldio/firefly": "^2.1.5",
         "drizzle-kit": "^0.31.4",
         "tailwindcss": "^4.1.12",
         "tw-animate-css": "^1.3.7",
