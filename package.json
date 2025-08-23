@@ -67,7 +67,7 @@
         "zod": "^4.1.0"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.2.0",
+        "@biomejs/biome": "^2.2.2",
         "@tailwindcss/postcss": "^4.1.12",
         "@tanstack/react-query-devtools": "^5.85.5",
         "@total-typescript/ts-reset": "^0.6.1",
