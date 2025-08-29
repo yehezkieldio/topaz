@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.1 (August 29, 2025)
+
+### <!-- 3 -->🚀 New Features
+- [`662a76f`](https://github.com/yehezkieldio/topaz/commit/662a76f0a133dcf503a03b6c7d8e7ade760def8c) api: Enhance search functionality with normalization
 ## topaz@0.2.0 (August 29, 2025)
 
 ### <!-- 17 -->🛠️ Miscellaneous
