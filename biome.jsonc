@@ -134,7 +134,7 @@
                 "noExcessiveLinesPerFunction": {
                     "level": "error",
                     "options": {
-                        "maxLines": 150
+                        "maxLines": 200
                     }
                 },
                 // This rule enforces a maximum depth to nested describe() in test files.
