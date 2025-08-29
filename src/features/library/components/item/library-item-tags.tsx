@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Badge } from "#/components/ui/badge";
 import { useLibraryItemContext } from "#/features/library/components/item/library-item-context";
 
@@ -14,13 +14,18 @@ const MAX_TAGS_TO_SHOW = 6;
 
 function _LibraryItemTags({ showAllFandoms = false, showAllTags = false }: LibraryItemTagsProps) {
     const { item } = useLibraryItemContext();
+    const [expandedFandoms, setExpandedFandoms] = useState(false);
+    const [expandedTags, setExpandedTags] = useState(false);
 
     if (!(item.fandoms?.length || item.tags?.length)) {
         return null;
     }
 
-    const fandomsToShow = showAllFandoms ? item.fandoms : item.fandoms?.slice(0, MAX_FANDOMS_TO_SHOW);
-    const tagsToShow = showAllTags ? item.tags : item.tags?.slice(0, MAX_TAGS_TO_SHOW);
+    const effectiveShowAllFandoms = showAllFandoms || expandedFandoms;
+    const effectiveShowAllTags = showAllTags || expandedTags;
+
+    const fandomsToShow = effectiveShowAllFandoms ? item.fandoms : item.fandoms?.slice(0, MAX_FANDOMS_TO_SHOW);
+    const tagsToShow = effectiveShowAllTags ? item.tags : item.tags?.slice(0, MAX_TAGS_TO_SHOW);
 
     return (
         <div className="space-y-2 lg:space-y-3">
@@ -31,8 +36,21 @@ function _LibraryItemTags({ showAllFandoms = false, showAllTags = false }: Libra
                             {fandom.name || "Unknown Fandom"}
                         </Badge>
                     ))}
-                    {!showAllFandoms && item.fandoms.length > MAX_FANDOMS_TO_SHOW && (
-                        <Badge className="rounded-md text-muted-foreground text-xs lg:text-xs" variant="outline">
+                    {!effectiveShowAllFandoms && item.fandoms.length > MAX_FANDOMS_TO_SHOW && (
+                        <Badge
+                            aria-expanded={effectiveShowAllFandoms}
+                            className="cursor-pointer rounded-md text-muted-foreground text-xs lg:text-xs"
+                            onClick={() => setExpandedFandoms((prev) => !prev)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    setExpandedFandoms((prev) => !prev);
+                                }
+                            }}
+                            tabIndex={0}
+                            title={`Show ${item.fandoms.length - MAX_FANDOMS_TO_SHOW} more`}
+                            variant="outline"
+                        >
                             +{item.fandoms.length - MAX_FANDOMS_TO_SHOW} more
                         </Badge>
                     )}
@@ -46,8 +64,21 @@ function _LibraryItemTags({ showAllFandoms = false, showAllTags = false }: Libra
                             {tag.name || "Unknown Tag"}
                         </Badge>
                     ))}
-                    {!showAllTags && item.tags.length > MAX_TAGS_TO_SHOW && (
-                        <Badge className="rounded-md text-muted-foreground text-xs lg:text-xs" variant="secondary">
+                    {!effectiveShowAllTags && item.tags.length > MAX_TAGS_TO_SHOW && (
+                        <Badge
+                            aria-expanded={effectiveShowAllTags}
+                            className="cursor-pointer rounded-md text-muted-foreground text-xs lg:text-xs"
+                            onClick={() => setExpandedTags((prev) => !prev)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    setExpandedTags((prev) => !prev);
+                                }
+                            }}
+                            tabIndex={0}
+                            title={`Show ${item.tags.length - MAX_TAGS_TO_SHOW} more`}
+                            variant="secondary"
+                        >
                             +{item.tags.length - MAX_TAGS_TO_SHOW}
                         </Badge>
                     )}
