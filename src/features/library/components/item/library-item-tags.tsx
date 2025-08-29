@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Badge } from "#/components/ui/badge";
 import { useLibraryItemContext } from "#/features/library/components/item/library-item-context";
 
@@ -16,6 +16,28 @@ function _LibraryItemTags({ showAllFandoms = false, showAllTags = false }: Libra
     const { item } = useLibraryItemContext();
     const [expandedFandoms, setExpandedFandoms] = useState(false);
     const [expandedTags, setExpandedTags] = useState(false);
+
+    const containerRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        if (!containerRef.current || typeof IntersectionObserver === "undefined") return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                for (const entry of entries) {
+                    if (!entry.isIntersecting) {
+                        setExpandedFandoms(false);
+                        setExpandedTags(false);
+                    }
+                }
+            },
+            { root: null, threshold: 0 },
+        );
+
+        observer.observe(containerRef.current);
+
+        return () => observer.disconnect();
+    }, []);
 
     if (!(item.fandoms?.length || item.tags?.length)) {
         return null;
