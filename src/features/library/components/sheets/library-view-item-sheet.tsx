@@ -28,7 +28,7 @@ export type ViewSheetProps = {
 };
 
 function _LibraryItemViewSheet({ item, isOpen, onClose }: ViewSheetProps) {
-    const { hasDescription, hasNotes, hasValidUrl } = useLibraryItemValues(item);
+    const { hasDescription, hasNotes, hasValidUrl, hasFandomsOrTags } = useLibraryItemValues(item);
 
     const contextValue = useMemo(
         () => ({
@@ -67,12 +67,14 @@ function _LibraryItemViewSheet({ item, isOpen, onClose }: ViewSheetProps) {
                                 <LibraryItemProgress />
                             </div>
 
-                            <div className="space-y-3">
-                                <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">
-                                    Categories
-                                </h3>
-                                <LibraryItemTags showAllFandoms showAllTags />
-                            </div>
+                            {hasFandomsOrTags && (
+                                <div className="space-y-3">
+                                    <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">
+                                        Categories
+                                    </h3>
+                                    <LibraryItemTags showAllFandoms showAllTags />
+                                </div>
+                            )}
 
                             {hasDescription && (
                                 <div className="space-y-3">
@@ -137,7 +139,7 @@ function _LibraryItemViewSheet({ item, isOpen, onClose }: ViewSheetProps) {
                 </div>
             </LibraryItemProvider>
         ),
-        [contextValue, item, onClose, hasDescription, hasNotes, hasValidUrl],
+        [contextValue, item, onClose, hasDescription, hasNotes, hasValidUrl, hasFandomsOrTags],
     );
 
     return (

@@ -18,6 +18,7 @@ export type LibraryItemValues = {
     hasDescription: boolean;
     lastUpdated: string | null;
     isNsfw?: boolean;
+    hasFandomsOrTags: boolean;
 };
 
 export function useLibraryItemValues(item: LibraryItem): LibraryItemValues {
@@ -39,6 +40,8 @@ export function useLibraryItemValues(item: LibraryItem): LibraryItemValues {
         const lastUpdated = formatDate(item.updatedAt);
         const isNsfw = item.storyIsNsfw ?? false;
 
+        const hasFandomsOrTags = (item.fandoms?.length ?? 0) > 0 || (item.tags?.length ?? 0) > 0;
+
         return {
             totalChapters,
             currentChapter,
@@ -53,6 +56,7 @@ export function useLibraryItemValues(item: LibraryItem): LibraryItemValues {
             hasDescription,
             lastUpdated,
             isNsfw,
+            hasFandomsOrTags,
         };
     }, [
         item.storyChapterCount,
@@ -64,5 +68,7 @@ export function useLibraryItemValues(item: LibraryItem): LibraryItemValues {
         item.storyDescription,
         item.updatedAt,
         item.storyIsNsfw,
+        item.fandoms,
+        item.tags,
     ]);
 }
