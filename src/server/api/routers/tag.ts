@@ -172,8 +172,9 @@ export const tagRouter = createTRPCRouter({
                         };
                     } else {
                         const term = search.trim();
-                        const similarityExpr = sql<number>`similarity(${tags.name}, ${term})`;
-                        const minSimilarity = 0.2;
+                        const normalizedTerm = term.toLowerCase();
+                        const similarityExpr = sql<number>`similarity(LOWER(${tags.name}), ${normalizedTerm})`;
+                        const minSimilarity = term.length < 4 ? 0.1 : 0.2;
 
                         const searchResults = await ctx.db
                             .select({
@@ -181,7 +182,9 @@ export const tagRouter = createTRPCRouter({
                                 name: tags.name,
                             })
                             .from(tags)
-                            .where(sql`${similarityExpr} >= ${minSimilarity}`)
+                            .where(
+                                sql`LOWER(${tags.name}) ILIKE ${`%${normalizedTerm}%`} OR ${similarityExpr} >= ${minSimilarity}`,
+                            )
                             .orderBy(desc(similarityExpr), asc(tags.name))
                             .limit(limit);
 

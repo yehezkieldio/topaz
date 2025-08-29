@@ -183,8 +183,9 @@ export const fandomRouter = createTRPCRouter({
                         };
                     } else {
                         const term = search.trim();
-                        const similarityExpr = sql<number>`similarity(${fandoms.name}, ${term})`;
-                        const minSimilarity = 0.2;
+                        const normalizedTerm = term.toLowerCase();
+                        const similarityExpr = sql<number>`similarity(LOWER(${fandoms.name}), ${normalizedTerm})`;
+                        const minSimilarity = term.length < 4 ? 0.1 : 0.2;
 
                         const searchResults = await ctx.db
                             .select({
@@ -192,7 +193,9 @@ export const fandomRouter = createTRPCRouter({
                                 name: fandoms.name,
                             })
                             .from(fandoms)
-                            .where(sql`${similarityExpr} >= ${minSimilarity}`)
+                            .where(
+                                sql`LOWER(${fandoms.name}) ILIKE ${`%${normalizedTerm}%`} OR ${similarityExpr} >= ${minSimilarity}`,
+                            )
                             .orderBy(desc(similarityExpr), asc(fandoms.name))
                             .limit(limit);
 
