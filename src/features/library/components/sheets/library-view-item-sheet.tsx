@@ -87,11 +87,18 @@ function _LibraryItemViewSheet({ item, isOpen, onClose }: ViewSheetProps) {
                                             const textarea = el;
                                             if (textarea) {
                                                 textarea.style.height = "0px";
-                                                textarea.style.height = `${textarea.scrollHeight}px`;
-                                                textarea.style.overflow = "hidden";
+                                                const scrollHeight = textarea.scrollHeight;
+
+                                                if (scrollHeight <= 256) {
+                                                    textarea.style.height = `${scrollHeight}px`;
+                                                    textarea.style.overflow = "hidden";
+                                                } else {
+                                                    textarea.style.height = "16rem";
+                                                    textarea.style.overflow = "auto";
+                                                }
                                             }
                                         }}
-                                        style={{ maxHeight: "16rem", overflow: "hidden" }}
+                                        style={{ maxHeight: "16rem" }}
                                         value={item.storyDescription}
                                     />
                                 </div>
