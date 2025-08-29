@@ -3,8 +3,12 @@ import { AuthorLink } from "#/app/(main)/author-link";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { env } from "#/env";
+import { LibraryStats } from "#/features/library/components/ui/library-stats";
+import { caller } from "#/trpc/server";
 
-export default function Home() {
+export default async function Home() {
+    const stats = await caller.view.getStats();
+
     return (
         <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.08),transparent_60%),radial-gradient(circle_at_70%_80%,hsl(var(--muted-foreground)/0.08),transparent_55%)]">
             <div className="pointer-events-none absolute inset-0 [mask-image:radial-gradient(circle_at_center,black,transparent)]">
@@ -28,6 +32,7 @@ export default function Home() {
                         online fiction. It serves as a digital library, letting me manage my reading list and revisit
                         beloved narratives.
                     </p>
+                    <LibraryStats stats={stats} />
                     <p className="mt-4 max-w-3xl text-muted-foreground text-sm leading-7 lg:text-base">
                         Curated, maintained, and enjoyed by <AuthorLink />.
                     </p>
