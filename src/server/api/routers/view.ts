@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "#/server/api/trpc";
 import { CacheManager } from "#/server/cache/manager";
 import { libraryMaterializedView, libraryStatsMaterializedView } from "#/server/db/schema/view";
 
@@ -28,7 +28,7 @@ export const viewRouter = createTRPCRouter({
 
         return { success: true };
     }),
-    getStats: protectedProcedure.query(async ({ ctx }) => {
+    getStats: publicProcedure.query(async ({ ctx }) => {
         return CacheManager.getWithSingleflight(
             "stats",
             "library",
