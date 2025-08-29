@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import z from "zod/v4";
+import type { Source } from "#/server/db/schema";
 
 export const DEBOUNCE_DELAY_MS = 300;
 export const WORD_COUNT_THRESHOLD = 1000;
@@ -60,4 +61,50 @@ export function formatRating(value: number): string {
         throw new Error("Invalid rating value");
     }
     return value.toFixed(1);
+}
+
+const SOURCE_PATTERNS: Record<Source, RegExp[]> = {
+    ArchiveOfOurOwn: [/archiveofourown\.org/i, /ao3\.org/i],
+    FanFictionNet: [/fanfiction\.net/i, /ffnet\.net/i, /www\.fanfiction\.net/i],
+    Wattpad: [/wattpad\.com/i],
+    SpaceBattles: [/spacebattles\.com/i, /forums\.spacebattles\.com/i],
+    SufficientVelocity: [/sufficientvelocity\.com/i, /forums\.sufficientvelocity\.com/i],
+    QuestionableQuesting: [
+        /questionablequesting\.com/i,
+        /forum\.questionablequesting\.com/i,
+        /forums\.questionablequesting\.com/i,
+    ],
+    RoyalRoad: [/royalroad\.com/i, /www\.royalroad\.com/i],
+    WebNovel: [/webnovel\.com/i, /www\.webnovel\.com/i],
+    ScribbleHub: [/scribblehub\.com/i, /www\.scribblehub\.com/i],
+    NovelBin: [/novelbin\.com/i, /www\.novelbin\.com/i, /novelbin\.net/i, /www\.novelbin\.net/i],
+    Other: [],
+};
+
+export function detectSourceFromUrl(url: string): Source {
+    if (!url || typeof url !== "string") {
+        return "Other";
+    }
+
+    const normalizedUrl = url.toLowerCase().trim();
+
+    for (const [source, patterns] of Object.entries(SOURCE_PATTERNS) as [Source, RegExp[]][]) {
+        if (source === "Other") continue;
+
+        const isMatch = patterns.some((pattern) => pattern.test(normalizedUrl));
+        if (isMatch) {
+            return source;
+        }
+    }
+
+    return "Other";
+}
+
+export function isValidUrl(url: string): boolean {
+    try {
+        new URL(url);
+        return true;
+    } catch {
+        return false;
+    }
 }
