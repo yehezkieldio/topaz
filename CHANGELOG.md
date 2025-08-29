@@ -6,6 +6,20 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.0 (August 29, 2025)
+
+### <!-- 17 -->🛠️ Miscellaneous
+- [`ad9fa9d`](https://github.com/yehezkieldio/topaz/commit/ad9fa9d8d35e95483aa765a640af51dddbc10c5f) biome: Disable noMagicNumbers rule
+
+### <!-- 3 -->🚀 New Features
+- [`f703330`](https://github.com/yehezkieldio/topaz/commit/f70333029f8ff4c30280149205055cacb8161650) library-view-item-sheet: Add fandoms and tags handling
+- [`3d6bd7e`](https://github.com/yehezkieldio/topaz/commit/3d6bd7e2bdb499e7c8b795cb8bf8d0555c75d87d) library-view-item-sheet: Add reading progress handling
+- [`ad5b3f2`](https://github.com/yehezkieldio/topaz/commit/ad5b3f2d01f90c130be7c53ec728c944fc3bf79f) trpc: Add caller for appRouter context
+- [`717109d`](https://github.com/yehezkieldio/topaz/commit/717109d248981895caeaf24fc2e6899cb2d5c078) ui: Add library stats component to home page
+- [`527e982`](https://github.com/yehezkieldio/topaz/commit/527e982f1233ac5e060c07be3ee9ddc6fca23179) api: Change getStats to publicProcedure
+
+### <!-- 4 -->🐛 Bug Fixes
+- [`a4bbdfa`](https://github.com/yehezkieldio/topaz/commit/a4bbdfa3f07e8f0d7fb21a0273cb6384425e3061) library-view-item-sheet: Adjust textarea height handling
 ## topaz@0.1.1-beta.8 (August 29, 2025)
 
 ### <!-- 11 -->🛠️ Miscellaneous
