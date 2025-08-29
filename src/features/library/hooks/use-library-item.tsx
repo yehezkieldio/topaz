@@ -19,6 +19,7 @@ export type LibraryItemValues = {
     lastUpdated: string | null;
     isNsfw?: boolean;
     hasFandomsOrTags: boolean;
+    hasReadingProgress: boolean;
 };
 
 export function useLibraryItemValues(item: LibraryItem): LibraryItemValues {
@@ -41,6 +42,7 @@ export function useLibraryItemValues(item: LibraryItem): LibraryItemValues {
         const isNsfw = item.storyIsNsfw ?? false;
 
         const hasFandomsOrTags = (item.fandoms?.length ?? 0) > 0 || (item.tags?.length ?? 0) > 0;
+        const hasReadingProgress = hasValidChapterData || hasCurrentChapterOnly;
 
         return {
             totalChapters,
@@ -57,6 +59,7 @@ export function useLibraryItemValues(item: LibraryItem): LibraryItemValues {
             lastUpdated,
             isNsfw,
             hasFandomsOrTags,
+            hasReadingProgress,
         };
     }, [
         item.storyChapterCount,
