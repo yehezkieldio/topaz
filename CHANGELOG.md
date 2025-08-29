@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.1.1-beta.8 (August 29, 2025)
+
+### <!-- 11 -->🛠️ Miscellaneous
+- [`5ff0b8f`](https://github.com/yehezkieldio/topaz/commit/5ff0b8fa4b0c7b79e7bc72acdcc53ec85c8ea365) biome: Increase maxLines limit per function from 150 to 200 in biome config
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`1cb5f98`](https://github.com/yehezkieldio/topaz/commit/1cb5f98c9d5fb94b871fdb2e6a3c639b2b06493b) deps: Update dependency @types/react-dom to ^19.1.9 ([#35](https://github.com/yehezkieldio/topaz/issues/35)) by renovate[bot]
+- [`f03d3f4`](https://github.com/yehezkieldio/topaz/commit/f03d3f4e12f82bda060d4f374504a33b6305dd3f) deps: Update dependency zod to ^4.1.5 ([#36](https://github.com/yehezkieldio/topaz/issues/36)) by renovate[bot]
+
+### <!-- 3 -->🚀 New Features
+- [`08dee7d`](https://github.com/yehezkieldio/topaz/commit/08dee7db2d357e754743382343b016d87da156ee) utils: Add URL validation and source detection based on known patterns
+- [`71c6af3`](https://github.com/yehezkieldio/topaz/commit/71c6af3ec13c57bc71e43827803985046ea6d91d) library-story-info-form: Auto-detect and set source when pasting valid URLs
 ## topaz@0.1.1-beta.7 (August 29, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
