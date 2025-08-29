@@ -7,6 +7,7 @@ import { Input } from "#/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
 import { Textarea } from "#/components/ui/textarea";
 import { useLibraryFormContext } from "#/features/library/components/forms/library-form";
+import { detectSourceFromUrl, isValidUrl } from "#/lib/utils";
 import { sourceEnum, sourceLabels } from "#/server/db/schema";
 
 type StoryInfo = {
@@ -26,21 +27,35 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
     const isInCompoundContext = context !== null;
 
     const control = context?.control ?? propControl;
+    const sourceOnChangeRef = React.useRef<((value: string) => void) | null>(null);
 
     if (!control) {
         throw new Error("LibraryStoryInfoForm requires either control prop or compound component context");
     }
 
-    const handlePasteFromClipboard = React.useCallback(async (onChange: (value: string) => void) => {
-        try {
-            const text = await navigator.clipboard.readText();
-            if (text) {
-                onChange(text);
+    const autoDetectSource = React.useCallback((url: string) => {
+        if (isValidUrl(url) && sourceOnChangeRef.current) {
+            const detectedSource = detectSourceFromUrl(url);
+            if (detectedSource !== "Other") {
+                sourceOnChangeRef.current(detectedSource);
             }
-        } catch (error) {
-            console.error("Failed to read clipboard:", error);
         }
     }, []);
+
+    const handlePasteFromClipboard = React.useCallback(
+        async (onChange: (value: string) => void) => {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    onChange(text);
+                    autoDetectSource(text);
+                }
+            } catch (error) {
+                console.error("Failed to read clipboard:", error);
+            }
+        },
+        [autoDetectSource],
+    );
 
     const formFields = (
         <>
@@ -129,6 +144,9 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
                                                 .getData("text")
                                                 .replace(/\s+/g, " ")
                                                 .trim();
+
+                                            autoDetectSource(pasteText);
+
                                             const target = e.target as HTMLInputElement;
                                             const { selectionStart, selectionEnd, value } = target;
                                             const newValue =
@@ -158,33 +176,37 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
                 <FormField
                     control={control}
                     name={"source" as Path<T>}
-                    render={({ field }) => (
-                        <FormItem className="w-full">
-                            <FormLabel>Source</FormLabel>
-                            <Select defaultValue={field.value} onValueChange={field.onChange}>
-                                <FormControl>
-                                    <SelectTrigger className="w-full rounded-md">
-                                        <SelectValue className="truncate" placeholder="Select source" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="w-[20rem] max-w-xs rounded-md sm:w-[16rem]">
-                                    {sourceEnum.enumValues.map((source) => (
-                                        <SelectItem
-                                            className="truncate"
-                                            key={source}
-                                            title={sourceLabels[source]}
-                                            value={source}
-                                        >
-                                            <span className="block max-w-[18rem] truncate sm:max-w-[14rem]">
-                                                {sourceLabels[source]}
-                                            </span>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
+                    render={({ field }) => {
+                        sourceOnChangeRef.current = field.onChange;
+
+                        return (
+                            <FormItem className="w-full">
+                                <FormLabel>Source</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger className="w-full rounded-md">
+                                            <SelectValue className="truncate" placeholder="Select source" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent className="w-[20rem] max-w-xs rounded-md sm:w-[16rem]">
+                                        {sourceEnum.enumValues.map((source) => (
+                                            <SelectItem
+                                                className="truncate"
+                                                key={source}
+                                                title={sourceLabels[source]}
+                                                value={source}
+                                            >
+                                                <span className="block max-w-[18rem] truncate sm:max-w-[14rem]">
+                                                    {sourceLabels[source]}
+                                                </span>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        );
+                    }}
                 />
             </div>
 
