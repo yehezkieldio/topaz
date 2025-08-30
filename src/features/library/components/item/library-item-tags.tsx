@@ -9,7 +9,7 @@ type LibraryItemTagsProps = {
     showAllTags?: boolean;
 };
 
-const MAX_FANDOMS_TO_SHOW = 3;
+const MAX_FANDOMS_TO_SHOW = 4;
 const MAX_TAGS_TO_SHOW = 6;
 
 function _LibraryItemTags({ showAllFandoms = false, showAllTags = false }: LibraryItemTagsProps) {
