@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.2 (August 30, 2025)
+
+### <!-- 3 -->🚀 New Features
+- [`41ee73e`](https://github.com/yehezkieldio/topaz/commit/41ee73e5ea6efd285b72345173bdfa5cb7c8a474) ui: Add tooltip for library item rating
+
+### <!-- 4 -->🐛 Bug Fixes
+- [`30f40f5`](https://github.com/yehezkieldio/topaz/commit/30f40f5f9bae0434033407f388dd138ec7a95265) utils: Update NovelBin regex patterns
+- [`8953161`](https://github.com/yehezkieldio/topaz/commit/8953161063bdc7ddf1c19a1d7c8a3b23d08cdfb4) library: Remove condition for detected source
+- [`829ba52`](https://github.com/yehezkieldio/topaz/commit/829ba52bc9cfd66044f8de7dd221e202f6e45bf1) ui: Trim input value on search action
+- [`9d64f8b`](https://github.com/yehezkieldio/topaz/commit/9d64f8b1a82a0c5b0a73593fc0a4b19ce97287ec) ui: Prevent rendering of rating for zero or less
+
+### <!-- 7 -->🚜 Refactor
+- [`533d69d`](https://github.com/yehezkieldio/topaz/commit/533d69dcdbaee4943ac6291cdb7c6cb9ffd840e4) ui: Rename selection and action handlers
 ## topaz@0.2.1 (August 29, 2025)
 
 ### <!-- 3 -->🚀 New Features
