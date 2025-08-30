@@ -34,8 +34,7 @@ function _LibraryItemProgress() {
         return (
             <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs lg:text-sm">
-                    <span className="text-muted-foreground">Current Chapter</span>
-                    <span className="text-muted-foreground tabular-nums">Chapter {currentChapter}</span>
+                    <span className="text-muted-foreground tabular-nums">Current Chapter: {currentChapter}</span>
                 </div>
             </div>
         );
