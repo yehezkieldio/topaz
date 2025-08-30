@@ -4,7 +4,7 @@
 
 - **Frontend:** React 19+ with Next.js 15+ (App Router), TypeScript, Tailwind CSS, and shadcn/ui.
 - **Backend:** tRPC with Next.js API routes.
-- **State Management:** TanStack React Query with aggressive caching.
+- **State Management:** TanStack React Query with aggressive caching and Zustand for local state management.
 - **Validation:** Zod for schema validation.
 - **Runtime:** Bun for execution and package management.
 
