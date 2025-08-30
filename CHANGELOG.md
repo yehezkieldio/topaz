@@ -6,6 +6,23 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.3 (August 30, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`1a94dcd`](https://github.com/yehezkieldio/topaz/commit/1a94dcdf10504ba5e0c6aa0b95fea9951f30ab33) deps: Add zustand dependency
+
+### <!-- 3 -->🚀 New Features
+- [`5efe091`](https://github.com/yehezkieldio/topaz/commit/5efe09182044a772b8fba2ddc3def3ff0f126f70) library: Add library create sheet store
+- [`ae17ea2`](https://github.com/yehezkieldio/topaz/commit/ae17ea26643a63024a83dab4d74fb810dea9d3c5) library: Implement keyboard shortcut for sheet open
+
+### <!-- 4 -->🐛 Bug Fixes
+- [`f782404`](https://github.com/yehezkieldio/topaz/commit/f7824043f85586efa0c454a5e1c24419a2ba2a3a) ui: Remove maximum rating display from tooltip
+- [`a5e2d4c`](https://github.com/yehezkieldio/topaz/commit/a5e2d4cda865e3fe90ae0513d5d3d23ac1484af7) ui: Increase maximum fandoms to show
+- [`c78dcb3`](https://github.com/yehezkieldio/topaz/commit/c78dcb3ad3105635e9255ee61e2f4c5c82a9b22e) ui: Adjust chapter display logic for mobile
+- [`2da8fe6`](https://github.com/yehezkieldio/topaz/commit/2da8fe657fce6091918a478ac40c494006033378) ui: Update current chapter display format
+
+### <!-- 5 -->📚 Documentation
+- [`3bd4414`](https://github.com/yehezkieldio/topaz/commit/3bd44141c70ad0484bfd59edd6e8b94626bd90ce) copilot: Update state management section in instructions
 ## topaz@0.2.2 (August 30, 2025)
 
 ### <!-- 3 -->🚀 New Features
