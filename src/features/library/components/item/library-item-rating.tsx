@@ -72,7 +72,7 @@ export const LibraryItemRating = memo(function LibraryItemRating({
                     </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" sideOffset={4}>
-                    {clampedValue.toFixed(1)} / {MAX_RATING}
+                    {clampedValue.toFixed(1)}
                 </TooltipContent>
             </Tooltip>
         </div>
