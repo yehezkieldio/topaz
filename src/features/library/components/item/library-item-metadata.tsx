@@ -28,7 +28,7 @@ function _LibraryItemMetadata() {
                 </>
             )}
 
-            {(totalChapters > 0 || hasCurrentChapterOnly) && (
+            {(totalChapters > 0 || (hasCurrentChapterOnly && isMobile)) && (
                 <>
                     <span className="text-muted-foreground/40">•</span>
                     <span>
@@ -38,13 +38,11 @@ function _LibraryItemMetadata() {
                             ) : (
                                 `Ch. ${currentChapter}`
                             )
-                        ) : totalChapters > 0 ? (
+                        ) : (
                             <>
                                 {totalChapters} chapter{totalChapters !== 1 ? "s" : ""}
                                 {isComplete && <span className="ml-1 font-medium text-emerald-600">(Complete)</span>}
                             </>
-                        ) : (
-                            <>Chapter {currentChapter}</>
                         )}
                     </span>
                 </>
