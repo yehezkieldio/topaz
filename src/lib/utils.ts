@@ -77,7 +77,7 @@ const SOURCE_PATTERNS: Record<Source, RegExp[]> = {
     RoyalRoad: [/royalroad\.com/i, /www\.royalroad\.com/i],
     WebNovel: [/webnovel\.com/i, /www\.webnovel\.com/i],
     ScribbleHub: [/scribblehub\.com/i, /www\.scribblehub\.com/i],
-    NovelBin: [/novelbin\.com/i, /www\.novelbin\.com/i, /novelbin\.net/i, /www\.novelbin\.net/i],
+    NovelBin: [/novelbin\.com/i, /www\.novelbin\.com/i, /novelbin\.net/i, /www\.novelbin\.net/i, /novelbin\.me/i],
     Other: [],
 };
 
