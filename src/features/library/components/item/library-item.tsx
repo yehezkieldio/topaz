@@ -78,6 +78,13 @@ type LibraryItemRatingProps = {
 
 function LibraryItemRatingComponent({ children }: LibraryItemRatingProps) {
     const { item } = useLibraryItemContext();
+
+    const rating = Number(item.progressRating ?? 0);
+
+    if (rating <= 0) {
+        return null;
+    }
+
     return (
         <>
             <LibraryItemRating value={item.progressRating} />
