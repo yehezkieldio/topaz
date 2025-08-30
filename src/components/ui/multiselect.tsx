@@ -58,8 +58,9 @@ export function MultiSelect({
 
     const handleInputChange = React.useCallback(
         (value: string) => {
-            setInputValue(value);
-            onSearchAction?.(value);
+            const trimmedValue = value.trimStart();
+            setInputValue(trimmedValue);
+            onSearchAction?.(trimmedValue);
         },
         [onSearchAction],
     );
