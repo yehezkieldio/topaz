@@ -40,9 +40,9 @@ export function LibraryTagMultiselect({
             emptyMessage="Start typing to search or create a new tag."
             isLoading={isLoadingTags || isCreatingTag}
             keepOpenOnSelect={true}
-            onCreate={handleCreateTag}
-            onSearch={setTagSearch}
-            onSelectionChange={onTagsChangeAction}
+            onCreateAction={handleCreateTag}
+            onSearchAction={setTagSearch}
+            onSelectionChangeAction={onTagsChangeAction}
             options={tagOptions}
             placeholder={placeholder}
             selectedValues={selectedTags}

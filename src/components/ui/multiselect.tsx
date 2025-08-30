@@ -16,9 +16,9 @@ type MultiSelectOption = {
 type MultiSelectProps = {
     options: MultiSelectOption[];
     selectedValues: MultiSelectOption[];
-    onSelectionChange: (selected: MultiSelectOption[]) => void;
-    onSearch?: (query: string) => void;
-    onCreate?: (value: string) => void;
+    onSelectionChangeAction: (selected: MultiSelectOption[]) => void;
+    onSearchAction?: (query: string) => void;
+    onCreateAction?: (value: string) => void;
     placeholder?: string;
     emptyMessage?: string;
     isLoading?: boolean;
@@ -32,9 +32,9 @@ type MultiSelectProps = {
 export function MultiSelect({
     options,
     selectedValues,
-    onSelectionChange,
-    onSearch,
-    onCreate,
+    onSelectionChangeAction,
+    onSearchAction,
+    onCreateAction,
     placeholder = "Select items...",
     emptyMessage = "No items found.",
     isLoading = false,
@@ -59,9 +59,9 @@ export function MultiSelect({
     const handleInputChange = React.useCallback(
         (value: string) => {
             setInputValue(value);
-            onSearch?.(value);
+            onSearchAction?.(value);
         },
-        [onSearch],
+        [onSearchAction],
     );
 
     const selectedValueSet = React.useMemo(() => new Set(selectedValues.map((item) => item.value)), [selectedValues]);
@@ -70,31 +70,31 @@ export function MultiSelect({
         (option: MultiSelectOption) => {
             const isSelected = selectedValueSet.has(option.value);
             if (isSelected) {
-                onSelectionChange(selectedValues.filter((item) => item.value !== option.value));
+                onSelectionChangeAction(selectedValues.filter((item) => item.value !== option.value));
             } else {
-                onSelectionChange([...selectedValues, option]);
+                onSelectionChangeAction([...selectedValues, option]);
             }
 
             if (!keepOpenOnSelect) {
                 setOpen(false);
             }
         },
-        [selectedValues, selectedValueSet, onSelectionChange, keepOpenOnSelect],
+        [selectedValues, selectedValueSet, onSelectionChangeAction, keepOpenOnSelect],
     );
 
     const removeOption = React.useCallback(
         (option: MultiSelectOption) => {
-            onSelectionChange(selectedValues.filter((item) => item.value !== option.value));
+            onSelectionChangeAction(selectedValues.filter((item) => item.value !== option.value));
         },
-        [selectedValues, onSelectionChange],
+        [selectedValues, onSelectionChangeAction],
     );
 
     const handleCreate = React.useCallback(() => {
-        if (inputValue.trim() && onCreate) {
-            onCreate(inputValue.trim());
+        if (inputValue.trim() && onCreateAction) {
+            onCreateAction(inputValue.trim());
             setInputValue("");
         }
-    }, [inputValue, onCreate]);
+    }, [inputValue, onCreateAction]);
 
     const displayText = React.useMemo(() => {
         if (selectedValues.length === 0) return placeholder;
@@ -116,14 +116,14 @@ export function MultiSelect({
             setOpen(newOpen);
             if (newOpen) {
                 if (inputValue === "") {
-                    onSearch?.("");
+                    onSearchAction?.("");
                 }
                 setTimeout(() => inputRef.current?.focus(), 0);
             } else {
                 setInputValue("");
             }
         },
-        [inputValue, onSearch],
+        [inputValue, onSearchAction],
     );
 
     return (

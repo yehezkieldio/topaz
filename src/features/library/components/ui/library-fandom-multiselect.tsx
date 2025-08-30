@@ -41,9 +41,9 @@ export function LibraryFandomMultiselect({
             emptyMessage="Start typing to search or create a new fandom."
             isLoading={isLoadingFandoms || isCreatingFandom}
             keepOpenOnSelect={true}
-            onCreate={handleCreateFandom}
-            onSearch={setFandomSearch}
-            onSelectionChange={onFandomsChangeAction}
+            onCreateAction={handleCreateFandom}
+            onSearchAction={setFandomSearch}
+            onSelectionChangeAction={onFandomsChangeAction}
             options={fandomOptions}
             placeholder={placeholder}
             selectedValues={selectedFandoms}
