@@ -36,9 +36,7 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
     const autoDetectSource = React.useCallback((url: string) => {
         if (isValidUrl(url) && sourceOnChangeRef.current) {
             const detectedSource = detectSourceFromUrl(url);
-            if (detectedSource !== "Other") {
-                sourceOnChangeRef.current(detectedSource);
-            }
+            sourceOnChangeRef.current(detectedSource);
         }
     }, []);
 
