@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.4 (September 1, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`46c35e8`](https://github.com/yehezkieldio/topaz/commit/46c35e83652c2a393ece23a799aa4ca95fa446aa) deps: Update dependency nuqs to v2.5.2 ([#37](https://github.com/yehezkieldio/topaz/issues/37)) by renovate[bot]
+- [`721d158`](https://github.com/yehezkieldio/topaz/commit/721d15898cdcb3e0b5e1ab2f9a8207beb4b67046) deps: Update tanstack-query monorepo to ^5.85.6 ([#38](https://github.com/yehezkieldio/topaz/issues/38)) by renovate[bot]
+
+### <!-- 3 -->🚀 New Features
+- [`e1ecc26`](https://github.com/yehezkieldio/topaz/commit/e1ecc26f78a60c6951ad0537e2e7f2d1539fce7e) ui: Add tooltip popover component for ratings
 ## topaz@0.2.3 (August 30, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
