@@ -79,7 +79,7 @@
         "@yehezkieldio/firefly": "^2.1.5",
         "drizzle-kit": "^0.31.4",
         "tailwindcss": "^4.1.12",
-        "tw-animate-css": "^1.3.7",
+        "tw-animate-css": "^1.3.8",
         "typescript": "^5.9.2"
     }
 }
