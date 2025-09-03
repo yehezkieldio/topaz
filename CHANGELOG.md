@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.5 (September 3, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`d0c6233`](https://github.com/yehezkieldio/topaz/commit/d0c623399e8cf18e39bd719dea3b66adfdb8b5e4) deps: Update tanstack-query monorepo ([#39](https://github.com/yehezkieldio/topaz/issues/39)) by renovate[bot]
+- [`13a48d8`](https://github.com/yehezkieldio/topaz/commit/13a48d836bc28ceb14e3c6d8378ccfe87d98a475) deps: Update tanstack-query monorepo to ^5.85.9 ([#40](https://github.com/yehezkieldio/topaz/issues/40)) by renovate[bot]
+- [`d50e227`](https://github.com/yehezkieldio/topaz/commit/d50e2270f82c34dafdb5869f27d401861b5b233c) deps: Add idb-keyval dependency
+
+### <!-- 3 -->🚀 New Features
+- [`16c5267`](https://github.com/yehezkieldio/topaz/commit/16c52674882b5687bd6818a5baf1039744a3e85d) trpc: Implement async storage persister with IndexedDB
+
+### <!-- 4 -->🐛 Bug Fixes
+- [`5c3cc4b`](https://github.com/yehezkieldio/topaz/commit/5c3cc4b3bb7ad13329ef87da3696c8b422587b8a) cache: Improve redis error handling logic
 ## topaz@0.2.4 (September 1, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
