@@ -50,7 +50,7 @@ export const sourceShortLabels = {
     Other: "Other",
 } satisfies Record<Source, string>;
 
-export const storyStatusEnum = pgEnum("story_status", ["Ongoing", "Completed", "Hiatus", "Abandoned"]);
+export const storyStatusEnum = pgEnum("story_status", ["Ongoing", "Completed", "Hiatus", "Abandoned", "Unknown"]);
 export type StoryStatus = (typeof storyStatusEnum.enumValues)[number];
 
 export const storyStatusLabels = {
@@ -58,6 +58,7 @@ export const storyStatusLabels = {
     Completed: "Completed",
     Hiatus: "Hiatus",
     Abandoned: "Abandoned",
+    Unknown: "Unknown",
 } satisfies Record<StoryStatus, string>;
 
 export const stories = createTable(
