@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.6 (September 3, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`362b863`](https://github.com/yehezkieldio/topaz/commit/362b863fd557817f0d3638d3f32aab3305706094) deps: Update dependency tw-animate-css to ^1.3.8 ([#41](https://github.com/yehezkieldio/topaz/issues/41)) by renovate[bot]
+
+### <!-- 3 -->🚀 New Features
+- [`dbd73e8`](https://github.com/yehezkieldio/topaz/commit/dbd73e8232d2844b010678780c7692014c3fe60e) progress: Add new statuses to progress tracking
+- [`679b2fa`](https://github.com/yehezkieldio/topaz/commit/679b2fa4e738668c7f51911a7a83a9167411d01f) db: Add reading and story status values
 ## topaz@0.2.5 (September 3, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
