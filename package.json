@@ -71,7 +71,7 @@
     "devDependencies": {
         "@biomejs/biome": "^2.2.3",
         "@tailwindcss/postcss": "^4.1.13",
-        "@tanstack/react-query-devtools": "^5.87.1",
+        "@tanstack/react-query-devtools": "^5.87.3",
         "@total-typescript/ts-reset": "^0.6.1",
         "@types/node": "^20.19.13",
         "@types/react": "^19.1.12",
