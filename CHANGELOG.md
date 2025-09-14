@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.8 (September 14, 2025)
+
+### <!-- 11 -->🛠️ Miscellaneous
+- [`24cfb00`](https://github.com/yehezkieldio/topaz/commit/24cfb0020c3bd192f5b55dfacc72b1bf9dd68533)  Bump version to 0.2.7
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`7bdfd3b`](https://github.com/yehezkieldio/topaz/commit/7bdfd3b9a300d15e3ba0ed6dc1915ebb34aba612) deps: Update dependency @hookform/resolvers to ^5.2.2 ([#63](https://github.com/yehezkieldio/topaz/issues/63)) by renovate[bot]
 ## topaz@0.2.6 (September 3, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
