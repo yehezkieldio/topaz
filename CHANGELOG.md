@@ -6,6 +6,34 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.7 (September 14, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`4a2ce40`](https://github.com/yehezkieldio/topaz/commit/4a2ce40f720546494fae2f5b1a98174d3e3b7524) deps: Update dependency @types/node to ^20.19.12 ([#42](https://github.com/yehezkieldio/topaz/issues/42)) by renovate[bot]
+- [`66f058b`](https://github.com/yehezkieldio/topaz/commit/66f058bd4ed8490e088132ee0443a9e3b2884835) deps: Update dependency @types/node to ^20.19.13 ([#43](https://github.com/yehezkieldio/topaz/issues/43)) by renovate[bot]
+- [`3013e40`](https://github.com/yehezkieldio/topaz/commit/3013e40df74799be4de2917b68e55dcef42f5765) deps: Update tanstack-query monorepo to ^5.86.0 ([#44](https://github.com/yehezkieldio/topaz/issues/44)) by renovate[bot]
+- [`0270492`](https://github.com/yehezkieldio/topaz/commit/02704928abc50fd149ffa3b8c35b4f477c1ea208) deps: Update dependency @tailwindcss/postcss to ^4.1.13 ([#45](https://github.com/yehezkieldio/topaz/issues/45)) by renovate[bot]
+- [`557a7da`](https://github.com/yehezkieldio/topaz/commit/557a7da6e6c1fcccf57c81cf9861b43e468d85dc) deps: Update dependency tailwindcss to ^4.1.13 ([#46](https://github.com/yehezkieldio/topaz/issues/46)) by renovate[bot]
+- [`b73361d`](https://github.com/yehezkieldio/topaz/commit/b73361d3a7dea8c45e4a8713679f67e2c0f3ec39) deps: Update dependency @biomejs/biome to v2.2.3 ([#47](https://github.com/yehezkieldio/topaz/issues/47)) by renovate[bot]
+- [`c518f78`](https://github.com/yehezkieldio/topaz/commit/c518f781f60fc36bdb5bcc9a847851017452b9ca) deps: Update tanstack-query monorepo to ^5.87.0 ([#48](https://github.com/yehezkieldio/topaz/issues/48)) by renovate[bot]
+- [`07e5fa7`](https://github.com/yehezkieldio/topaz/commit/07e5fa759863c21fe361a29d463fcba2ddc8735f) deps: Update dependency @trpc/tanstack-react-query to ^11.5.1 ([#49](https://github.com/yehezkieldio/topaz/issues/49)) by renovate[bot]
+- [`72f348a`](https://github.com/yehezkieldio/topaz/commit/72f348a2effbc48787a32649bd3d35cfc9f12e90) deps: Update tanstack-query monorepo to ^5.87.1 ([#50](https://github.com/yehezkieldio/topaz/issues/50)) by renovate[bot]
+- [`f7bdd99`](https://github.com/yehezkieldio/topaz/commit/f7bdd99071aebff06d306b43b148c7870252de6a) deps: Update trpc monorepo to ^11.5.1 ([#51](https://github.com/yehezkieldio/topaz/issues/51)) by renovate[bot]
+- [`e69f1ee`](https://github.com/yehezkieldio/topaz/commit/e69f1eead40edf2a975bbb872dea8a873e787d36) deps: Update dependency nuqs to v2.6.0 ([#52](https://github.com/yehezkieldio/topaz/issues/52)) by renovate[bot]
+- [`eb5b394`](https://github.com/yehezkieldio/topaz/commit/eb5b394cb96a96242eee2b30b68237c358031098) deps: Update dependency @tanstack/react-query-devtools to ^5.87.3 ([#53](https://github.com/yehezkieldio/topaz/issues/53)) by renovate[bot]
+- [`159398b`](https://github.com/yehezkieldio/topaz/commit/159398b11ef2c9c021accac948f8548500090819) deps: Update dependency lucide-react to ^0.543.0 ([#54](https://github.com/yehezkieldio/topaz/issues/54)) by renovate[bot]
+- [`e091e3d`](https://github.com/yehezkieldio/topaz/commit/e091e3da4dfa1c1108c51b6314ada27d133928ec) deps: Update dependency @biomejs/biome to v2.2.4 ([#55](https://github.com/yehezkieldio/topaz/issues/55)) by renovate[bot]
+- [`3a8a619`](https://github.com/yehezkieldio/topaz/commit/3a8a6196ff5c3a195dd861d34ed52af3f024e640) deps: Update tanstack-query monorepo to ^5.87.4 ([#56](https://github.com/yehezkieldio/topaz/issues/56)) by renovate[bot]
+- [`6f0db23`](https://github.com/yehezkieldio/topaz/commit/6f0db23252313e17c9a83989208b1f437b4e49e9) deps: Update dependency next to v15.5.3 ([#57](https://github.com/yehezkieldio/topaz/issues/57)) by renovate[bot]
+- [`47109eb`](https://github.com/yehezkieldio/topaz/commit/47109eb2961a9ff80319e0fd23037b74a19d61d5) deps: Update dependency zod to ^4.1.7 ([#58](https://github.com/yehezkieldio/topaz/issues/58)) by renovate[bot]
+- [`bc13d95`](https://github.com/yehezkieldio/topaz/commit/bc13d95843153be6bc5e6396646a77d4f7080c11) deps: Update dependency lucide-react to ^0.544.0 ([#59](https://github.com/yehezkieldio/topaz/issues/59)) by renovate[bot]
+- [`3ef4017`](https://github.com/yehezkieldio/topaz/commit/3ef401726e7db6473032bc11069a9886eebf5fe2) deps: Update dependency zod to ^4.1.8 ([#60](https://github.com/yehezkieldio/topaz/issues/60)) by renovate[bot]
+- [`a09f16f`](https://github.com/yehezkieldio/topaz/commit/a09f16fe0a17cf9c89257fb7a020ea077d8ab82d) deps: Update dependency @types/node to ^20.19.14 ([#61](https://github.com/yehezkieldio/topaz/issues/61)) by renovate[bot]
+- [`8005621`](https://github.com/yehezkieldio/topaz/commit/8005621194250d45873e138d59aa31f7fa827582) deps: Update dependency @types/react to ^19.1.13 ([#62](https://github.com/yehezkieldio/topaz/issues/62)) by renovate[bot]
+- [`ffd2060`](https://github.com/yehezkieldio/topaz/commit/ffd206079a4747d04c5613fd17f72a17a4405aa6) deps: Add fireflyy dependency at v3.0.0
+
+### <!-- 9 -->🎨 Code Styling
+- [`b2e26a6`](https://github.com/yehezkieldio/topaz/commit/b2e26a6c181122c78dbf9acff922e0ff7786947b) db: Format files
 ## topaz@0.2.6 (September 3, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
