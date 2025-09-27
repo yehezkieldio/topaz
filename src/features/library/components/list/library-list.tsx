@@ -205,7 +205,7 @@ function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
                                 onCloseAction={() => {
                                     setIsEditSheetOpen(false);
                                     setSelectedItem(null);
-                                    parentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                    // parentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
                                 }}
                             />
                             <LibraryItemDeleteDialog
@@ -214,7 +214,7 @@ function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
                                 onClose={() => {
                                     setIsDeleteDialogOpen(false);
                                     setSelectedItem(null);
-                                    parentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                    // parentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
                                 }}
                                 onDelete={handleDelete}
                             />
