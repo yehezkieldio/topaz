@@ -6,6 +6,29 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.9 (September 27, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`3e427cd`](https://github.com/yehezkieldio/topaz/commit/3e427cd3efe8a7012619e4cdea84e4aedbcd891f) deps: Update dependency @types/node to ^20.19.15 ([#64](https://github.com/yehezkieldio/topaz/issues/64)) by renovate[bot]
+- [`bc788fa`](https://github.com/yehezkieldio/topaz/commit/bc788faffc64ee00c974d244ac3509b6283db891) deps: Update tanstack-query monorepo to ^5.89.0 ([#65](https://github.com/yehezkieldio/topaz/issues/65)) by renovate[bot]
+- [`48d1c34`](https://github.com/yehezkieldio/topaz/commit/48d1c349800489d7eb658e69c1a0036cabc24982) deps: Update dependency @types/node to ^20.19.16 ([#66](https://github.com/yehezkieldio/topaz/issues/66)) by renovate[bot]
+- [`6c7a478`](https://github.com/yehezkieldio/topaz/commit/6c7a478ff091e7df04fc6b5c5d0fae079110b937) deps: Update dependency zod to ^4.1.9 ([#67](https://github.com/yehezkieldio/topaz/issues/67)) by renovate[bot]
+- [`48ccd75`](https://github.com/yehezkieldio/topaz/commit/48ccd75761a504e4a7d5a7ff293fdac7b3fe5e89) deps: Update dependency @types/node to ^20.19.17 ([#68](https://github.com/yehezkieldio/topaz/issues/68)) by renovate[bot]
+- [`84783b9`](https://github.com/yehezkieldio/topaz/commit/84783b93e2cd94f41c89f9223b7c5aa6f2f9263d) deps: Update dependency react-hook-form to ^7.63.0 ([#69](https://github.com/yehezkieldio/topaz/issues/69)) by renovate[bot]
+- [`cbf932b`](https://github.com/yehezkieldio/topaz/commit/cbf932b72fde450f5001ba604bac33777f0644a5) deps: Update dependency zod to ^4.1.10 ([#70](https://github.com/yehezkieldio/topaz/issues/70)) by renovate[bot]
+- [`8c28063`](https://github.com/yehezkieldio/topaz/commit/8c28063c5503913484e28ceb955e8f30b2100577) deps: Update dependency zod to ^4.1.11 ([#71](https://github.com/yehezkieldio/topaz/issues/71)) by renovate[bot]
+- [`9744ba6`](https://github.com/yehezkieldio/topaz/commit/9744ba6d187db99676ff2805b84592609ba5cab7) deps: Update tanstack-query monorepo to ^5.90.1 ([#72](https://github.com/yehezkieldio/topaz/issues/72)) by renovate[bot]
+- [`4fbfa7c`](https://github.com/yehezkieldio/topaz/commit/4fbfa7ccc21a77b49b488d926b1d14143465b1c2) deps: Update dependency fireflyy to ^3.0.1 ([#73](https://github.com/yehezkieldio/topaz/issues/73)) by renovate[bot]
+- [`f13e3a6`](https://github.com/yehezkieldio/topaz/commit/f13e3a6bec2b2663d62945fba9550db3c5217875) deps: Update tanstack-query monorepo to ^5.90.2 ([#74](https://github.com/yehezkieldio/topaz/issues/74)) by renovate[bot]
+- [`7fa69fd`](https://github.com/yehezkieldio/topaz/commit/7fa69fd9a933daf84900532dce78fa0c99600541) deps: Update dependency ioredis to ^5.8.0 ([#75](https://github.com/yehezkieldio/topaz/issues/75)) by renovate[bot]
+- [`b506b4c`](https://github.com/yehezkieldio/topaz/commit/b506b4caf52fd4402bc3f9012ca711109203f009) deps: Update dependency next to v15.5.4 ([#76](https://github.com/yehezkieldio/topaz/issues/76)) by renovate[bot]
+- [`2a1a0ae`](https://github.com/yehezkieldio/topaz/commit/2a1a0aed0c3e05673c498e0bec15aeb653420b6a) deps: Update dependency tw-animate-css to ^1.4.0 ([#77](https://github.com/yehezkieldio/topaz/issues/77)) by renovate[bot]
+- [`3405866`](https://github.com/yehezkieldio/topaz/commit/340586608abd492b20aaa1dc5c17ff87c324ce7b) deps: Update trpc monorepo to ^11.6.0 ([#78](https://github.com/yehezkieldio/topaz/issues/78)) by renovate[bot]
+- [`9344ae3`](https://github.com/yehezkieldio/topaz/commit/9344ae346026ee5467a0c1b5695a80058263146f) deps: Update dependency drizzle-kit to ^0.31.5 ([#79](https://github.com/yehezkieldio/topaz/issues/79)) by renovate[bot]
+- [`182443c`](https://github.com/yehezkieldio/topaz/commit/182443cf1113d064e0ef84ff799e8451214d037b) deps: Update dependency @types/react to ^19.1.14 ([#80](https://github.com/yehezkieldio/topaz/issues/80)) by renovate[bot]
+
+### <!-- 4 -->🐛 Bug Fixes
+- [`4ca4164`](https://github.com/yehezkieldio/topaz/commit/4ca4164206ac58b9519e5405a7768a2fcf831147) library: Disable smooth scroll on dialog close
 ## topaz@0.2.8 (September 14, 2025)
 
 ### <!-- 11 -->🛠️ Miscellaneous
