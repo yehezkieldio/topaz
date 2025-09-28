@@ -1,5 +1,3 @@
-import "./globals.css";
-
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
@@ -9,6 +7,8 @@ import { ThemeProvider } from "#/app/theme-provider";
 import { Toaster } from "#/app/toaster";
 import { cn } from "#/lib/utils";
 import { TRPCReactProvider } from "#/trpc/react";
+
+import "./globals.css";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
