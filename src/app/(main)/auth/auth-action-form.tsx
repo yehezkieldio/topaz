@@ -7,18 +7,22 @@ type AuthActionFormProps = {
 };
 
 export function AuthActionForm({ isAdministratorUser }: AuthActionFormProps) {
-    return isAdministratorUser ? (
-        <form
-            action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/" });
-            }}
-        >
-            <Button className="w-full" type="submit" variant="secondary">
-                Sign out
-            </Button>
-        </form>
-    ) : (
+    if (isAdministratorUser) {
+        return (
+            <form
+                action={async () => {
+                    "use server";
+                    await signOut({ redirectTo: "/" });
+                }}
+            >
+                <Button className="w-full" type="submit" variant="secondary">
+                    Sign out
+                </Button>
+            </form>
+        );
+    }
+
+    return (
         <form
             action={async () => {
                 "use server";
