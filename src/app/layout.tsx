@@ -1,7 +1,7 @@
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next";
 import { ThemeProvider } from "#/app/theme-provider";
 import { Toaster } from "#/app/toaster";
@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
     subsets: ["latin"],
 });
 
-const playfairDisplay = Playfair_Display({
-    variable: "--font-playfair-display",
+const spaceGrotesk = Space_Grotesk({
+    variable: "--font-space-grotesk",
     subsets: ["latin"],
 });
 
@@ -84,7 +84,7 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className={cn(geistSans.variable, geistMono.variable, playfairDisplay.variable, "antialiased")}>
+            <body className={cn(geistSans.variable, geistMono.variable, spaceGrotesk.variable, "antialiased")}>
                 <TRPCReactProvider>
                     <NuqsAdapter>
                         <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange enableSystem>

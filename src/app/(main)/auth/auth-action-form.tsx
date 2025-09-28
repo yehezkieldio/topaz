@@ -1,3 +1,4 @@
+import React from "react";
 import { Icons } from "#/components/icons";
 import { Button } from "#/components/ui/button";
 import { signIn, signOut } from "#/server/auth";
@@ -6,7 +7,7 @@ type AuthActionFormProps = {
     isAdministratorUser: boolean;
 };
 
-export function AuthActionForm({ isAdministratorUser }: AuthActionFormProps) {
+export const AuthActionForm = React.memo(function AuthActionForm({ isAdministratorUser }: AuthActionFormProps) {
     if (isAdministratorUser) {
         return (
             <form
@@ -35,4 +36,4 @@ export function AuthActionForm({ isAdministratorUser }: AuthActionFormProps) {
             </Button>
         </form>
     );
-}
+});
