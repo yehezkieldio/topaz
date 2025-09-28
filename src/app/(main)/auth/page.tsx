@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { AuthActionForm } from "#/components/auth-action-form";
+import { AuthActionForm } from "#/app/(main)/auth/auth-action-form";
 import { AuthUserGate } from "#/components/auth-user-gate";
 import { Icons } from "#/components/icons";
 import { Button } from "#/components/ui/button";

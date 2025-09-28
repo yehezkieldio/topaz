@@ -12,9 +12,7 @@ const handler = (req: NextRequest) =>
         createContext: createTRPCContext,
         onError:
             env.NODE_ENV === "development"
-                ? ({ path, error }) => {
-                      console.error(`❌ tRPC failed on ${path ?? "<no-path>"}: ${error.message}`);
-                  }
+                ? ({ path, error }) => console.error(`❌ tRPC failed on ${path ?? "<no-path>"}: ${error.message}`)
                 : undefined,
         responseMeta({ info, errors }) {
             const paths: string[] | undefined = info?.calls.map((call) => call.path);
@@ -23,12 +21,11 @@ const handler = (req: NextRequest) =>
             const isQuery = info?.type === "query";
 
             if (allPublic && allOk && isQuery) {
-                // cache request for 1 day + revalidate once every second
                 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 
                 return {
                     headers: new Headers([
-                        ["cache-control", `s-maxage=1, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`],
+                        ["cache-control", `public, s-maxage=1, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`],
                     ]),
                 };
             }

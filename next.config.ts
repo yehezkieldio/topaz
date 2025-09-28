@@ -19,9 +19,6 @@ const nextConfig: NextConfig = {
     env: {
         NEXT_PUBLIC_VERSION: packageJson.version,
     },
-    experimental: {
-        clientSegmentCache: true,
-    },
 };
 
 export default nextConfig;
