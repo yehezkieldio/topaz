@@ -1,65 +1,20 @@
 import { relations } from "drizzle-orm";
-import { index, pgEnum, primaryKey, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { index, primaryKey, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import z from "zod/v4";
+import { progressStatusEnum, sourceEnum, storyStatusEnum } from "#/server/db/schema/enums";
 import { fandoms } from "#/server/db/schema/fandom";
-import { progressStatusEnum } from "#/server/db/schema/progress";
 import { tags } from "#/server/db/schema/tag";
 import { citext, createTable, ids, timestamps } from "#/server/db/utils";
 
-export const sourceEnum = pgEnum("source", [
-    "ArchiveOfOurOwn",
-    "FanFictionNet",
-    "Wattpad",
-    "SpaceBattles",
-    "SufficientVelocity",
-    "QuestionableQuesting",
-    "RoyalRoad",
-    "WebNovel",
-    "ScribbleHub",
-    "NovelBin",
-    "Other",
-]);
-export type Source = (typeof sourceEnum.enumValues)[number];
-
-export const sourceLabels = {
-    ArchiveOfOurOwn: "Archive of Our Own",
-    Wattpad: "Wattpad",
-    SpaceBattles: "SpaceBattles",
-    SufficientVelocity: "Sufficient Velocity",
-    QuestionableQuesting: "Questionable Questing",
-    FanFictionNet: "FanFiction.Net",
-    RoyalRoad: "Royal Road",
-    WebNovel: "WebNovel",
-    ScribbleHub: "ScribbleHub",
-    NovelBin: "NovelBin",
-    Other: "Other",
-} satisfies Record<Source, string>;
-
-export const sourceShortLabels = {
-    ArchiveOfOurOwn: "AO3",
-    Wattpad: "Wattpad",
-    SpaceBattles: "SB",
-    SufficientVelocity: "SV",
-    QuestionableQuesting: "QQ",
-    FanFictionNet: "FFN",
-    RoyalRoad: "RR",
-    WebNovel: "WN",
-    ScribbleHub: "SH",
-    NovelBin: "NB",
-    Other: "Other",
-} satisfies Record<Source, string>;
-
-export const storyStatusEnum = pgEnum("story_status", ["Ongoing", "Completed", "Hiatus", "Abandoned", "Unknown"]);
-export type StoryStatus = (typeof storyStatusEnum.enumValues)[number];
-
-export const storyStatusLabels = {
-    Ongoing: "Ongoing",
-    Completed: "Completed",
-    Hiatus: "Hiatus",
-    Abandoned: "Abandoned",
-    Unknown: "Unknown",
-} satisfies Record<StoryStatus, string>;
+export type { Source, StoryStatus } from "#/server/db/schema/enums";
+export {
+    sourceEnum,
+    sourceLabels,
+    sourceShortLabels,
+    storyStatusEnum,
+    storyStatusLabels,
+} from "#/server/db/schema/enums";
 
 export const stories = createTable(
     "story",

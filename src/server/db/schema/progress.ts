@@ -1,32 +1,14 @@
 import { relations, sql } from "drizzle-orm";
-import { check, index, pgEnum, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { check, index, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import z4 from "zod/v4";
+import { progressStatusEnum } from "#/server/db/schema/enums";
 import { stories } from "#/server/db/schema/story";
 import { users } from "#/server/db/schema/user";
 import { createTable, ids, timestamps } from "#/server/db/utils";
 
-export const progressStatusEnum = pgEnum("reading_status", [
-    "NotStarted",
-    "Reading",
-    "Paused",
-    "Completed",
-    "Dropped",
-    "PlanToRead",
-    "DroppedAsAbandoned",
-]);
-
-export const progressStatusLabels: Record<ProgressStatus, string> = {
-    NotStarted: "Not Started",
-    Reading: "Reading",
-    Paused: "Paused",
-    Completed: "Completed",
-    Dropped: "Dropped",
-    PlanToRead: "PlanToRead",
-    DroppedAsAbandoned: "Dropped as Abandoned",
-};
-
-export type ProgressStatus = (typeof progressStatusEnum.enumValues)[number];
+export type { ProgressStatus } from "#/server/db/schema/enums";
+export { progressStatusEnum, progressStatusLabels } from "#/server/db/schema/enums";
 
 export const progressSortByEnum = z4.enum([
     "title",
