@@ -5,12 +5,12 @@ const MOBILE_BREAKPOINT = 768;
 export function useIsMobile() {
     const getQuery = React.useCallback(() => `(max-width: ${MOBILE_BREAKPOINT - 1}px)`, []);
 
-    const [isMobile, setIsMobile] = React.useState<boolean>(() => {
-        if (typeof window === "undefined") return false;
-        return window.matchMedia(getQuery()).matches;
-    });
+    // Always start with false to match SSR
+    const [isMobile, setIsMobile] = React.useState<boolean>(false);
+    const [mounted, setMounted] = React.useState<boolean>(false);
 
     React.useEffect(() => {
+        setMounted(true);
         const mql = window.matchMedia(getQuery());
         const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
 
@@ -23,5 +23,6 @@ export function useIsMobile() {
         };
     }, [getQuery]);
 
-    return isMobile;
+    // Return false until mounted to match SSR
+    return mounted ? isMobile : false;
 }
