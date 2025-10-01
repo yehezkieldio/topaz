@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.10 (October 1, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`ebf1e50`](https://github.com/yehezkieldio/topaz/commit/ebf1e50e5dade75fab16c9bfad5126b4c32fa534) deps: Update dependency @types/react to ^19.1.15 ([#81](https://github.com/yehezkieldio/topaz/issues/81)) by renovate[bot]
+- [`11a9700`](https://github.com/yehezkieldio/topaz/commit/11a9700e62919b725b79ba3529a06413b059ff2d) deps: Update dependency @types/node to ^20.19.18 ([#82](https://github.com/yehezkieldio/topaz/issues/82)) by renovate[bot]
+- [`b569cee`](https://github.com/yehezkieldio/topaz/commit/b569cee27f0f900c305c9cb9bc00882fc2a74abd) deps: Update dependency @types/react to ^19.1.16 ([#83](https://github.com/yehezkieldio/topaz/issues/83)) by renovate[bot]
+- [`00fc61b`](https://github.com/yehezkieldio/topaz/commit/00fc61bfc28b49ebb67ce4e15ea7d47b84033766) deps: Update dependency nuqs to v2.7.0 ([#84](https://github.com/yehezkieldio/topaz/issues/84)) by renovate[bot]
+- [`c302342`](https://github.com/yehezkieldio/topaz/commit/c302342b6e4ab5f4d1bb1808df041572e802cbd7) deps: Update dependency typescript to ^5.9.3 ([#85](https://github.com/yehezkieldio/topaz/issues/85)) by renovate[bot]
+- [`8503007`](https://github.com/yehezkieldio/topaz/commit/850300714a7ca18df08aa6247eab247355055c2b) deps: Update dependency @types/node to ^20.19.19 ([#86](https://github.com/yehezkieldio/topaz/issues/86)) by renovate[bot]
 ## topaz@0.2.9 (September 27, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
