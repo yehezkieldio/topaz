@@ -62,7 +62,7 @@
         "@types/react": "^19.1.16",
         "@types/react-dom": "^19.1.9",
         "drizzle-kit": "^0.31.5",
-        "fireflyy": "^3.0.1",
+        "fireflyy": "^3.0.3",
         "tailwindcss": "^4.1.13",
         "tw-animate-css": "^1.4.0",
         "typescript": "^5.9.3",
@@ -486,7 +486,7 @@
 
     "figures": ["figures@6.1.0", "", { "dependencies": { "is-unicode-supported": "^2.0.0" } }, "sha512-d+l3qxjSesT4V7v2fh+QnmFnUWv9lSpjarhShNTgBOfA0ttejbQUAlHLitbjkoRiDulW0OPoQPYIGhIC8ohejg=="],
 
-    "fireflyy": ["fireflyy@3.0.1", "", { "dependencies": { "c12": "^3.3.0", "commander": "^14.0.1", "consola": "^3.4.2", "git-cliff": "^2.10.1", "neverthrow": "^8.2.0", "semver": "^7.7.2", "smol-toml": "^1.4.2", "zod": "^4.1.11" }, "bin": { "firefly": "dist/main.js", "ff": "dist/main.js" } }, "sha512-OvPYDQI4FUvjwPv9e7oHjyXT/fPFmuoIGD4MCKqQqbdxZjG9O8f9TjZ9m51ZAX29bd6UiZfNfRz0z5ujeUy1MA=="],
+    "fireflyy": ["fireflyy@3.0.3", "", { "dependencies": { "c12": "^3.3.0", "commander": "^14.0.1", "consola": "^3.4.2", "git-cliff": "^2.10.1", "neverthrow": "^8.2.0", "semver": "^7.7.2", "zod": "^4.1.11" }, "bin": { "firefly": "dist/main.js", "ff": "dist/main.js" } }, "sha512-8ddzmb5sWLiAK7QDrMI5skXNPiTQhnTobu0vnN8DiN6H2FXERG6igGIUAwkyZOIG5nnVnWMrhATy624VM260FQ=="],
 
     "get-nonce": ["get-nonce@1.0.1", "", {}, "sha512-FJhYRoDaiatfEkUK8HKlicmu/3SGFD51q3itKDGoSTysQJBnfOcxU5GxnhE1E6soB76MbT0MBtnKJuXyAx+96Q=="],
 
@@ -655,8 +655,6 @@
     "signal-exit": ["signal-exit@4.1.0", "", {}, "sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw=="],
 
     "simple-swizzle": ["simple-swizzle@0.2.2", "", { "dependencies": { "is-arrayish": "^0.3.1" } }, "sha512-JA//kQgZtbuY83m+xT+tXJkmJncGMTFT+C+g2h2R9uxkYIrE2yy9sgmcLhCnw57/WSD+Eh3J97FPEDFnbXnDUg=="],
-
-    "smol-toml": ["smol-toml@1.4.2", "", {}, "sha512-rInDH6lCNiEyn3+hH8KVGFdbjc099j47+OSgbMrfDYX1CmXLfdKd7qi6IfcWj2wFxvSVkuI46M+wPGYfEOEj6g=="],
 
     "sonner": ["sonner@2.0.7", "", { "peerDependencies": { "react": "^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react-dom": "^18.0.0 || ^19.0.0 || ^19.0.0-rc" } }, "sha512-W6ZN4p58k8aDKA4XPcx2hpIQXBRAgyiWVkYhT7CvK6D3iAu7xjvVyhQHg2/iaKJZ1XVJ4r7XuwGL+WGEK37i9w=="],
 
