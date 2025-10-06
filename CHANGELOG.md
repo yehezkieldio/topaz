@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.11 (October 6, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`754bc19`](https://github.com/yehezkieldio/topaz/commit/754bc192ef7f2e82e00e9b8766ac4b4582e27249) deps: Update dependency fireflyy to ^3.0.3 ([#87](https://github.com/yehezkieldio/topaz/issues/87)) by renovate[bot]
+- [`dbb3cd6`](https://github.com/yehezkieldio/topaz/commit/dbb3cd66859af78c1cf43bdccfd4d2a7bb67f007) deps: Update tailwindcss monorepo to ^4.1.14 ([#88](https://github.com/yehezkieldio/topaz/issues/88)) by renovate[bot]
+- [`bc0dae6`](https://github.com/yehezkieldio/topaz/commit/bc0dae62be6ade6cde1faddccd5ec515753f4ae8) deps: Update react monorepo to ^19.2.0 ([#89](https://github.com/yehezkieldio/topaz/issues/89)) by renovate[bot]
+- [`a888725`](https://github.com/yehezkieldio/topaz/commit/a8887252b6ce19619b506bbd796f1037f79c356a) deps: Update dependency @biomejs/biome to v2.2.5 ([#90](https://github.com/yehezkieldio/topaz/issues/90)) by renovate[bot]
+- [`6b1deb4`](https://github.com/yehezkieldio/topaz/commit/6b1deb44e45999fa8b748a0cd73edb4131565a88) deps: Update dependency drizzle-orm to ^0.44.6 ([#91](https://github.com/yehezkieldio/topaz/issues/91)) by renovate[bot]
+- [`1c2ca87`](https://github.com/yehezkieldio/topaz/commit/1c2ca87000064ac1c80db35afa22466e0678a836) deps: Update dependency react-hook-form to ^7.64.0 ([#92](https://github.com/yehezkieldio/topaz/issues/92)) by renovate[bot]
+- [`cd06a4a`](https://github.com/yehezkieldio/topaz/commit/cd06a4a81b9383401b0e09ffb95337eaeda52f07) deps: Update dependency ioredis to ^5.8.1 ([#93](https://github.com/yehezkieldio/topaz/issues/93)) by renovate[bot]
+- [`50889a4`](https://github.com/yehezkieldio/topaz/commit/50889a4dc2af943f9d5f1726b5ae2649d201258d) deps: Update dependency zod to ^4.1.12 ([#94](https://github.com/yehezkieldio/topaz/issues/94)) by renovate[bot]
+- [`43d788a`](https://github.com/yehezkieldio/topaz/commit/43d788a8ba2df899a0d4284caccd344ba3671d5b) deps: Update dependency @types/react to ^19.2.1 ([#95](https://github.com/yehezkieldio/topaz/issues/95)) by renovate[bot]
+- [`a4dada9`](https://github.com/yehezkieldio/topaz/commit/a4dada994cd85c104ca8f8d932aec76c2e027b69) deps: Update dependency nuqs to v2.7.1 ([#96](https://github.com/yehezkieldio/topaz/issues/96)) by renovate[bot]
 ## topaz@0.2.10 (October 1, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
