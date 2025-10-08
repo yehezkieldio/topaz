@@ -4,7 +4,7 @@
     "": {
       "name": "topaz",
       "dependencies": {
-        "@auth/drizzle-adapter": "^1.10.0",
+        "@auth/drizzle-adapter": "^1.11.0",
         "@hookform/resolvers": "^5.2.2",
         "@paralleldrive/cuid2": "^2.2.2",
         "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -72,9 +72,9 @@
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
 
-    "@auth/core": ["@auth/core@0.40.0", "", { "dependencies": { "@panva/hkdf": "^1.2.1", "jose": "^6.0.6", "oauth4webapi": "^3.3.0", "preact": "10.24.3", "preact-render-to-string": "6.5.11" }, "peerDependencies": { "@simplewebauthn/browser": "^9.0.1", "@simplewebauthn/server": "^9.0.2", "nodemailer": "^6.8.0" }, "optionalPeers": ["@simplewebauthn/browser", "@simplewebauthn/server", "nodemailer"] }, "sha512-n53uJE0RH5SqZ7N1xZoMKekbHfQgjd0sAEyUbE+IYJnmuQkbvuZnXItCU7d+i7Fj8VGOgqvNO7Mw4YfBTlZeQw=="],
+    "@auth/core": ["@auth/core@0.41.0", "", { "dependencies": { "@panva/hkdf": "^1.2.1", "jose": "^6.0.6", "oauth4webapi": "^3.3.0", "preact": "10.24.3", "preact-render-to-string": "6.5.11" }, "peerDependencies": { "@simplewebauthn/browser": "^9.0.1", "@simplewebauthn/server": "^9.0.2", "nodemailer": "^6.8.0" }, "optionalPeers": ["@simplewebauthn/browser", "@simplewebauthn/server", "nodemailer"] }, "sha512-Wd7mHPQ/8zy6Qj7f4T46vg3aoor8fskJm6g2Zyj064oQ3+p0xNZXAV60ww0hY+MbTesfu29kK14Zk5d5JTazXQ=="],
 
-    "@auth/drizzle-adapter": ["@auth/drizzle-adapter@1.10.0", "", { "dependencies": { "@auth/core": "0.40.0" } }, "sha512-3MKsdAINTfvV4QKev8PFMNG93HJEUHh9sggDXnmUmriFogRf8qLvgqnPsTlfUyWcLwTzzrrYjeu8CGM+4IxHwQ=="],
+    "@auth/drizzle-adapter": ["@auth/drizzle-adapter@1.11.0", "", { "dependencies": { "@auth/core": "0.41.0" } }, "sha512-7YHi5bTZZs4+D6TQIT/AWgZ2PLL7Zc9fS7bteHKMrsEMemarbdv3H5eF8RfF1FpRtyK8MAj4EQV4BWf0gCzAYw=="],
 
     "@babel/runtime": ["@babel/runtime@7.28.3", "", {}, "sha512-9uIQ10o0WGdpP6GDhXcdOJPJuDgFtIDtN/9+ArJQ2NAfAmiuhTQdzkaTGR33v43GYS2UrSA0eX2pPPHoFVvpxA=="],
 
@@ -725,6 +725,8 @@
     "fireflyy/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
 
     "next/postcss": ["postcss@8.4.31", "", { "dependencies": { "nanoid": "^3.3.6", "picocolors": "^1.0.0", "source-map-js": "^1.0.2" } }, "sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ=="],
+
+    "next-auth/@auth/core": ["@auth/core@0.40.0", "", { "dependencies": { "@panva/hkdf": "^1.2.1", "jose": "^6.0.6", "oauth4webapi": "^3.3.0", "preact": "10.24.3", "preact-render-to-string": "6.5.11" }, "peerDependencies": { "@simplewebauthn/browser": "^9.0.1", "@simplewebauthn/server": "^9.0.2", "nodemailer": "^6.8.0" }, "optionalPeers": ["@simplewebauthn/browser", "@simplewebauthn/server", "nodemailer"] }, "sha512-n53uJE0RH5SqZ7N1xZoMKekbHfQgjd0sAEyUbE+IYJnmuQkbvuZnXItCU7d+i7Fj8VGOgqvNO7Mw4YfBTlZeQw=="],
 
     "npm-run-path/path-key": ["path-key@4.0.0", "", {}, "sha512-haREypq7xkM7ErfgIyA0z+Bj4AGKlMSdlQE2jvJo6huWD1EdkKYV+G/T4nq0YEF2vgTT8kqMFKo1uHn950r4SQ=="],
 
