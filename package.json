@@ -19,7 +19,7 @@
         "lint:fix": "biome lint . --fix --unsafe"
     },
     "dependencies": {
-        "@auth/drizzle-adapter": "^1.10.0",
+        "@auth/drizzle-adapter": "^1.11.0",
         "@hookform/resolvers": "^5.2.2",
         "@paralleldrive/cuid2": "^2.2.2",
         "@radix-ui/react-alert-dialog": "^1.1.15",
