@@ -14,7 +14,7 @@ declare module "next-auth" {
     }
     interface User {
         id: string;
-        publicId: string;
+        // publicId: string;
     }
 }
 
@@ -49,7 +49,7 @@ export const authConfig = {
         async jwt({ token, user }) {
             if (user) {
                 token.id = user.id;
-                token.publicId = user.publicId;
+                // token.publicId = user.publicId;
             }
             return token;
         },
