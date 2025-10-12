@@ -6,6 +6,25 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.12 (October 12, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`2d2528e`](https://github.com/yehezkieldio/topaz/commit/2d2528e5f322e47401ea177a14eb5817dd18cc56) deps: Update dependency lucide-react to ^0.545.0 ([#97](https://github.com/yehezkieldio/topaz/issues/97)) by renovate[bot]
+- [`afa6ef9`](https://github.com/yehezkieldio/topaz/commit/afa6ef93636f384ded7b36b1d2ae8ab7b987815f) deps: Update react monorepo ([#98](https://github.com/yehezkieldio/topaz/issues/98)) by renovate[bot]
+- [`6804f4e`](https://github.com/yehezkieldio/topaz/commit/6804f4e61fd90262ae9680d8fa30e9a45cf40718) deps: Update dependency @auth/drizzle-adapter to ^1.11.0 ([#99](https://github.com/yehezkieldio/topaz/issues/99)) by renovate[bot]
+- [`f30ca32`](https://github.com/yehezkieldio/topaz/commit/f30ca32e30703ea1e91b4170b91e19813b51a814) deps: Update dependency @types/node to ^20.19.20 ([#100](https://github.com/yehezkieldio/topaz/issues/100)) by renovate[bot]
+- [`8c077e5`](https://github.com/yehezkieldio/topaz/commit/8c077e50cfcf99ee694f84c00cfad9979021ec5c) deps: Update tanstack-query monorepo to ^5.90.4 ([#101](https://github.com/yehezkieldio/topaz/issues/101)) by renovate[bot]
+- [`ea30f8e`](https://github.com/yehezkieldio/topaz/commit/ea30f8e5b27a78dd8505c4bbdc2f59fbb9dd1356) deps: Update dependency react-hook-form to ^7.65.0 ([#102](https://github.com/yehezkieldio/topaz/issues/102)) by renovate[bot]
+- [`fa8eb00`](https://github.com/yehezkieldio/topaz/commit/fa8eb00e9de53274f0305d3fd03f83edf8fd7169) deps: Update dependency @types/node to ^20.19.21 ([#103](https://github.com/yehezkieldio/topaz/issues/103)) by renovate[bot]
+- [`faa1ff3`](https://github.com/yehezkieldio/topaz/commit/faa1ff3b4cf88a194f0a86f8fdb361a9b2f7eb1b) deps: Update next and react dependencies
+- [`a2dfea6`](https://github.com/yehezkieldio/topaz/commit/a2dfea6a7ce3927094cd2ea0b387ece3d42886e8) deps: Update dependency next to ^16.0.0-canary.2 ([#104](https://github.com/yehezkieldio/topaz/issues/104)) by renovate[bot]
+
+### <!-- 4 -->🐛 Bug Fixes
+- [`fff1176`](https://github.com/yehezkieldio/topaz/commit/fff117670b5cb4db52b128bc81452635e4fc6196) config: Update jsx setting and include paths
+
+### <!-- 7 -->🚜 Refactor
+- [`5b56c78`](https://github.com/yehezkieldio/topaz/commit/5b56c78c34ad9e52e8fec4dd88448c111ceb9767) config: Remove unused eslint and experimental settings
+- [`cde3106`](https://github.com/yehezkieldio/topaz/commit/cde310685822a4f3a20aa066104b5c0d425ce697) auth: Remove publicId from user interface
 ## topaz@0.2.11 (October 6, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
