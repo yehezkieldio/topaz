@@ -5,9 +5,6 @@ const nextConfig: NextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
-    eslint: {
-        ignoreDuringBuilds: true,
-    },
     images: {
         remotePatterns: [
             {
@@ -18,9 +15,6 @@ const nextConfig: NextConfig = {
     },
     env: {
         NEXT_PUBLIC_VERSION: packageJson.version,
-    },
-    experimental: {
-        clientSegmentCache: true,
     },
 };
 
