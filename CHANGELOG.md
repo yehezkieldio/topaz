@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.2.13 (October 15, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`b8b6512`](https://github.com/yehezkieldio/topaz/commit/b8b6512a5566c8c98b53d27352ca0a72f9dfefd1) deps: Update dependency next to ^16.0.0-canary.3 ([#105](https://github.com/yehezkieldio/topaz/issues/105)) by renovate[bot]
+- [`7a79a5e`](https://github.com/yehezkieldio/topaz/commit/7a79a5e12740283ee1488d14751b155d4cfed442) deps: Update dependency @biomejs/biome to v2.2.6 ([#106](https://github.com/yehezkieldio/topaz/issues/106)) by renovate[bot]
+- [`4dd416d`](https://github.com/yehezkieldio/topaz/commit/4dd416db23a7008542c7cdd44d891933d692c8f2) deps: Update dependency @types/react-dom to ^19.2.2 ([#107](https://github.com/yehezkieldio/topaz/issues/107)) by renovate[bot]
+- [`08a4ab2`](https://github.com/yehezkieldio/topaz/commit/08a4ab2a28ff4c59d86ad737d1d7fd1f76c384a9) deps: Update tanstack-query monorepo ([#108](https://github.com/yehezkieldio/topaz/issues/108)) by renovate[bot]
+- [`2e68fbf`](https://github.com/yehezkieldio/topaz/commit/2e68fbff476f0463536879208bddf11e45017caa) deps: Update dependency fireflyy to ^3.0.4 ([#109](https://github.com/yehezkieldio/topaz/issues/109)) by renovate[bot]
+- [`1d15cb5`](https://github.com/yehezkieldio/topaz/commit/1d15cb52896094b0fed25fd625f44cd3667b17b4) deps: Update dependency next to ^16.0.0-canary.4 ([#110](https://github.com/yehezkieldio/topaz/issues/110)) by renovate[bot]
+- [`2d88e7a`](https://github.com/yehezkieldio/topaz/commit/2d88e7acfe57957ccead8d028623014507dd5a84) deps: Update dependency fireflyy to ^3.0.5 ([#111](https://github.com/yehezkieldio/topaz/issues/111)) by renovate[bot]
+- [`76ff761`](https://github.com/yehezkieldio/topaz/commit/76ff761fb0b3792df3bb01fa61269a41e4dc105d) deps: Update dependency next to ^16.0.0-canary.5 ([#112](https://github.com/yehezkieldio/topaz/issues/112)) by renovate[bot]
+- [`817bc88`](https://github.com/yehezkieldio/topaz/commit/817bc8894233693b09070cf47e72218c79401043) deps: Update dependency next to ^16.0.0-canary.6 ([#113](https://github.com/yehezkieldio/topaz/issues/113)) by renovate[bot]
 ## topaz@0.2.12 (October 12, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
