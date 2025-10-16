@@ -3,7 +3,7 @@ import { type SQL, and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-o
 import z from "zod/v4";
 import { sortOrderEnum } from "#/lib/utils";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "#/server/api/trpc";
-import { type CacheConfig, CacheKeys, CacheManager } from "#/server/cache/manager";
+import { CacheManager } from "#/server/cache/manager";
 import { type ProgressSortBy, progressSortByEnum, progressStatusEnum, progresses } from "#/server/db/schema/progress";
 import { sourceEnum } from "#/server/db/schema/story";
 import { getSortColumn, libraryMaterializedView } from "#/server/db/schema/view";
@@ -18,19 +18,6 @@ const DEFAULT_LIMIT = 20;
 
 const PUBLIC_ID_MIN = 1;
 const PUBLIC_ID_MAX = 50;
-
-const TTL_BASE = 60; // seconds
-const TTL_FILTER_MULTIPLIER = 3;
-const TTL_FIRST_PAGE_MULTIPLIER = 5;
-const TTL_DEFAULT_MULTIPLIER = 2;
-
-const TTL_FILTER = TTL_BASE * TTL_FILTER_MULTIPLIER;
-const TTL_FIRST_PAGE = TTL_BASE * TTL_FIRST_PAGE_MULTIPLIER;
-const TTL_DEFAULT = TTL_BASE * TTL_DEFAULT_MULTIPLIER;
-const TTL_SEARCH = TTL_BASE;
-
-const SWR_SEARCH = 30; // stale-while-revalidate for search
-const SWR_DEFAULT = 60;
 
 export type ProgressQueryResult = {
     data: Array<{
@@ -363,156 +350,108 @@ export const progressRouter = createTRPCRouter({
             };
         }
 
-        const queryParams = {
-            search: search || "",
-            status: filterInput.status || [],
-            source: filterInput.source || [],
-            isNsfw: filterInput.isNsfw,
-            minRating: filterInput.minRating,
-            maxRating: filterInput.maxRating,
-            hasNotes: filterInput.hasNotes,
-            completedOnly: filterInput.completedOnly,
-            inProgressOnly: filterInput.inProgressOnly,
-            sortBy,
-            sortOrder,
-            cursor: cursor || "",
-            limit: effectiveLimit,
+        const cursorData = parseCursor(cursor);
+        const whereConditions = buildWhereConditions({ search, ...filterInput }, cursorData, sortBy, sortOrder);
+        const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+        const hasValidSearch = sanitizedSearch && sanitizedSearch.length > 0;
+
+        const baseSelectFields = {
+            progressPublicId: libraryMaterializedView.progressPublicId,
+            storyPublicId: libraryMaterializedView.storyPublicId,
+            storyTitle: libraryMaterializedView.storyTitle,
+            storyAuthor: libraryMaterializedView.storyAuthor,
+            progressStatus: libraryMaterializedView.progressStatus,
+            progressCurrentChapter: libraryMaterializedView.progressCurrentChapter,
+            progressRating: libraryMaterializedView.progressRating,
+            storyStatus: libraryMaterializedView.storyStatus,
+            updatedAt: libraryMaterializedView.updatedAt,
+            tags: libraryMaterializedView.tags,
+            fandoms: libraryMaterializedView.fandoms,
         };
 
-        const cacheKey = CacheKeys.progress.all(
-            queryParams.search,
-            JSON.stringify(queryParams.status),
-            queryParams.sortBy,
-            queryParams.sortOrder,
-            queryParams.cursor,
-        );
-
-        const isFirstPage = !cursor;
-        const hasFilters = Object.values(filterInput).some((v) => v !== undefined);
-        const hasSearch = Boolean(sanitizedSearch);
-
-        const cacheConfig: CacheConfig = {
-            ttl: hasSearch ? TTL_SEARCH : hasFilters ? TTL_FILTER : isFirstPage ? TTL_FIRST_PAGE : TTL_DEFAULT,
-            compress: true,
-            jitter: true,
-            staleWhileRevalidate: hasSearch ? SWR_SEARCH : SWR_DEFAULT,
-            snapshot: false,
+        const selectFields = {
+            ...baseSelectFields,
+            ...((!hasValidSearch || sortBy === "updatedAt") && {
+                storySource: libraryMaterializedView.storySource,
+                storyUrl: libraryMaterializedView.storyUrl,
+                storyChapterCount: libraryMaterializedView.storyChapterCount,
+                storyWordCount: libraryMaterializedView.storyWordCount,
+                storyIsNsfw: libraryMaterializedView.storyIsNsfw,
+                storyDescription: libraryMaterializedView.storyDescription,
+                progressNotes: libraryMaterializedView.progressNotes,
+                createdAt: libraryMaterializedView.createdAt,
+            }),
+            ...(hasValidSearch && {
+                relevanceScore: sql<number>`
+                        CASE
+                            WHEN ${libraryMaterializedView.storyTitle} ILIKE ${sanitizedSearch} THEN 100
+                            WHEN ${libraryMaterializedView.storyTitle} ILIKE ${`${sanitizedSearch}%`} THEN 90
+                            WHEN ${libraryMaterializedView.storyAuthor} ILIKE ${sanitizedSearch} THEN 85
+                            ELSE 50 + similarity(${libraryMaterializedView.storyTitle}, ${sanitizedSearch}) * 25
+                        END
+                    `.as("relevance_score"),
+            }),
         };
 
-        return await CacheManager.getWithSingleflight(
-            "progress",
-            cacheKey,
-            async () => {
-                const cursorData = parseCursor(cursor);
-                const whereConditions = buildWhereConditions({ search, ...filterInput }, cursorData, sortBy, sortOrder);
-                const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+        const baseQuery = ctx.db.select(selectFields).from(libraryMaterializedView).where(whereClause);
 
-                const sanitizedSearch = search?.trim() ? sanitizeSearchInput(search) : undefined;
-                const hasValidSearch = sanitizedSearch && sanitizedSearch.length > 0;
+        let orderByClause: SQL[];
+        if (hasValidSearch && (sortBy === "title" || sortBy === "author")) {
+            const relevanceExpression = sql`
+                    CASE
+                        WHEN ${libraryMaterializedView.storyTitle} ILIKE ${sanitizedSearch} THEN 100
+                        WHEN ${libraryMaterializedView.storyTitle} ILIKE ${`${sanitizedSearch}%`} THEN 90
+                        WHEN ${libraryMaterializedView.storyAuthor} ILIKE ${sanitizedSearch} THEN 85
+                        WHEN ${libraryMaterializedView.storyTitle} ILIKE ${`%${sanitizedSearch}%`} THEN 80
+                        WHEN ${libraryMaterializedView.storyAuthor} ILIKE ${`%${sanitizedSearch}%`} THEN 75
+                        WHEN ${libraryMaterializedView.searchVector} @@ websearch_to_tsquery('english', ${sanitizedSearch}) THEN
+                            60 + ts_rank(${libraryMaterializedView.searchVector}, websearch_to_tsquery('english', ${sanitizedSearch})) * 40
+                        WHEN ${libraryMaterializedView.storyTitle} % ${sanitizedSearch} THEN
+                            50 + similarity(${libraryMaterializedView.storyTitle}, ${sanitizedSearch}) * 25
+                        WHEN ${libraryMaterializedView.storyAuthor} % ${sanitizedSearch} THEN
+                            45 + similarity(${libraryMaterializedView.storyAuthor}, ${sanitizedSearch}) * 25
+                        WHEN ${libraryMaterializedView.progressNotes} ILIKE ${`%${sanitizedSearch}%`} THEN 30
+                        ELSE 0
+                    END
+                `;
+            const secondarySort = getSortColumn(sortBy);
+            const tiebreaker =
+                sortOrder === "asc"
+                    ? asc(libraryMaterializedView.progressPublicId)
+                    : desc(libraryMaterializedView.progressPublicId);
 
-                const baseSelectFields = {
-                    progressPublicId: libraryMaterializedView.progressPublicId,
-                    storyPublicId: libraryMaterializedView.storyPublicId,
-                    storyTitle: libraryMaterializedView.storyTitle,
-                    storyAuthor: libraryMaterializedView.storyAuthor,
-                    progressStatus: libraryMaterializedView.progressStatus,
-                    progressCurrentChapter: libraryMaterializedView.progressCurrentChapter,
-                    progressRating: libraryMaterializedView.progressRating,
-                    storyStatus: libraryMaterializedView.storyStatus,
-                    updatedAt: libraryMaterializedView.updatedAt,
-                    tags: libraryMaterializedView.tags,
-                    fandoms: libraryMaterializedView.fandoms,
-                };
+            orderByClause =
+                sortOrder === "asc"
+                    ? [desc(relevanceExpression), asc(secondarySort), tiebreaker]
+                    : [desc(relevanceExpression), desc(secondarySort), tiebreaker];
+        } else {
+            const sortColumn = getSortColumn(sortBy);
+            const tiebreaker =
+                sortOrder === "asc"
+                    ? asc(libraryMaterializedView.progressPublicId)
+                    : desc(libraryMaterializedView.progressPublicId);
 
-                const selectFields = {
-                    ...baseSelectFields,
-                    ...((!hasSearch || sortBy === "updatedAt") && {
-                        storySource: libraryMaterializedView.storySource,
-                        storyUrl: libraryMaterializedView.storyUrl,
-                        storyChapterCount: libraryMaterializedView.storyChapterCount,
-                        storyWordCount: libraryMaterializedView.storyWordCount,
-                        storyIsNsfw: libraryMaterializedView.storyIsNsfw,
-                        storyDescription: libraryMaterializedView.storyDescription,
-                        progressNotes: libraryMaterializedView.progressNotes,
-                        createdAt: libraryMaterializedView.createdAt,
-                    }),
-                    ...(hasValidSearch && {
-                        relevanceScore: sql<number>`
-                                CASE
-                                    WHEN ${libraryMaterializedView.storyTitle} ILIKE ${sanitizedSearch} THEN 100
-                                    WHEN ${libraryMaterializedView.storyTitle} ILIKE ${`${sanitizedSearch}%`} THEN 90
-                                    WHEN ${libraryMaterializedView.storyAuthor} ILIKE ${sanitizedSearch} THEN 85
-                                    ELSE 50 + similarity(${libraryMaterializedView.storyTitle}, ${sanitizedSearch}) * 25
-                                END
-                            `.as("relevance_score"),
-                    }),
-                };
+            orderByClause = sortOrder === "asc" ? [asc(sortColumn), tiebreaker] : [desc(sortColumn), tiebreaker];
+        }
 
-                const baseQuery = ctx.db.select(selectFields).from(libraryMaterializedView).where(whereClause);
+        const results = await baseQuery.orderBy(...orderByClause).limit(effectiveLimit + 1);
 
-                let orderByClause: SQL[];
-                if (hasValidSearch && (sortBy === "title" || sortBy === "author")) {
-                    const relevanceExpression = sql`
-                            CASE
-                                WHEN ${libraryMaterializedView.storyTitle} ILIKE ${sanitizedSearch} THEN 100
-                                WHEN ${libraryMaterializedView.storyTitle} ILIKE ${`${sanitizedSearch}%`} THEN 90
-                                WHEN ${libraryMaterializedView.storyAuthor} ILIKE ${sanitizedSearch} THEN 85
-                                WHEN ${libraryMaterializedView.storyTitle} ILIKE ${`%${sanitizedSearch}%`} THEN 80
-                                WHEN ${libraryMaterializedView.storyAuthor} ILIKE ${`%${sanitizedSearch}%`} THEN 75
-                                WHEN ${libraryMaterializedView.searchVector} @@ websearch_to_tsquery('english', ${sanitizedSearch}) THEN
-                                    60 + ts_rank(${libraryMaterializedView.searchVector}, websearch_to_tsquery('english', ${sanitizedSearch})) * 40
-                                WHEN ${libraryMaterializedView.storyTitle} % ${sanitizedSearch} THEN
-                                    50 + similarity(${libraryMaterializedView.storyTitle}, ${sanitizedSearch}) * 25
-                                WHEN ${libraryMaterializedView.storyAuthor} % ${sanitizedSearch} THEN
-                                    45 + similarity(${libraryMaterializedView.storyAuthor}, ${sanitizedSearch}) * 25
-                                WHEN ${libraryMaterializedView.progressNotes} ILIKE ${`%${sanitizedSearch}%`} THEN 30
-                                ELSE 0
-                            END
-                        `;
-                    const secondarySort = getSortColumn(sortBy);
-                    const tiebreaker =
-                        sortOrder === "asc"
-                            ? asc(libraryMaterializedView.progressPublicId)
-                            : desc(libraryMaterializedView.progressPublicId);
+        const hasNextPage = results.length > effectiveLimit;
+        const items = hasNextPage ? results.slice(0, effectiveLimit) : results;
+        const mappedItems = items.map((item) => ({
+            ...item,
+            tags: Array.isArray(item.tags) ? item.tags : [],
+        }));
+        const nextCursor = hasNextPage ? generateNextCursor(mappedItems, sortBy) : undefined;
 
-                    orderByClause =
-                        sortOrder === "asc"
-                            ? [desc(relevanceExpression), asc(secondarySort), tiebreaker]
-                            : [desc(relevanceExpression), desc(secondarySort), tiebreaker];
-                } else {
-                    const sortColumn = getSortColumn(sortBy);
-                    const tiebreaker =
-                        sortOrder === "asc"
-                            ? asc(libraryMaterializedView.progressPublicId)
-                            : desc(libraryMaterializedView.progressPublicId);
-
-                    orderByClause =
-                        sortOrder === "asc" ? [asc(sortColumn), tiebreaker] : [desc(sortColumn), tiebreaker];
-                }
-
-                const results = await baseQuery.orderBy(...orderByClause).limit(effectiveLimit + 1);
-
-                const hasNextPage = results.length > effectiveLimit;
-                const items = hasNextPage ? results.slice(0, effectiveLimit) : results;
-                const mappedItems = items.map((item) => ({
-                    ...item,
-                    tags: Array.isArray(item.tags) ? item.tags : [],
-                }));
-                const nextCursor = hasNextPage ? generateNextCursor(mappedItems, sortBy) : undefined;
-
-                const result = {
-                    data: mappedItems,
-                    meta: {
-                        hasNextPage,
-                        nextCursor,
-                        ...(hasValidSearch && { searchTerm: sanitizedSearch }),
-                    },
-                };
-
-                return result;
+        return {
+            data: mappedItems,
+            meta: {
+                hasNextPage,
+                nextCursor,
+                ...(hasValidSearch && { searchTerm: sanitizedSearch }),
             },
-            cacheConfig,
-            ["progress"],
-        );
+        };
     }),
 });
