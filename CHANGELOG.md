@@ -6,6 +6,20 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.3.0 (October 16, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`d75938a`](https://github.com/yehezkieldio/topaz/commit/d75938ae25c9398e31f00e2e911494b0c643da51) deps: Update dependency next to ^16.0.0-canary.7 ([#114](https://github.com/yehezkieldio/topaz/issues/114)) by renovate[bot]
+- [`27c8243`](https://github.com/yehezkieldio/topaz/commit/27c8243f94db9977e14cbeff45f0051b6b2b60b6) deps: Update dependency next to ^16.0.0-canary.8 ([#115](https://github.com/yehezkieldio/topaz/issues/115)) by renovate[bot]
+- [`aacfbe9`](https://github.com/yehezkieldio/topaz/commit/aacfbe926796853c06c992e82004b9f1e5d7ae64) deps: Update dependency nuqs to v2.7.2 ([#116](https://github.com/yehezkieldio/topaz/issues/116)) by renovate[bot]
+- [`010dc51`](https://github.com/yehezkieldio/topaz/commit/010dc51ee22f380b533dda8cba828009e1fee8e6) deps: Update dependency next to ^16.0.0-canary.9 ([#117](https://github.com/yehezkieldio/topaz/issues/117)) by renovate[bot]
+- [`6237011`](https://github.com/yehezkieldio/topaz/commit/623701123ce128eb8a57902ce1e20435e4196e60) deps: Update tanstack-query monorepo ([#118](https://github.com/yehezkieldio/topaz/issues/118)) by renovate[bot]
+
+### <!-- 4 -->🐛 Bug Fixes
+- [`412648d`](https://github.com/yehezkieldio/topaz/commit/412648dc246a98021c00efd33768bc409902abef) library: Handle loading state for next page fetch
+
+### <!-- 7 -->🚜 Refactor
+- [`b802bfa`](https://github.com/yehezkieldio/topaz/commit/b802bfa395c85567e9b0766035ce049e2710ad3e) api: Disable progres router caching
 ## topaz@0.2.13 (October 15, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
