@@ -19,6 +19,7 @@ type LibraryListItemProps = {
     handleEdit: (item: LibraryItemType) => void;
     handleDelete: (item: LibraryItemType) => void;
     measureElement: (element: Element | null) => void;
+    scrollContainerRef: React.RefObject<HTMLDivElement | null>;
     onInView?: () => void;
 };
 
@@ -34,28 +35,29 @@ export const LibraryListItem = memo(function LibraryListItem({
     handleEdit,
     handleDelete,
     measureElement,
+    scrollContainerRef,
     onInView,
 }: LibraryListItemProps) {
     const sentinelRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        if (!(onInView && sentinelRef.current)) return;
+        if (!(onInView && sentinelRef.current && scrollContainerRef.current)) return;
         const el = sentinelRef.current;
-        const root = el.parentElement;
+        const scrollContainer = scrollContainerRef.current;
 
         const obs = new IntersectionObserver(
             (entries) => {
                 if (entries[0]?.isIntersecting) onInView();
             },
             {
-                root,
+                root: scrollContainer,
                 rootMargin: "600px 0px",
                 threshold: 0,
             },
         );
         obs.observe(el);
         return () => obs.disconnect();
-    }, [onInView]);
+    }, [onInView, scrollContainerRef]);
 
     return (
         <div

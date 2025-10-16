@@ -77,6 +77,7 @@ function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
     const [isViewSheetOpen, setIsViewSheetOpen] = useState(false);
     const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const isLoadingNextPageRef = useRef(false);
 
     const itemHeight = isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_ITEM_HEIGHT;
 
@@ -115,9 +116,15 @@ function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
         fetchNextPage();
     }, [fetchNextPage]);
 
-    const onLoaderInView = useCallback(() => {
-        if (!hasNextPage || isFetchingNextPage) return;
-        fetchNextPage();
+    const onLoaderInView = useCallback(async () => {
+        if (!hasNextPage || isFetchingNextPage || isLoadingNextPageRef.current) return;
+
+        isLoadingNextPageRef.current = true;
+        try {
+            await fetchNextPage();
+        } finally {
+            isLoadingNextPageRef.current = false;
+        }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
     const measureElementStable = useMemo(() => virtualizer.measureElement, [virtualizer.measureElement]);
@@ -179,6 +186,7 @@ function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
                             key={virtualItem.key}
                             measureElement={measureElementStable}
                             onInView={isLoaderRow ? onLoaderInView : undefined}
+                            scrollContainerRef={parentRef}
                             virtualItem={virtualItem}
                         />
                     );
