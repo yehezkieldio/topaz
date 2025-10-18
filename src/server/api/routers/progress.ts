@@ -49,8 +49,8 @@ export type ProgressQueryResult = {
 };
 
 type CursorData = {
-    type: "string" | "number" | "date";
-    value: string | number;
+    type: "string" | "number" | "date" | "boolean";
+    value: string | number | boolean;
     id: string;
 };
 
@@ -85,6 +85,13 @@ function createCursor(sortBy: ProgressSortBy, sortValue: unknown, id: string): s
                 id,
             };
             break;
+        case "isNsfw":
+            cursorData = {
+                type: "boolean",
+                value: Boolean(sortValue),
+                id,
+            };
+            break;
         default:
             cursorData = {
                 type: "string",
@@ -110,7 +117,10 @@ function parseCursor(cursor: string | undefined): CursorData | null {
             "value" in parsed &&
             "id" in parsed &&
             typeof parsed.id === "string" &&
-            (parsed.type === "string" || parsed.type === "number" || parsed.type === "date")
+            (parsed.type === "string" ||
+                parsed.type === "number" ||
+                parsed.type === "date" ||
+                parsed.type === "boolean")
         ) {
             return parsed as CursorData;
         }
@@ -132,6 +142,9 @@ function createCursorPredicate(cursorData: CursorData, sortBy: ProgressSortBy, s
             break;
         case "date":
             typedValue = sql`${new Date(String(value)).toISOString()}::timestamp`;
+            break;
+        case "boolean":
+            typedValue = sql`${Boolean(value)}`;
             break;
         default:
             typedValue = sql`${String(value)}`;
@@ -260,13 +273,20 @@ function generateNextCursor(items: Record<string, unknown>[], sortBy: ProgressSo
     if (!lastItem) return;
 
     let sortValue: unknown;
-    if (sortBy === "progress") {
-        const storyChapterCount = Number(lastItem.storyChapterCount) || 0;
-        const progressCurrentChapter = Number(lastItem.progressCurrentChapter) || 0;
-        const progress = storyChapterCount > 0 ? progressCurrentChapter / storyChapterCount : 0;
-        sortValue = progress;
-    } else {
-        sortValue = lastItem[sortBy as keyof typeof lastItem];
+    switch (sortBy) {
+        case "progress": {
+            const storyChapterCount = Number(lastItem.storyChapterCount) || 0;
+            const progressCurrentChapter = Number(lastItem.progressCurrentChapter) || 0;
+            const progress = storyChapterCount > 0 ? progressCurrentChapter / storyChapterCount : 0;
+            sortValue = progress;
+            break;
+        }
+        case "isNsfw":
+            sortValue = Boolean(lastItem.storyIsNsfw);
+            break;
+        default:
+            sortValue = lastItem[sortBy as keyof typeof lastItem];
+            break;
     }
 
     const id = String(lastItem.progressPublicId);
@@ -366,6 +386,7 @@ export const progressRouter = createTRPCRouter({
             progressRating: libraryMaterializedView.progressRating,
             storyStatus: libraryMaterializedView.storyStatus,
             updatedAt: libraryMaterializedView.updatedAt,
+            storyIsNsfw: libraryMaterializedView.storyIsNsfw,
             tags: libraryMaterializedView.tags,
             fandoms: libraryMaterializedView.fandoms,
         };
@@ -377,7 +398,6 @@ export const progressRouter = createTRPCRouter({
                 storyUrl: libraryMaterializedView.storyUrl,
                 storyChapterCount: libraryMaterializedView.storyChapterCount,
                 storyWordCount: libraryMaterializedView.storyWordCount,
-                storyIsNsfw: libraryMaterializedView.storyIsNsfw,
                 storyDescription: libraryMaterializedView.storyDescription,
                 progressNotes: libraryMaterializedView.progressNotes,
                 createdAt: libraryMaterializedView.createdAt,

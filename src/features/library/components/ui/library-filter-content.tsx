@@ -29,6 +29,7 @@ export const SORT_OPTIONS: SortOption[] = [
     { value: "createdAt", label: "Date Added" },
     { value: "wordCount", label: "Word Count" },
     { value: "chapterCount", label: "Chapter Count" },
+    { value: "isNsfw", label: "NSFW" },
 ] as const;
 
 export type StatusOption = {

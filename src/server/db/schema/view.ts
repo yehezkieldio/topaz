@@ -117,7 +117,7 @@ export const libraryStatsMaterializedView = pgMaterializedView("library_stats_mv
 
 const sortColumnMap: Record<
     ProgressSortBy,
-    SQL<unknown> | SQL.Aliased<string> | SQL.Aliased<number> | SQL.Aliased<Date>
+    SQL<unknown> | SQL.Aliased<string> | SQL.Aliased<number> | SQL.Aliased<Date> | SQL.Aliased<boolean>
 > = {
     title: libraryMaterializedView.storyTitle,
     author: libraryMaterializedView.storyAuthor,
@@ -132,10 +132,11 @@ const sortColumnMap: Record<
     createdAt: libraryMaterializedView.createdAt,
     wordCount: libraryMaterializedView.storyWordCount,
     chapterCount: libraryMaterializedView.storyChapterCount,
+    isNsfw: libraryMaterializedView.storyIsNsfw,
 };
 
 export function getSortColumn(
     sortBy: ProgressSortBy,
-): SQL<unknown> | SQL.Aliased<string> | SQL.Aliased<number> | SQL.Aliased<Date> {
+): SQL<unknown> | SQL.Aliased<string> | SQL.Aliased<number> | SQL.Aliased<Date> | SQL.Aliased<boolean> {
     return sortColumnMap[sortBy];
 }

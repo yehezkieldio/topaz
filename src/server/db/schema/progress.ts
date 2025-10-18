@@ -38,6 +38,7 @@ export const progressSortByEnum = z4.enum([
     "createdAt",
     "wordCount",
     "chapterCount",
+    "isNsfw",
 ]);
 
 export type ProgressSortBy = z4.infer<typeof progressSortByEnum>;
