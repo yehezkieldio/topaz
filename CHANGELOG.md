@@ -6,6 +6,17 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.4.0 (October 18, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`595372f`](https://github.com/yehezkieldio/topaz/commit/595372fafadfc197b36b70b6d01e5954f04c7ad8) deps: Update dependency lucide-react to ^0.546.0 ([#119](https://github.com/yehezkieldio/topaz/issues/119)) by renovate[bot]
+- [`484a4be`](https://github.com/yehezkieldio/topaz/commit/484a4be21730f8014ae8ee3d6464925bc62a91c3) deps: Update dependency @types/node to ^20.19.22 ([#120](https://github.com/yehezkieldio/topaz/issues/120)) by renovate[bot]
+- [`b846664`](https://github.com/yehezkieldio/topaz/commit/b84666423c827a4f9f0751a912a1dfa4ab9ea75c) deps: Update dependency next to ^16.0.0-canary.10 ([#121](https://github.com/yehezkieldio/topaz/issues/121)) by renovate[bot]
+- [`79cf66f`](https://github.com/yehezkieldio/topaz/commit/79cf66f3563c62d7a2fe874758e770450a00987a) deps: Update dependency next to ^16.0.0-canary.11 ([#122](https://github.com/yehezkieldio/topaz/issues/122)) by renovate[bot]
+- [`10782da`](https://github.com/yehezkieldio/topaz/commit/10782da0010a4269e7cadc25ade4f857a053e26a) deps: Update dependency next to ^16.0.0-canary.12 ([#123](https://github.com/yehezkieldio/topaz/issues/123)) by renovate[bot]
+
+### <!-- 3 -->🚀 New Features
+- [`44c8250`](https://github.com/yehezkieldio/topaz/commit/44c82507f717b554ad950be5f7cfa693b5529d5c) library: Add NSFW sort option and update progress types
 ## topaz@0.3.0 (October 16, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
