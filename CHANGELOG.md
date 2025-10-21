@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.4.1 (October 21, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`ee4ed37`](https://github.com/yehezkieldio/topaz/commit/ee4ed3714a856f65039c514c10ec20ef9402fcc7) deps: Update dependency next to ^16.0.0-canary.13 ([#124](https://github.com/yehezkieldio/topaz/issues/124)) by renovate[bot]
+- [`07fafa4`](https://github.com/yehezkieldio/topaz/commit/07fafa471964b3eaa7cd7f8987b58fbbc2db75eb) deps: Update dependency next to ^16.0.0-canary.14 ([#125](https://github.com/yehezkieldio/topaz/issues/125)) by renovate[bot]
+- [`61921e1`](https://github.com/yehezkieldio/topaz/commit/61921e155cab01d612f9b15521f0022259c035ca) deps: Update dependency next to ^16.0.0-canary.15 ([#126](https://github.com/yehezkieldio/topaz/issues/126)) by renovate[bot]
+- [`958f8a0`](https://github.com/yehezkieldio/topaz/commit/958f8a07a90522d7fc4d8997ba9367b78724d876) deps: Update tailwindcss monorepo to ^4.1.15 ([#127](https://github.com/yehezkieldio/topaz/issues/127)) by renovate[bot]
+- [`95651e3`](https://github.com/yehezkieldio/topaz/commit/95651e30537ae9bd906192fc8a4e26f86c097873) deps: Update dependency @types/node to ^20.19.23 ([#128](https://github.com/yehezkieldio/topaz/issues/128)) by renovate[bot]
+- [`2492325`](https://github.com/yehezkieldio/topaz/commit/2492325ef1010f34c19e542471f0c28277398e30) deps: Update dependency next to ^16.0.0-canary.16 ([#129](https://github.com/yehezkieldio/topaz/issues/129)) by renovate[bot]
 ## topaz@0.4.0 (October 18, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
