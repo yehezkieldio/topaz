@@ -1,6 +1,7 @@
 import { isDevelopment } from "#/env";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "#/server/api/trpc";
 import { invalidateLibraryStats } from "#/server/cache/actions";
+import { getCachedLibraryStats } from "#/server/cache/stats";
 import { libraryMaterializedView, libraryStatsMaterializedView } from "#/server/db/schema/view";
 
 export const viewRouter = createTRPCRouter({
@@ -37,8 +38,8 @@ export const viewRouter = createTRPCRouter({
 
         return { success: true };
     }),
-    getStats: publicProcedure.query(async ({ ctx }) => {
-        const stats = await ctx.db.select().from(libraryStatsMaterializedView);
-        return stats[0] || {};
+    getStats: publicProcedure.query(async () => {
+        // Use cached stats for better performance
+        return await getCachedLibraryStats();
     }),
 });
