@@ -1,8 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
-import { invalidateHotTags, invalidateTagSearch } from "#/server/cache/actions";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
+import { invalidateHotTags, invalidateTagSearch } from "#/server/cache/actions";
 import { storyTags } from "#/server/db/schema/story";
 import { tagCreateSchema, tagUpdateSchema, tags } from "#/server/db/schema/tag";
 

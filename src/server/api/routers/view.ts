@@ -1,16 +1,16 @@
 import { isDevelopment } from "#/env";
-import { invalidateLibraryStats } from "#/server/cache/actions";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "#/server/api/trpc";
+import { invalidateLibraryStats } from "#/server/cache/actions";
 import { libraryMaterializedView, libraryStatsMaterializedView } from "#/server/db/schema/view";
 
 export const viewRouter = createTRPCRouter({
     refreshAll: protectedProcedure.mutation(async ({ ctx }) => {
         await ctx.db.refreshMaterializedView(libraryMaterializedView).concurrently();
         await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
-        
+
         // Invalidate cache after refreshing materialized views
         await invalidateLibraryStats();
-        
+
         if (isDevelopment === false) {
             console.log("[trpc] Refreshed all materialized views");
         }
@@ -27,10 +27,10 @@ export const viewRouter = createTRPCRouter({
     }),
     refreshLibraryStats: protectedProcedure.mutation(async ({ ctx }) => {
         await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
-        
+
         // Invalidate cache after refreshing stats
         await invalidateLibraryStats();
-        
+
         if (isDevelopment === false) {
             console.log("[trpc] Refreshed user library stats materialized view");
         }

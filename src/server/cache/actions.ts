@@ -4,10 +4,10 @@ import { revalidateTag } from "next/cache";
 
 /**
  * Server actions for cache invalidation.
- * 
+ *
  * These actions use revalidateTag() to invalidate specific cache entries
  * when data changes (e.g., after creating, updating, or deleting resources).
- * 
+ *
  * The "max" profile is used for stale-while-revalidate behavior.
  */
 

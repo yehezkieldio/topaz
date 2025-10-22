@@ -1,8 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
-import { invalidateFandomSearch, invalidateHotFandoms } from "#/server/cache/actions";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
+import { invalidateFandomSearch, invalidateHotFandoms } from "#/server/cache/actions";
 import { fandomCreateSchema, fandomUpdateSchema, fandoms } from "#/server/db/schema/fandom";
 import { storyFandoms } from "#/server/db/schema/story";
 
