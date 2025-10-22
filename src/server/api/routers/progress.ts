@@ -3,7 +3,6 @@ import { type SQL, and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-o
 import z from "zod/v4";
 import { sortOrderEnum } from "#/lib/utils";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "#/server/api/trpc";
-import { CacheManager } from "#/server/cache/manager";
 import { type ProgressSortBy, progressSortByEnum, progressStatusEnum, progresses } from "#/server/db/schema/progress";
 import { sourceEnum } from "#/server/db/schema/story";
 import { getSortColumn, libraryMaterializedView } from "#/server/db/schema/view";
@@ -348,8 +347,6 @@ export const progressRouter = createTRPCRouter({
                     message: "Progress not found",
                 });
             }
-
-            await CacheManager.invalidateView();
 
             return deletedProgress;
         }),

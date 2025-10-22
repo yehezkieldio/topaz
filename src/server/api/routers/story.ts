@@ -3,7 +3,6 @@ import { eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { formatRating } from "#/lib/utils";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
-import { CacheManager } from "#/server/cache/manager";
 import { fandoms } from "#/server/db/schema/fandom";
 import { progressStatusEnum, progresses } from "#/server/db/schema/progress";
 import {
@@ -40,8 +39,6 @@ export const storyRouter = createTRPCRouter({
                     message: "Story not found",
                 });
             }
-
-            await CacheManager.invalidateStory(input.publicId);
 
             return deletedStory;
         }),
@@ -93,8 +90,6 @@ export const storyRouter = createTRPCRouter({
                     message: "Story not found",
                 });
             }
-
-            await CacheManager.invalidateStory(publicId);
 
             return updatedStory;
         });
@@ -237,9 +232,6 @@ export const storyRouter = createTRPCRouter({
                 updatedFandoms: resolvedFandoms.map((f) => f.publicId),
             };
 
-            await CacheManager.invalidateStory(storyPublicId);
-            await CacheManager.invalidateView();
-
             return result;
         });
     }),
@@ -313,8 +305,6 @@ export const storyRouter = createTRPCRouter({
                     })),
                 );
             }
-
-            await CacheManager.invalidateStory(newStory.publicId);
 
             return newStory;
         });
@@ -420,8 +410,6 @@ export const storyRouter = createTRPCRouter({
                         message: "Failed to create progress",
                     });
                 }
-
-                await Promise.all([CacheManager.invalidateStory(), CacheManager.invalidateView()]);
 
                 return {
                     story: newStory,

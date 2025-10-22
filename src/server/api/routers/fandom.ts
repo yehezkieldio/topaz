@@ -2,7 +2,6 @@ import { TRPCError } from "@trpc/server";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
-import { type CacheConfig, CacheKeys, CacheManager } from "#/server/cache/manager";
 import { fandomCreateSchema, fandomUpdateSchema, fandoms } from "#/server/db/schema/fandom";
 import { storyFandoms } from "#/server/db/schema/story";
 
@@ -13,7 +12,6 @@ const MULTISELECT_LIMIT_DEFAULT = 10;
 const HOT_LIMIT_MIN = 1;
 const HOT_LIMIT_MAX = 20;
 const HOT_LIMIT_DEFAULT = 8;
-const CACHE_TTL_SECONDS_FIVE_MINUTES = 300; // 5 minutes
 const FANDOM_NAME_MIN = 1;
 const FANDOM_NAME_MAX = 255;
 
@@ -36,8 +34,6 @@ export const fandomRouter = createTRPCRouter({
                     message: "Fandom not found",
                 });
             }
-
-            await CacheManager.invalidateFandom(input.publicId);
 
             return deletedFandom;
         }),
@@ -90,8 +86,6 @@ export const fandomRouter = createTRPCRouter({
                 });
             }
 
-            await CacheManager.invalidateFandom(publicId);
-
             return updatedFandom;
         });
     }),
@@ -122,8 +116,6 @@ export const fandomRouter = createTRPCRouter({
                 });
             }
 
-            await CacheManager.invalidateFandom(newFandom.publicId);
-
             return newFandom;
         });
     }),
@@ -143,82 +135,67 @@ export const fandomRouter = createTRPCRouter({
         .query(async ({ ctx, input }) => {
             const { search, limit, includeHot, hotLimit } = input;
 
-            const cacheKey = CacheKeys.fandom.forMultiselect(search || "", limit, includeHot, hotLimit);
-            const cacheTags = ["fandom", "multiselect"];
-            const cacheConfig: CacheConfig = {
-                ttl: CACHE_TTL_SECONDS_FIVE_MINUTES,
-                jitter: true,
+            let result: {
+                fandoms: { publicId: string; name: string }[];
+                canCreate: boolean;
+                searchTerm: string | null;
             };
 
-            return await CacheManager.getWithSingleflight(
-                "fandom",
-                cacheKey,
-                async () => {
-                    let result: {
-                        fandoms: { publicId: string; name: string }[];
-                        canCreate: boolean;
-                        searchTerm: string | null;
-                    };
+            if ((!search || search.trim().length === 0) && includeHot) {
+                result = {
+                    fandoms: await ctx.db
+                        .select({
+                            publicId: fandoms.publicId,
+                            name: fandoms.name,
+                        })
+                        .from(fandoms)
+                        .leftJoin(storyFandoms, eq(fandoms.id, storyFandoms.fandomId))
+                        .groupBy(fandoms.id, fandoms.publicId, fandoms.name)
+                        .orderBy(desc(sql`COUNT(${storyFandoms.fandomId})`), asc(fandoms.name))
+                        .limit(hotLimit),
+                    canCreate: false,
+                    searchTerm: null,
+                };
+            } else if (!search || search.trim().length === 0) {
+                result = {
+                    fandoms: [],
+                    canCreate: false,
+                    searchTerm: null,
+                };
+            } else {
+                const term = search.trim();
+                const normalizedTerm = term.toLowerCase();
+                const similarityExpr = sql<number>`similarity(LOWER(${fandoms.name}), ${normalizedTerm})`;
+                const minSimilarity = term.length < 4 ? 0.1 : 0.2;
 
-                    if ((!search || search.trim().length === 0) && includeHot) {
-                        result = {
-                            fandoms: await ctx.db
-                                .select({
-                                    publicId: fandoms.publicId,
-                                    name: fandoms.name,
-                                })
-                                .from(fandoms)
-                                .leftJoin(storyFandoms, eq(fandoms.id, storyFandoms.fandomId))
-                                .groupBy(fandoms.id, fandoms.publicId, fandoms.name)
-                                .orderBy(desc(sql`COUNT(${storyFandoms.fandomId})`), asc(fandoms.name))
-                                .limit(hotLimit),
-                            canCreate: false,
-                            searchTerm: null,
-                        };
-                    } else if (!search || search.trim().length === 0) {
-                        result = {
-                            fandoms: [],
-                            canCreate: false,
-                            searchTerm: null,
-                        };
-                    } else {
-                        const term = search.trim();
-                        const normalizedTerm = term.toLowerCase();
-                        const similarityExpr = sql<number>`similarity(LOWER(${fandoms.name}), ${normalizedTerm})`;
-                        const minSimilarity = term.length < 4 ? 0.1 : 0.2;
+                const searchResults = await ctx.db
+                    .select({
+                        publicId: fandoms.publicId,
+                        name: fandoms.name,
+                    })
+                    .from(fandoms)
+                    .where(
+                        sql`LOWER(${fandoms.name}) ILIKE ${`%${normalizedTerm}%`} OR ${similarityExpr} >= ${minSimilarity}`,
+                    )
+                    .orderBy(desc(similarityExpr), asc(fandoms.name))
+                    .limit(limit);
 
-                        const searchResults = await ctx.db
-                            .select({
-                                publicId: fandoms.publicId,
-                                name: fandoms.name,
-                            })
-                            .from(fandoms)
-                            .where(
-                                sql`LOWER(${fandoms.name}) ILIKE ${`%${normalizedTerm}%`} OR ${similarityExpr} >= ${minSimilarity}`,
-                            )
-                            .orderBy(desc(similarityExpr), asc(fandoms.name))
-                            .limit(limit);
+                const exactMatch = await ctx.db
+                    .select({ id: fandoms.id })
+                    .from(fandoms)
+                    .where(sql`LOWER(${fandoms.name}) = LOWER(${term})`)
+                    .limit(1);
 
-                        const exactMatch = await ctx.db
-                            .select({ id: fandoms.id })
-                            .from(fandoms)
-                            .where(sql`LOWER(${fandoms.name}) = LOWER(${term})`)
-                            .limit(1);
+                const canCreate = exactMatch.length === 0;
 
-                        const canCreate = exactMatch.length === 0;
+                result = {
+                    fandoms: searchResults,
+                    canCreate,
+                    searchTerm: term,
+                };
+            }
 
-                        result = {
-                            fandoms: searchResults,
-                            canCreate,
-                            searchTerm: term,
-                        };
-                    }
-
-                    await CacheManager.setWithTags("fandom", cacheKey, result, cacheTags, cacheConfig);
-                    return result;
-                },
-                cacheConfig,
-            );
+            return result;
         }),
     createForMultiselect: protectedProcedure
         .input(
@@ -253,8 +230,6 @@ export const fandomRouter = createTRPCRouter({
                     message: "Failed to create fandom",
                 });
             }
-
-            await CacheManager.invalidateFandom();
 
             return newFandom;
         }),

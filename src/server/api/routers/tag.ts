@@ -2,7 +2,6 @@ import { TRPCError } from "@trpc/server";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
-import { type CacheConfig, CacheKeys, CacheManager } from "#/server/cache/manager";
 import { storyTags } from "#/server/db/schema/story";
 import { tagCreateSchema, tagUpdateSchema, tags } from "#/server/db/schema/tag";
 
@@ -13,8 +12,6 @@ const TAG_LIMIT_DEFAULT = 10;
 const TAG_HOT_LIMIT_MIN = 1;
 const TAG_HOT_LIMIT_MAX = 20;
 const TAG_HOT_LIMIT_DEFAULT = 8;
-const FIVE_MINUTES = 5;
-const TAG_TTL_SECONDS = 60 * FIVE_MINUTES;
 const TAG_NAME_MIN_LENGTH = 1;
 const TAG_NAME_MAX_LENGTH = 255;
 
@@ -37,8 +34,6 @@ export const tagRouter = createTRPCRouter({
                     message: "Tag not found",
                 });
             }
-
-            await CacheManager.invalidateTag(input.publicId);
 
             return deletedTag;
         }),
@@ -87,8 +82,6 @@ export const tagRouter = createTRPCRouter({
                 });
             }
 
-            await CacheManager.invalidateTag(publicId);
-
             return updatedTag;
         });
     }),
@@ -115,8 +108,6 @@ export const tagRouter = createTRPCRouter({
                 });
             }
 
-            await CacheManager.invalidateTag(newTag.publicId);
-
             return newTag;
         });
     }),
@@ -132,82 +123,67 @@ export const tagRouter = createTRPCRouter({
         .query(async ({ ctx, input }) => {
             const { search, limit, includeHot, hotLimit } = input;
 
-            const cacheKey = CacheKeys.tag.forMultiselect(search || "", limit, includeHot, hotLimit);
-            const cacheTags = ["tag", "multiselect"];
-            const cacheConfig: CacheConfig = {
-                ttl: TAG_TTL_SECONDS,
-                jitter: true,
+            let result: {
+                tags: { publicId: string; name: string }[];
+                canCreate: boolean;
+                searchTerm: string | null;
             };
 
-            return await CacheManager.getWithSingleflight(
-                "tag",
-                cacheKey,
-                async () => {
-                    let result: {
-                        tags: { publicId: string; name: string }[];
-                        canCreate: boolean;
-                        searchTerm: string | null;
-                    };
+            if ((!search || search.trim().length === 0) && includeHot) {
+                result = {
+                    tags: await ctx.db
+                        .select({
+                            publicId: tags.publicId,
+                            name: tags.name,
+                        })
+                        .from(tags)
+                        .leftJoin(storyTags, eq(tags.id, storyTags.tagId))
+                        .groupBy(tags.id, tags.publicId, tags.name)
+                        .orderBy(desc(sql`COUNT(${storyTags.tagId})`), asc(tags.name))
+                        .limit(hotLimit),
+                    canCreate: false,
+                    searchTerm: null,
+                };
+            } else if (!search || search.trim().length === 0) {
+                result = {
+                    tags: [],
+                    canCreate: false,
+                    searchTerm: null,
+                };
+            } else {
+                const term = search.trim();
+                const normalizedTerm = term.toLowerCase();
+                const similarityExpr = sql<number>`similarity(LOWER(${tags.name}), ${normalizedTerm})`;
+                const minSimilarity = term.length < 4 ? 0.1 : 0.2;
 
-                    if ((!search || search.trim().length === 0) && includeHot) {
-                        result = {
-                            tags: await ctx.db
-                                .select({
-                                    publicId: tags.publicId,
-                                    name: tags.name,
-                                })
-                                .from(tags)
-                                .leftJoin(storyTags, eq(tags.id, storyTags.tagId))
-                                .groupBy(tags.id, tags.publicId, tags.name)
-                                .orderBy(desc(sql`COUNT(${storyTags.tagId})`), asc(tags.name))
-                                .limit(hotLimit),
-                            canCreate: false,
-                            searchTerm: null,
-                        };
-                    } else if (!search || search.trim().length === 0) {
-                        result = {
-                            tags: [],
-                            canCreate: false,
-                            searchTerm: null,
-                        };
-                    } else {
-                        const term = search.trim();
-                        const normalizedTerm = term.toLowerCase();
-                        const similarityExpr = sql<number>`similarity(LOWER(${tags.name}), ${normalizedTerm})`;
-                        const minSimilarity = term.length < 4 ? 0.1 : 0.2;
+                const searchResults = await ctx.db
+                    .select({
+                        publicId: tags.publicId,
+                        name: tags.name,
+                    })
+                    .from(tags)
+                    .where(
+                        sql`LOWER(${tags.name}) ILIKE ${`%${normalizedTerm}%`} OR ${similarityExpr} >= ${minSimilarity}`,
+                    )
+                    .orderBy(desc(similarityExpr), asc(tags.name))
+                    .limit(limit);
 
-                        const searchResults = await ctx.db
-                            .select({
-                                publicId: tags.publicId,
-                                name: tags.name,
-                            })
-                            .from(tags)
-                            .where(
-                                sql`LOWER(${tags.name}) ILIKE ${`%${normalizedTerm}%`} OR ${similarityExpr} >= ${minSimilarity}`,
-                            )
-                            .orderBy(desc(similarityExpr), asc(tags.name))
-                            .limit(limit);
+                const exactMatch = await ctx.db
+                    .select({ id: tags.id })
+                    .from(tags)
+                    .where(sql`LOWER(${tags.name}) = LOWER(${term})`)
+                    .limit(1);
 
-                        const exactMatch = await ctx.db
-                            .select({ id: tags.id })
-                            .from(tags)
-                            .where(sql`LOWER(${tags.name}) = LOWER(${term})`)
-                            .limit(1);
+                const canCreate = exactMatch.length === 0;
 
-                        const canCreate = exactMatch.length === 0;
+                result = {
+                    tags: searchResults,
+                    canCreate,
+                    searchTerm: term,
+                };
+            }
 
-                        result = {
-                            tags: searchResults,
-                            canCreate,
-                            searchTerm: term,
-                        };
-                    }
-
-                    await CacheManager.setWithTags("tag", cacheKey, result, cacheTags, cacheConfig);
-                    return result;
-                },
-                cacheConfig,
-            );
+            return result;
         }),
     createForMultiselect: protectedProcedure
         .input(
@@ -242,8 +218,6 @@ export const tagRouter = createTRPCRouter({
                     message: "Failed to create tag",
                 });
             }
-
-            await CacheManager.invalidateTag();
 
             return newTag;
         }),

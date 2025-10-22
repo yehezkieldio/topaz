@@ -1,5 +1,4 @@
 import { parseArgs } from "node:util";
-import { CacheManager } from "#/server/cache/manager";
 import { db } from "#/server/db";
 import {
     type ProgressStatus,
@@ -589,9 +588,6 @@ async function populate(): Promise<void> {
     await db.refreshMaterializedView(libraryMaterializedView).concurrently();
     await db.refreshMaterializedView(libraryStatsMaterializedView);
     console.log("   ✓ Refreshed materialized view");
-
-    await CacheManager.invalidateView();
-    console.log("   ✓ Invalidated cache for views");
 
     console.log("✅ Database populated successfully!");
 }
