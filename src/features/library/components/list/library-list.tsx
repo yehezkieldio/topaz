@@ -2,7 +2,7 @@
 
 import { useVirtualizer } from "@tanstack/react-virtual";
 import dynamic from "next/dynamic";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useLibraryDataContext } from "#/features/library/api/use-library-data";
 import { LibraryListItem } from "#/features/library/components/list/library-list-item";
 import { ListItemSkeleton } from "#/features/library/components/skeletons/library-list-skeleton";
@@ -127,7 +127,12 @@ function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    const measureElementStable = useMemo(() => virtualizer.measureElement, [virtualizer.measureElement]);
+    const measureElementStable = useCallback(
+        (element: Element | null) => {
+            virtualizer.measureElement(element);
+        },
+        [virtualizer],
+    );
 
     if (isLoading) {
         return <ListItemSkeleton count={6} />;
