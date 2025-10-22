@@ -6,11 +6,6 @@ import { db } from "#/server/db";
 import { fandoms } from "#/server/db/schema/fandom";
 import { storyFandoms } from "#/server/db/schema/story";
 
-/**
- * Cached function to get hot (popular) fandoms.
- * Uses public cache since hot fandoms are the same for all users.
- * Returns fandoms ordered by story count (most popular first).
- */
 export async function getCachedHotFandoms(limit = 8) {
     "use cache";
     cacheTag("hot-fandoms");
@@ -28,10 +23,6 @@ export async function getCachedHotFandoms(limit = 8) {
         .limit(limit);
 }
 
-/**
- * Cached function to search fandoms.
- * Uses separate cache entries for each search term.
- */
 export async function getCachedFandomSearch(searchTerm: string, limit = 10) {
     "use cache";
     cacheTag("fandom-search");

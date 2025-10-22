@@ -37,7 +37,6 @@ export const fandomRouter = createTRPCRouter({
                 });
             }
 
-            // Invalidate caches after fandom deletion
             await invalidateHotFandoms();
             await invalidateFandomSearch();
 
@@ -92,7 +91,6 @@ export const fandomRouter = createTRPCRouter({
                 });
             }
 
-            // Invalidate caches after fandom update
             await invalidateHotFandoms();
             await invalidateFandomSearch();
 
@@ -126,7 +124,6 @@ export const fandomRouter = createTRPCRouter({
                 });
             }
 
-            // Invalidate caches after fandom creation
             await invalidateHotFandoms();
             await invalidateFandomSearch();
 
@@ -156,7 +153,6 @@ export const fandomRouter = createTRPCRouter({
             };
 
             if ((!search || search.trim().length === 0) && includeHot) {
-                // Use cached hot fandoms for better performance
                 const cachedFandoms = await getCachedHotFandoms(hotLimit);
 
                 result = {
@@ -173,7 +169,6 @@ export const fandomRouter = createTRPCRouter({
             } else {
                 const term = search.trim();
 
-                // Use cached search for better performance
                 const searchResults = await getCachedFandomSearch(term, limit);
 
                 const exactMatch = await ctx.db
@@ -227,7 +222,6 @@ export const fandomRouter = createTRPCRouter({
                 });
             }
 
-            // Invalidate caches after fandom creation
             await invalidateHotFandoms();
             await invalidateFandomSearch();
 

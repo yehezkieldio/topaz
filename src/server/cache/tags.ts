@@ -6,11 +6,6 @@ import { db } from "#/server/db";
 import { storyTags } from "#/server/db/schema/story";
 import { tags } from "#/server/db/schema/tag";
 
-/**
- * Cached function to get hot (popular) tags.
- * Uses public cache since hot tags are the same for all users.
- * Returns tags ordered by story count (most popular first).
- */
 export async function getCachedHotTags(limit = 8) {
     "use cache";
     cacheTag("hot-tags");
@@ -28,10 +23,6 @@ export async function getCachedHotTags(limit = 8) {
         .limit(limit);
 }
 
-/**
- * Cached function to search tags.
- * Uses separate cache entries for each search term.
- */
 export async function getCachedTagSearch(searchTerm: string, limit = 10) {
     "use cache";
     cacheTag("tag-search");

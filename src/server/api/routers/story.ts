@@ -41,7 +41,6 @@ export const storyRouter = createTRPCRouter({
                 });
             }
 
-            // Invalidate caches after story deletion
             await invalidateLibraryStats();
             await invalidateHotFandoms();
             await invalidateHotTags();
@@ -238,7 +237,6 @@ export const storyRouter = createTRPCRouter({
                 updatedFandoms: resolvedFandoms.map((f) => f.publicId),
             };
 
-            // Invalidate caches after story update
             await invalidateLibraryStats();
             await invalidateHotFandoms();
             await invalidateHotTags();
@@ -317,7 +315,6 @@ export const storyRouter = createTRPCRouter({
                 );
             }
 
-            // Invalidate caches after story creation
             await invalidateLibraryStats();
             await invalidateHotFandoms();
             await invalidateHotTags();
@@ -427,7 +424,6 @@ export const storyRouter = createTRPCRouter({
                     });
                 }
 
-                // Invalidate caches after story creation with progress
                 await invalidateLibraryStats();
                 await invalidateHotFandoms();
                 await invalidateHotTags();

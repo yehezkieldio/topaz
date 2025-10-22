@@ -37,7 +37,6 @@ export const tagRouter = createTRPCRouter({
                 });
             }
 
-            // Invalidate caches after tag deletion
             await invalidateHotTags();
             await invalidateTagSearch();
 
@@ -88,7 +87,6 @@ export const tagRouter = createTRPCRouter({
                 });
             }
 
-            // Invalidate caches after tag update
             await invalidateHotTags();
             await invalidateTagSearch();
 
@@ -118,7 +116,6 @@ export const tagRouter = createTRPCRouter({
                 });
             }
 
-            // Invalidate caches after tag creation
             await invalidateHotTags();
             await invalidateTagSearch();
 
@@ -144,7 +141,6 @@ export const tagRouter = createTRPCRouter({
             };
 
             if ((!search || search.trim().length === 0) && includeHot) {
-                // Use cached hot tags for better performance
                 const cachedTags = await getCachedHotTags(hotLimit);
 
                 result = {
@@ -161,7 +157,6 @@ export const tagRouter = createTRPCRouter({
             } else {
                 const term = search.trim();
 
-                // Use cached search for better performance
                 const searchResults = await getCachedTagSearch(term, limit);
 
                 const exactMatch = await ctx.db
@@ -215,7 +210,6 @@ export const tagRouter = createTRPCRouter({
                 });
             }
 
-            // Invalidate caches after tag creation
             await invalidateHotTags();
             await invalidateTagSearch();
 

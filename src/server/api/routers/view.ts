@@ -9,7 +9,6 @@ export const viewRouter = createTRPCRouter({
         await ctx.db.refreshMaterializedView(libraryMaterializedView).concurrently();
         await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
 
-        // Invalidate cache after refreshing materialized views
         await invalidateLibraryStats();
 
         if (isDevelopment === false) {
@@ -29,7 +28,6 @@ export const viewRouter = createTRPCRouter({
     refreshLibraryStats: protectedProcedure.mutation(async ({ ctx }) => {
         await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
 
-        // Invalidate cache after refreshing stats
         await invalidateLibraryStats();
 
         if (isDevelopment === false) {
@@ -39,7 +37,6 @@ export const viewRouter = createTRPCRouter({
         return { success: true };
     }),
     getStats: publicProcedure.query(async () => {
-        // Use cached stats for better performance
         return await getCachedLibraryStats();
     }),
 });
