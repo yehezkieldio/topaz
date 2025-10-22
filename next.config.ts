@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
         NEXT_PUBLIC_VERSION: packageJson.version,
     },
     reactCompiler: true,
+    cacheComponents: true,
     experimental: {
         turbopackFileSystemCacheForDev: true,
     },

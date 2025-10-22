@@ -2,6 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
+import { invalidateHotTags, invalidateTagSearch } from "#/server/cache/actions";
+import { getCachedHotTags, getCachedTagSearch } from "#/server/cache/tags";
 import { storyTags } from "#/server/db/schema/story";
 import { tagCreateSchema, tagUpdateSchema, tags } from "#/server/db/schema/tag";
 
@@ -34,6 +36,9 @@ export const tagRouter = createTRPCRouter({
                     message: "Tag not found",
                 });
             }
+
+            await invalidateHotTags();
+            await invalidateTagSearch();
 
             return deletedTag;
         }),
@@ -82,6 +87,9 @@ export const tagRouter = createTRPCRouter({
                 });
             }
 
+            await invalidateHotTags();
+            await invalidateTagSearch();
+
             return updatedTag;
         });
     }),
@@ -108,6 +116,9 @@ export const tagRouter = createTRPCRouter({
                 });
             }
 
+            await invalidateHotTags();
+            await invalidateTagSearch();
+
             return newTag;
         });
     }),
@@ -130,17 +141,10 @@ export const tagRouter = createTRPCRouter({
             };
 
             if ((!search || search.trim().length === 0) && includeHot) {
+                const cachedTags = await getCachedHotTags(hotLimit);
+
                 result = {
-                    tags: await ctx.db
-                        .select({
-                            publicId: tags.publicId,
-                            name: tags.name,
-                        })
-                        .from(tags)
-                        .leftJoin(storyTags, eq(tags.id, storyTags.tagId))
-                        .groupBy(tags.id, tags.publicId, tags.name)
-                        .orderBy(desc(sql`COUNT(${storyTags.tagId})`), asc(tags.name))
-                        .limit(hotLimit),
+                    tags: cachedTags,
                     canCreate: false,
                     searchTerm: null,
                 };
@@ -152,21 +156,8 @@ export const tagRouter = createTRPCRouter({
                 };
             } else {
                 const term = search.trim();
-                const normalizedTerm = term.toLowerCase();
-                const similarityExpr = sql<number>`similarity(LOWER(${tags.name}), ${normalizedTerm})`;
-                const minSimilarity = term.length < 4 ? 0.1 : 0.2;
 
-                const searchResults = await ctx.db
-                    .select({
-                        publicId: tags.publicId,
-                        name: tags.name,
-                    })
-                    .from(tags)
-                    .where(
-                        sql`LOWER(${tags.name}) ILIKE ${`%${normalizedTerm}%`} OR ${similarityExpr} >= ${minSimilarity}`,
-                    )
-                    .orderBy(desc(similarityExpr), asc(tags.name))
-                    .limit(limit);
+                const searchResults = await getCachedTagSearch(term, limit);
 
                 const exactMatch = await ctx.db
                     .select({ id: tags.id })
@@ -218,6 +209,9 @@ export const tagRouter = createTRPCRouter({
                     message: "Failed to create tag",
                 });
             }
+
+            await invalidateHotTags();
+            await invalidateTagSearch();
 
             return newTag;
         }),

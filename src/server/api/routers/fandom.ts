@@ -2,6 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
+import { invalidateFandomSearch, invalidateHotFandoms } from "#/server/cache/actions";
+import { getCachedFandomSearch, getCachedHotFandoms } from "#/server/cache/fandoms";
 import { fandomCreateSchema, fandomUpdateSchema, fandoms } from "#/server/db/schema/fandom";
 import { storyFandoms } from "#/server/db/schema/story";
 
@@ -34,6 +36,9 @@ export const fandomRouter = createTRPCRouter({
                     message: "Fandom not found",
                 });
             }
+
+            await invalidateHotFandoms();
+            await invalidateFandomSearch();
 
             return deletedFandom;
         }),
@@ -86,6 +91,9 @@ export const fandomRouter = createTRPCRouter({
                 });
             }
 
+            await invalidateHotFandoms();
+            await invalidateFandomSearch();
+
             return updatedFandom;
         });
     }),
@@ -116,6 +124,9 @@ export const fandomRouter = createTRPCRouter({
                 });
             }
 
+            await invalidateHotFandoms();
+            await invalidateFandomSearch();
+
             return newFandom;
         });
     }),
@@ -142,17 +153,10 @@ export const fandomRouter = createTRPCRouter({
             };
 
             if ((!search || search.trim().length === 0) && includeHot) {
+                const cachedFandoms = await getCachedHotFandoms(hotLimit);
+
                 result = {
-                    fandoms: await ctx.db
-                        .select({
-                            publicId: fandoms.publicId,
-                            name: fandoms.name,
-                        })
-                        .from(fandoms)
-                        .leftJoin(storyFandoms, eq(fandoms.id, storyFandoms.fandomId))
-                        .groupBy(fandoms.id, fandoms.publicId, fandoms.name)
-                        .orderBy(desc(sql`COUNT(${storyFandoms.fandomId})`), asc(fandoms.name))
-                        .limit(hotLimit),
+                    fandoms: cachedFandoms,
                     canCreate: false,
                     searchTerm: null,
                 };
@@ -164,21 +168,8 @@ export const fandomRouter = createTRPCRouter({
                 };
             } else {
                 const term = search.trim();
-                const normalizedTerm = term.toLowerCase();
-                const similarityExpr = sql<number>`similarity(LOWER(${fandoms.name}), ${normalizedTerm})`;
-                const minSimilarity = term.length < 4 ? 0.1 : 0.2;
 
-                const searchResults = await ctx.db
-                    .select({
-                        publicId: fandoms.publicId,
-                        name: fandoms.name,
-                    })
-                    .from(fandoms)
-                    .where(
-                        sql`LOWER(${fandoms.name}) ILIKE ${`%${normalizedTerm}%`} OR ${similarityExpr} >= ${minSimilarity}`,
-                    )
-                    .orderBy(desc(similarityExpr), asc(fandoms.name))
-                    .limit(limit);
+                const searchResults = await getCachedFandomSearch(term, limit);
 
                 const exactMatch = await ctx.db
                     .select({ id: fandoms.id })
@@ -230,6 +221,9 @@ export const fandomRouter = createTRPCRouter({
                     message: "Failed to create fandom",
                 });
             }
+
+            await invalidateHotFandoms();
+            await invalidateFandomSearch();
 
             return newFandom;
         }),
