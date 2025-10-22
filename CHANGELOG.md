@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.5.1 (October 22, 2025)
+
+### <!-- 4 -->🐛 Bug Fixes
+- [`d584c4c`](https://github.com/yehezkieldio/topaz/commit/d584c4cc62e6dcc6f095ebde89a53f36ee17682a)  Remove package lock
 ## topaz@0.5.0 (October 22, 2025)
 
 ### <!-- 11 -->🛠️ Miscellaneous
