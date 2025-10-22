@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
+import { invalidateHotTags, invalidateTagSearch } from "#/server/cache/actions";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
 import { storyTags } from "#/server/db/schema/story";
 import { tagCreateSchema, tagUpdateSchema, tags } from "#/server/db/schema/tag";
@@ -34,6 +35,10 @@ export const tagRouter = createTRPCRouter({
                     message: "Tag not found",
                 });
             }
+
+            // Invalidate caches after tag deletion
+            await invalidateHotTags();
+            await invalidateTagSearch();
 
             return deletedTag;
         }),
@@ -82,6 +87,10 @@ export const tagRouter = createTRPCRouter({
                 });
             }
 
+            // Invalidate caches after tag update
+            await invalidateHotTags();
+            await invalidateTagSearch();
+
             return updatedTag;
         });
     }),
@@ -107,6 +116,10 @@ export const tagRouter = createTRPCRouter({
                     message: "Failed to create tag",
                 });
             }
+
+            // Invalidate caches after tag creation
+            await invalidateHotTags();
+            await invalidateTagSearch();
 
             return newTag;
         });
@@ -218,6 +231,10 @@ export const tagRouter = createTRPCRouter({
                     message: "Failed to create tag",
                 });
             }
+
+            // Invalidate caches after tag creation
+            await invalidateHotTags();
+            await invalidateTagSearch();
 
             return newTag;
         }),

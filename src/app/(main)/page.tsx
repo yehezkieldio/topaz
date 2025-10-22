@@ -4,10 +4,10 @@ import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { env } from "#/env";
 import { LibraryStats } from "#/features/library/components/ui/library-stats";
-import { caller } from "#/trpc/server";
+import { getCachedLibraryStats } from "#/server/cache/stats";
 
 export default async function Home() {
-    const stats = await caller.view.getStats();
+    const stats = await getCachedLibraryStats();
 
     return (
         <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.08),transparent_60%),radial-gradient(circle_at_70%_80%,hsl(var(--muted-foreground)/0.08),transparent_55%)]">

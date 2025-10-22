@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { formatRating } from "#/lib/utils";
+import { invalidateHotFandoms, invalidateHotTags, invalidateLibraryStats } from "#/server/cache/actions";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
 import { fandoms } from "#/server/db/schema/fandom";
 import { progressStatusEnum, progresses } from "#/server/db/schema/progress";
@@ -39,6 +40,11 @@ export const storyRouter = createTRPCRouter({
                     message: "Story not found",
                 });
             }
+
+            // Invalidate caches after story deletion
+            await invalidateLibraryStats();
+            await invalidateHotFandoms();
+            await invalidateHotTags();
 
             return deletedStory;
         }),
@@ -232,6 +238,11 @@ export const storyRouter = createTRPCRouter({
                 updatedFandoms: resolvedFandoms.map((f) => f.publicId),
             };
 
+            // Invalidate caches after story update
+            await invalidateLibraryStats();
+            await invalidateHotFandoms();
+            await invalidateHotTags();
+
             return result;
         });
     }),
@@ -305,6 +316,11 @@ export const storyRouter = createTRPCRouter({
                     })),
                 );
             }
+
+            // Invalidate caches after story creation
+            await invalidateLibraryStats();
+            await invalidateHotFandoms();
+            await invalidateHotTags();
 
             return newStory;
         });
@@ -410,6 +426,11 @@ export const storyRouter = createTRPCRouter({
                         message: "Failed to create progress",
                     });
                 }
+
+                // Invalidate caches after story creation with progress
+                await invalidateLibraryStats();
+                await invalidateHotFandoms();
+                await invalidateHotTags();
 
                 return {
                     story: newStory,

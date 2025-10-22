@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
+import { invalidateFandomSearch, invalidateHotFandoms } from "#/server/cache/actions";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
 import { fandomCreateSchema, fandomUpdateSchema, fandoms } from "#/server/db/schema/fandom";
 import { storyFandoms } from "#/server/db/schema/story";
@@ -34,6 +35,10 @@ export const fandomRouter = createTRPCRouter({
                     message: "Fandom not found",
                 });
             }
+
+            // Invalidate caches after fandom deletion
+            await invalidateHotFandoms();
+            await invalidateFandomSearch();
 
             return deletedFandom;
         }),
@@ -86,6 +91,10 @@ export const fandomRouter = createTRPCRouter({
                 });
             }
 
+            // Invalidate caches after fandom update
+            await invalidateHotFandoms();
+            await invalidateFandomSearch();
+
             return updatedFandom;
         });
     }),
@@ -115,6 +124,10 @@ export const fandomRouter = createTRPCRouter({
                     message: "Failed to create fandom",
                 });
             }
+
+            // Invalidate caches after fandom creation
+            await invalidateHotFandoms();
+            await invalidateFandomSearch();
 
             return newFandom;
         });
@@ -230,6 +243,10 @@ export const fandomRouter = createTRPCRouter({
                     message: "Failed to create fandom",
                 });
             }
+
+            // Invalidate caches after fandom creation
+            await invalidateHotFandoms();
+            await invalidateFandomSearch();
 
             return newFandom;
         }),

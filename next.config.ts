@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
     reactCompiler: true,
     experimental: {
         turbopackFileSystemCacheForDev: true,
+        cacheComponents: true,
     },
     allowedDevOrigins: ["192.168.137.2"],
 };
