@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.4.2 (October 22, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`38241be`](https://github.com/yehezkieldio/topaz/commit/38241be08fdb6866af078a509515592fcce5cd50) deps: Update dependency ioredis to ^5.8.2 ([#130](https://github.com/yehezkieldio/topaz/issues/130)) by renovate[bot]
+- [`5ce872b`](https://github.com/yehezkieldio/topaz/commit/5ce872b34cc2cb20788205e1410af54010e40744) deps: Update dependency next to ^16.0.0-canary.17 ([#131](https://github.com/yehezkieldio/topaz/issues/131)) by renovate[bot]
+- [`71e6d91`](https://github.com/yehezkieldio/topaz/commit/71e6d9195339cb2fc0c2139bc563b326bda935c8) deps: Update dependency next to ^16.0.0
 ## topaz@0.4.1 (October 21, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
