@@ -1,7 +1,7 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
-const isDevelopment = process.env.NODE_ENV === "development";
+export const isDevelopment = process.env.NODE_ENV === "development";
 
 function devUse<T>(value: T, fallback: T): T {
     return isDevelopment ? value : fallback;

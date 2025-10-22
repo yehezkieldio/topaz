@@ -2,6 +2,7 @@ import { TRPCError, initTRPC } from "@trpc/server";
 import { cache } from "react";
 import superjson from "superjson";
 import { ZodError } from "zod";
+import { isDevelopment } from "#/env";
 import { auth } from "#/server/auth";
 import { db } from "#/server/db";
 
@@ -31,6 +32,10 @@ export const createCallerFactory = t.createCallerFactory;
 export const createTRPCRouter = t.router;
 
 const timingMiddleware = t.middleware(async ({ next, path }) => {
+    if (isDevelopment === false) {
+        return next();
+    }
+
     const start = Date.now();
     const result = await next();
     const end = Date.now();
