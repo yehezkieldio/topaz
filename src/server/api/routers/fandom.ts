@@ -1,11 +1,10 @@
 import { TRPCError } from "@trpc/server";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
 import { invalidateFandomSearch, invalidateHotFandoms } from "#/server/cache/actions";
 import { getCachedFandomSearch, getCachedHotFandoms } from "#/server/cache/fandoms";
 import { fandomCreateSchema, fandomUpdateSchema, fandoms } from "#/server/db/schema/fandom";
-import { storyFandoms } from "#/server/db/schema/story";
 
 // Magic numbers extracted to constants
 const MULTISELECT_LIMIT_MIN = 1;

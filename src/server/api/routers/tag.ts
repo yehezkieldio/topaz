@@ -1,10 +1,9 @@
 import { TRPCError } from "@trpc/server";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
 import { invalidateHotTags, invalidateTagSearch } from "#/server/cache/actions";
 import { getCachedHotTags, getCachedTagSearch } from "#/server/cache/tags";
-import { storyTags } from "#/server/db/schema/story";
 import { tagCreateSchema, tagUpdateSchema, tags } from "#/server/db/schema/tag";
 
 // Tag router configuration constants
