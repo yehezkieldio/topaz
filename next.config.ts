@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
     env: {
         NEXT_PUBLIC_VERSION: packageJson.version,
     },
+    reactCompiler: true,
+    experimental: {
+        turbopackFileSystemCacheForDev: true,
+    },
+    allowedDevOrigins: ["192.168.137.2"],
 };
 
 export default nextConfig;
