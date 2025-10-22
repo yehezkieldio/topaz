@@ -6,6 +6,21 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.4.3 (October 22, 2025)
+
+### <!-- 11 -->🛠️ Miscellaneous
+- [`39a6be3`](https://github.com/yehezkieldio/topaz/commit/39a6be30a6f77a0ed9cea1eb644b24d1a9235982)  Add next-devtools-mcp dependency to package.json
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`27c5c46`](https://github.com/yehezkieldio/topaz/commit/27c5c46a73edc7e4b2841c4a6915e9b31c6b695c) deps: Add babel-plugin-react-compiler
+
+### <!-- 7 -->🚜 Refactor
+- [`ac302cd`](https://github.com/yehezkieldio/topaz/commit/ac302cda61bf2ffb041028ea57cea1e494fba1b9)  Remove redis caching implementation
+- [`617b4f8`](https://github.com/yehezkieldio/topaz/commit/617b4f815e58ac901fd5d071d4346c6931360eea) config: Adjust indentation and remove unused services
+- [`2175402`](https://github.com/yehezkieldio/topaz/commit/2175402475eb11e8b31388261e22de8752314abc) api: Only use timing middleware on development
+- [`451c564`](https://github.com/yehezkieldio/topaz/commit/451c564c837ec4148ed180a570f2d507cb0c2960) api: Conditionally log materialized view refreshes
+- [`e572a60`](https://github.com/yehezkieldio/topaz/commit/e572a608c25a51e94619d339684347a008d39ec8) library: Replace useMemo with useCallback for stability
+- [`db45bb7`](https://github.com/yehezkieldio/topaz/commit/db45bb7738a0d0e04e13b7e7acda020582c25b31) library: Restructure library client components
 ## topaz@0.4.2 (October 22, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
