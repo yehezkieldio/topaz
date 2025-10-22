@@ -6,6 +6,90 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.5.0 (October 22, 2025)
+
+### <!-- 11 -->🛠️ Miscellaneous
+- [`5a7a746`](https://github.com/yehezkieldio/topaz/commit/5a7a746d393192d37d2c44f1296d9085864ceb59)  Initial plan
+
+### <!-- 17 -->🛠️ Miscellaneous
+- [`d457198`](https://github.com/yehezkieldio/topaz/commit/d457198a0a08d131100c26cffad0d58d59c2bcaa)  Initial plan
+- [`4ef7d6b`](https://github.com/yehezkieldio/topaz/commit/4ef7d6b4bfa156330e324e974767e4991585a88c)  Initial setup: Add dummy environment variables for build
+
+Co-authored-by: yehezkieldio <47420407+yehezkieldio@users.noreply.github.com>
+- [`ba68bbd`](https://github.com/yehezkieldio/topaz/commit/ba68bbd6b6581f226d39bf2b54136b54e973f770)  Implement Next.js Cache Components integration
+
+- Enable cacheComponents in next.config.ts
+- Create cached functions for stats, fandoms, and tags
+- Add server actions for cache invalidation
+- Integrate cache invalidation in mutation operations
+- Add comprehensive documentation in docs/CACHE_COMPONENTS.md
+
+Co-authored-by: yehezkieldio <47420407+yehezkieldio@users.noreply.github.com>
+- [`1a116c0`](https://github.com/yehezkieldio/topaz/commit/1a116c00ad85db563addb7d1bce9ae909b2c6282)  Add cache examples and documentation, fix config
+
+- Move cacheComponents to stable config (not experimental)
+- Add comprehensive cache examples with practical patterns
+- Add README for cache directory
+- Fix Drizzle count() usage in examples
+- All linting and type-checking passes
+
+Co-authored-by: yehezkieldio <47420407+yehezkieldio@users.noreply.github.com>
+- [`4892668`](https://github.com/yehezkieldio/topaz/commit/489266866cda31846e1f258803e94001b7c555e2)  Add integration summary document
+
+- Comprehensive analysis of Next.js Cache Components
+- Practical integration details for Topaz
+- Before/after comparisons
+- Cache invalidation flow diagrams
+- Next steps and recommendations
+
+Co-authored-by: yehezkieldio <47420407+yehezkieldio@users.noreply.github.com>
+- [`0971c1a`](https://github.com/yehezkieldio/topaz/commit/0971c1ac99be88dab8816c69ca2ce87a72da7969)  Use cache functions in tRPC UI endpoints
+
+- Integrate getCachedHotFandoms in fandom.forMultiselect
+- Integrate getCachedFandomSearch in fandom.forMultiselect
+- Integrate getCachedHotTags in tag.forMultiselect
+- Integrate getCachedTagSearch in tag.forMultiselect
+- Cache now benefits all UI components using these endpoints
+
+Co-authored-by: yehezkieldio <47420407+yehezkieldio@users.noreply.github.com>
+- [`ec14b1f`](https://github.com/yehezkieldio/topaz/commit/ec14b1f0de9d3741682c434d90197afd53331e66)  Fix library route: Wrap AuthUserGate in Suspense boundary
+
+- Add Suspense boundary around AuthUserGate in library page
+- Fixes "Uncached data was accessed outside of" error
+- Consistent with auth page pattern
+- AuthUserGate accesses cookies via auth(), needs Suspense with Cache Components
+
+Co-authored-by: yehezkieldio <47420407+yehezkieldio@users.noreply.github.com>
+- [`189b2d7`](https://github.com/yehezkieldio/topaz/commit/189b2d77604da05ca69679bbfcb96de6825ea40b)  Merge branch 'master' into copilot/analyze-nextjs-cache-components-again
+- [`84f406d`](https://github.com/yehezkieldio/topaz/commit/84f406d964498dbc1e0782a99a946326cd7a3e01)  Use cache function in view.getStats endpoint
+
+- Update view.getStats to use getCachedLibraryStats()
+- Ensures all API consumers benefit from server-side caching
+- Consistent with direct usage in home page
+- Completes cache function integration across all endpoints
+
+Co-authored-by: yehezkieldio <47420407+yehezkieldio@users.noreply.github.com>
+- [`5bd9db9`](https://github.com/yehezkieldio/topaz/commit/5bd9db996658d7378afdef7933ddc7568f59e947)  Clean up cache implementation - remove docs and examples
+
+- Remove documentation files (CACHE_COMPONENTS.md, INTEGRATION_SUMMARY.md)
+- Remove unused cache/README.md, cache/examples.ts, cache/index.ts
+- Remove all comments from cache files (stats, fandoms, tags, actions)
+- Remove inline comments from router integrations
+- Match minimal comment style of codebase
+
+Co-authored-by: yehezkieldio <47420407+yehezkieldio@users.noreply.github.com>
+- [`f76ad84`](https://github.com/yehezkieldio/topaz/commit/f76ad84782dfe2690c50551ea825c87e0cba592f)  Merge branch 'master' into copilot/analyze-nextjs-cache-components-again
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`90c2af0`](https://github.com/yehezkieldio/topaz/commit/90c2af04fb6c7ebafbfcf0a797acdf04ed4f2d63) deps: Update dependency @biomejs/biome to v2.2.7 ([#135](https://github.com/yehezkieldio/topaz/issues/135)) by renovate[bot]
+- [`fb10e1d`](https://github.com/yehezkieldio/topaz/commit/fb10e1dcc48332d8393a045569693aee0140c1b8) deps: Update dependency next-devtools-mcp to ^0.2.1 ([#136](https://github.com/yehezkieldio/topaz/issues/136)) by renovate[bot]
+- [`f2e1d71`](https://github.com/yehezkieldio/topaz/commit/f2e1d719f52b120ea85e826b93c73c38737907d9) deps: Update dependency superjson to ^2.2.3 ([#137](https://github.com/yehezkieldio/topaz/issues/137)) by renovate[bot]
+
+### <!-- 3 -->🚀 New Features
+- [`953ced5`](https://github.com/yehezkieldio/topaz/commit/953ced50a12e47340380882fdf7bc6a42de0e846)  Implement Next.js 16 Cache Components for optimized server-side data fetching ([#134](https://github.com/yehezkieldio/topaz/issues/134)) by [@yehezkieldio](https://github.com/yehezkieldio)
+
+### <!-- 7 -->🚜 Refactor
+- [`182de69`](https://github.com/yehezkieldio/topaz/commit/182de69d0cea14bab1528858c50add3dae811173) api: Remove unused imports from fandom and tag routers
 ## topaz@0.4.3 (October 22, 2025)
 
 ### <!-- 11 -->🛠️ Miscellaneous
