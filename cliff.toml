@@ -19,28 +19,34 @@ body = """
 {% if message -%}
   ### 📝 Release Notes
   {{ message | safe }}
-{% endif -%}\
+{% endif -%}
 
 {% for group, commits in commits | group_by(attribute="group") %}
     ### {{ group | replace(from="<!-- \\d+ -->", to="") | trim | upper_first }}
     {%- for commit in commits %}
-      - [`{{ commit.id | truncate(length=7, end="") }}`]({{ self::remote_url() }}/commit/{{ commit.id }}) {% if commit.scope %}{{ commit.scope }}:{% endif %} {{ commit.message | upper_first }}\
-      {% if commit.remote.pr_number %} \
-          {% if commit.remote.username != "renovate[bot]" and commit.remote.username != "github-actions[bot]" -%}
-            by [@{{ commit.remote.username }}](https://github.com/{{ commit.remote.username }})\
-          {% else -%}
-            by {{ commit.remote.username }}\
-          {% endif -%}
-      {%- endif %}\
-      {% if commit.breaking %}\
-        {% if commit.footers | length > 0 %}\
-          {% for breakingChange in commit.footers %}\
-            \n{% raw %}  {% endraw %} - 💥 **{{ breakingChange.token }}{{ breakingChange.separator }}** {{ breakingChange.value }}\
-          {% endfor %}\
-        {% else %}\
-          \n{% raw %}  {% endraw %} - 💥 **BREAKING CHANGE:** This commit introduces a breaking change.\
-        {% endif %}\
-      {% endif %}\
+      {% set commit_title = commit.message | split(pat="\n") | first %}
+      - [`{{ commit.id | truncate(length=7, end="") }}`]({{ self::remote_url() }}/commit/{{ commit.id }}){% if commit.scope %} {{ commit.scope }}:{% endif %} {{ commit_title | trim | upper_first }}
+      {%- if commit.remote.pr_number %}
+        {%- if commit.remote.username != "renovate[bot]" and commit.remote.username != "github-actions[bot]" -%}
+          by [@{{ commit.remote.username }}](https://github.com/{{ commit.remote.username }})
+        {%- else -%}
+          by {{ commit.remote.username }}
+        {%- endif -%}
+      {%- endif %}
+      {%- if commit.body %}
+        {% for line in commit.body | split(pat="\n") %}
+          {{ line }}
+        {% endfor %}
+      {%- endif %}
+      {%- if commit.breaking %}
+        {% if commit.footers | length > 0 %}
+          {% for breakingChange in commit.footers %}
+          - 💥 **{{ breakingChange.token }}{{ breakingChange.separator }}** {{ breakingChange.value }}
+          {% endfor %}
+        {% else %}
+          - 💥 **BREAKING CHANGE:** This commit introduces a breaking change.
+        {% endif %}
+      {%- endif %}
     {% endfor %}
 {% endfor %}
 """
