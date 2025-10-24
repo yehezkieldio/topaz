@@ -2,7 +2,7 @@
     "$schema": "https://biomejs.dev/schemas/2.3.0/schema.json",
     "files": {
         "ignoreUnknown": true,
-        "includes": ["**", "!dist", "!.next", "!node_modules", "!bun.lock"]
+        "includes": ["**", "!dist", "!node_modules", "!bun.lock"]
     },
     "formatter": {
         "enabled": true,
@@ -28,6 +28,11 @@
     "javascript": {
         "formatter": {
             "quoteStyle": "double"
+        }
+    },
+    "css": {
+        "parser": {
+            "tailwindDirectives": true
         }
     },
     "linter": {
@@ -134,7 +139,7 @@
                 "noExcessiveLinesPerFunction": {
                     "level": "error",
                     "options": {
-                        "maxLines": 200
+                        "maxLines": 150
                     }
                 },
                 // This rule enforces a maximum depth to nested describe() in test files.
@@ -148,7 +153,7 @@
                 // Disallow shorthand type conversions.
                 "noImplicitCoercions": "error",
                 // This rule reports when a class has no non-static members, such as for a class used exclusively as a static namespace.
-                "noStaticOnlyClass": "error",
+                "noStaticOnlyClass": "off",
                 // Disallow this and super in static contexts.
                 "noThisInStatic": "error",
                 // Disallow unnecessary catch clauses.
@@ -348,10 +353,6 @@
                 "noMisusedPromises": "error",
                 // Prevent client components from being async functions.
                 "noNextAsyncClientComponent": "error",
-                // Disallow non-null assertions after optional chaining expressions.
-                "noNonNullAssertedOptionalChain": "error",
-                // Disallow useVisibleTask$() functions in Qwik components.
-                "noQwikUseVisibleTask": "error",
                 // Disallow variable declarations from shadowing variables declared in the outer scope.
                 "noShadow": "off",
                 // Disallow unnecessary type-based conditions that can be statically determined as redundant.
@@ -364,12 +365,8 @@
                 "noVueReservedKeys": "error",
                 // Disallow reserved names to be used as props.
                 "noVueReservedProps": "error",
-                // Enforces href attribute for <a> elements.
-                "useAnchorHref": "error",
                 // Require switch-case statements to be exhaustive.
                 "useExhaustiveSwitchCases": "error",
-                // Enforces that <img> elements have both width and height attributes.
-                "useImageSize": "error",
                 // Enforce a maximum number of parameters in function definitions.
                 "useMaxParams": {
                     "level": "error",
@@ -377,12 +374,6 @@
                         "max": 5
                     }
                 },
-                // Prefer using the class prop as a classlist over the classnames helper.
-                "useQwikClasslist": "error",
-                // Enforce that components are defined as functions and never as classes.
-                "useReactFunctionComponents": "error",
-                // Disallow usage of sensitive data such as API keys and tokens.
-                "noSecrets": "off",
                 // Enforce types in functions, methods, variables, and parameters.
                 "useExplicitType": "off",
                 // Enforce the sorting of CSS utility classes.
@@ -450,7 +441,7 @@
                 // Disallow reassigning function parameters.
                 "noParameterAssign": "error",
                 // Disallow the use of parameter properties in class constructors.
-                "noParameterProperties": "error",
+                "noParameterProperties": "off",
                 // This rule allows you to specify global variable names that you don't want to use in your application.
                 "noRestrictedGlobals": "error",
                 // Disallow specified modules when loaded by import or require.
@@ -729,7 +720,7 @@
                 // Ensure async functions utilize await.
                 "useAwait": "off",
                 // Enforce consistent return values in iterable callbacks.
-                "useIterableCallbackReturn": "error",
+                "useIterableCallbackReturn": "off",
                 // Enforce default clauses in switch statements to be last
                 "useDefaultSwitchClauseLast": "error",
                 // Enforce passing a message value when creating a built-in error.
@@ -769,10 +760,7 @@
                 "noImportantInKeyframe": "error",
                 // Disallow shorthand properties that override related longhand properties.
                 "noShorthandPropertyOverrides": "error",
-                // TODO: Re-enable this rule once we upgrade past Biome 2.2.0.
-                // Currently, Biome 2.2.0 has a regression where valid Tailwind CSS at-rules (e.g., @apply)
-                // are incorrectly flagged as unknown. This was valid in earlier versions
-                // and should be valid again once the regression is fixed in a future release.
+                // Disallow unknown at-rules.
                 "noUnknownAtRules": "off"
             }
         }
