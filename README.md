@@ -33,8 +33,8 @@ Built with modern web technologies, Topaz provides a fast, responsive, and intui
 
 Before you begin, ensure you have the following installed:
 
-- [Node.js](https://nodejs.org/) 20+ or [Bun](https://bun.sh/) 1.0+
-- [PostgreSQL](https://www.postgresql.org/) 14+
+- [Node.js](https://nodejs.org/) 20.x+ or [Bun](https://bun.sh/) 1.x+
+- [PostgreSQL](https://www.postgresql.org/) 14.x+
 - [Docker](https://www.docker.com/) (optional, for local PostgreSQL)
 - [Discord Application](https://discord.com/developers/applications) (for authentication)
 
@@ -75,9 +75,14 @@ Before you begin, ensure you have the following installed:
 
 4. **Set up the database**
 
-   If using Docker for local development:
+   If using Docker for local development (requires [just](https://github.com/casey/just) command runner):
    ```bash
    just dev-up
+   ```
+
+   Or using Docker directly:
+   ```bash
+   docker compose up
    ```
 
    Push the database schema:
