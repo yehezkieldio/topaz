@@ -6,6 +6,67 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.5.2 (October 28, 2025)
+### 📝 Release Notes
+Hopefully this resolves the error on the create new entry form
+
+### <!-- 16 -->🤖 CI/CD
+
+- [`bec73a6`](https://github.com/yehezkieldio/topaz/commit/bec73a657b19b877f1254754da1e89c72a0341fc) Update biome command to parse tailwind directives
+
+
+### <!-- 2 -->🧩 Dependencies Updates
+
+- [`24c62d7`](https://github.com/yehezkieldio/topaz/commit/24c62d77f14297bd4a040bcf8c533caeb546941f) deps: Update tailwindcss monorepo to ^4.1.16 ([#138](https://github.com/yehezkieldio/topaz/issues/138))by renovate[bot]
+
+
+- [`d8e4f0f`](https://github.com/yehezkieldio/topaz/commit/d8e4f0f5d1da0ba33fd16aaae1b27f6018f810f2) deps: Update dependency drizzle-orm to ^0.44.7 ([#139](https://github.com/yehezkieldio/topaz/issues/139))by renovate[bot]
+
+
+- [`36a077a`](https://github.com/yehezkieldio/topaz/commit/36a077a025e449b0a62783872711f2522950882f) deps: Update dependency @biomejs/biome to v2.3.0 ([#140](https://github.com/yehezkieldio/topaz/issues/140))by renovate[bot]
+
+
+- [`81aa143`](https://github.com/yehezkieldio/topaz/commit/81aa1432fa9b90b8201f4ea0ee9744cd13691b98) deps: Update dependency lucide-react to ^0.547.0 ([#141](https://github.com/yehezkieldio/topaz/issues/141))by renovate[bot]
+
+
+- [`e8b4b6b`](https://github.com/yehezkieldio/topaz/commit/e8b4b6b9ef93a0fe5d023f6e99eae1cfa604abcf) deps: Update dependency lucide-react to ^0.548.0 ([#142](https://github.com/yehezkieldio/topaz/issues/142))by renovate[bot]
+
+
+- [`3a8586f`](https://github.com/yehezkieldio/topaz/commit/3a8586f23eec1e45989be34b5e6559f0a039c8a3) deps: Update dependency @paralleldrive/cuid2 to ^2.3.1 ([#143](https://github.com/yehezkieldio/topaz/issues/143))by renovate[bot]
+
+
+- [`0138b1a`](https://github.com/yehezkieldio/topaz/commit/0138b1af84f74b1bbee32fbeb6d0a9ad9d26dc1a) deps: Update trpc monorepo to ^11.7.0 ([#144](https://github.com/yehezkieldio/topaz/issues/144))by renovate[bot]
+
+
+- [`57a3557`](https://github.com/yehezkieldio/topaz/commit/57a3557e66737805cf07e778b7bc932d45d58f6b) deps: Update dependency @trpc/client to ^11.7.0 ([#145](https://github.com/yehezkieldio/topaz/issues/145))by renovate[bot]
+
+
+- [`d56b341`](https://github.com/yehezkieldio/topaz/commit/d56b341ab59362d50e3e6d2a3572af3e82326f52) deps: Update dependency @auth/drizzle-adapter to ^1.11.1 ([#146](https://github.com/yehezkieldio/topaz/issues/146))by renovate[bot]
+
+
+- [`b5bdd72`](https://github.com/yehezkieldio/topaz/commit/b5bdd724900cb2f9490ad41811cb5ce50e7fe013) deps: Update dependency @biomejs/biome to v2.3.1 ([#147](https://github.com/yehezkieldio/topaz/issues/147))by renovate[bot]
+
+
+- [`fbfc644`](https://github.com/yehezkieldio/topaz/commit/fbfc6440696fcf90a6a844fc2c4e08a8028c7802) deps: Update dependency next-auth to v5.0.0-beta.30 ([#148](https://github.com/yehezkieldio/topaz/issues/148))by renovate[bot]
+
+
+- [`15f8453`](https://github.com/yehezkieldio/topaz/commit/15f8453b2ae346786998f0be060a9f4aabc56a0e) deps: Update trpc monorepo to ^11.7.1 ([#149](https://github.com/yehezkieldio/topaz/issues/149))by renovate[bot]
+
+
+### <!-- 3 -->🚀 New Features
+
+- [`31dbe3a`](https://github.com/yehezkieldio/topaz/commit/31dbe3aaf5edd480b56dbe72dc65e6dcc25b611f) library: Add client directive to forms and refactor provider structure in LibraryClient
+
+
+### <!-- 4 -->🐛 Bug Fixes
+
+- [`deebe94`](https://github.com/yehezkieldio/topaz/commit/deebe94e265cd7f33da4b3ef7e15a73683dd344e) config: Update biome configuration rules
+
+
+### <!-- 7 -->🚜 Refactor
+
+- [`7b1bd5e`](https://github.com/yehezkieldio/topaz/commit/7b1bd5e6e3bd62d7077a2d84781b19b70ebf5842) Improve commit message formatting in changelog
+
 ## topaz@0.5.1 (October 22, 2025)
 
 ### <!-- 4 -->🐛 Bug Fixes
