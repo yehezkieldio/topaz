@@ -6,6 +6,23 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.5.3 (October 28, 2025)
+
+### <!-- 11 -->🛠️ Miscellaneous
+- [`9fa30c2`](https://github.com/yehezkieldio/topaz/commit/9fa30c2d9931b20d1d932fb47cc386fc39e3c4e5) cliff.toml: Enhance commit parsing and grouping for changelog generation
+
+### <!-- 5 -->📚 Documentation
+- [`2f338c1`](https://github.com/yehezkieldio/topaz/commit/2f338c1d6d56331f3eaba0ae645e239029242f50) Refine README with Overview, Features, and Getting Started sections
+- [`0025daa`](https://github.com/yehezkieldio/topaz/commit/0025daa288f80c11e354e91e5b7340718e68af03) Address code review feedback - improve version format and clarify just command
+- [`91a4a13`](https://github.com/yehezkieldio/topaz/commit/91a4a13baf9f7f4d84a4f76361070ccec8472b69) readme: Remove npm instructions and update commands to use bun exclusively
+
+### <!-- 7 -->🚜 Refactor
+- [`4138abb`](https://github.com/yehezkieldio/topaz/commit/4138abb7be30f62c89d9d3bfc11a8056766fe282) cliff.toml: Improve commit entry rendering with normalized titles, author attribution, and PR markup handling
+
+### <!-- 99 -->🌀 Other
+- [`c3152d2`](https://github.com/yehezkieldio/topaz/commit/c3152d29969385d430273dad6805eaed6930f00a) Initial plan
+- [`b8197a5`](https://github.com/yehezkieldio/topaz/commit/b8197a5b068cd2dd21c40932973b1184f8f7b7eb) Initial plan for README refinement
+- [`57680d4`](https://github.com/yehezkieldio/topaz/commit/57680d4d27550919cd6c5b369fbfe336abfb775a) [WIP] Refine README sections for clarity and structure by yehezkieldio ([#150](https://github.com/yehezkieldio/topaz/issues/150))
 ## topaz@0.5.2 (October 28, 2025)
 ### 📝 Release Notes
 Hopefully this resolves the error on the create new entry form
