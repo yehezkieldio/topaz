@@ -13,8 +13,6 @@
 
 Topaz is a personal platform built to track, organize, and revisit my reading journey through fanfiction, webnovels, and serialized internet fiction. It is tailored specifically for fanfic and long-form web content. Topaz helps me catalog what I've read, what I'm currently reading, and what I want to return to, without relying on fragile browser bookmarks, cluttered spreadsheets, or unreliable third-party services.
 
-Built with modern web technologies, Topaz provides a fast, responsive, and intuitive interface for managing your digital reading library. While this space is built for me, it is open for anyone to explore, fork, and adapt for their own use.
-
 ## Features
 
 - Track reading progress across multiple platforms (AO3, FFN, Wattpad, RoyalRoad, and more)
@@ -23,9 +21,6 @@ Built with modern web technologies, Topaz provides a fast, responsive, and intui
 - Rate stories and add personal notes
 - Full-text search across titles, authors, descriptions, tags, and fandoms
 - View detailed library statistics and insights
-- Discord OAuth authentication for secure access
-- Optimized performance with PostgreSQL materialized views and Next.js Cache Components
-- Mobile-responsive design with dark mode support
 
 ## Getting Started
 
@@ -54,11 +49,6 @@ Before you begin, ensure you have the following installed:
    bun install
    ```
 
-   Or using npm:
-   ```bash
-   npm install
-   ```
-
 3. **Set up environment variables**
 
    Copy the example environment file and fill in your credentials:
@@ -71,7 +61,7 @@ Before you begin, ensure you have the following installed:
    - `AUTH_SECRET` - Random secret for NextAuth (generate with `openssl rand -base64 32`)
    - `AUTH_DISCORD_ID` - Discord OAuth client ID
    - `AUTH_DISCORD_SECRET` - Discord OAuth client secret
-   - `ALLOWED_DISCORD_ID` - Your Discord user ID (optional, restricts access to your account only)
+   - `ALLOWED_DISCORD_ID` - Your Discord user ID (restricts entry creation to your account only)
 
 4. **Set up the database**
 
@@ -87,19 +77,13 @@ Before you begin, ensure you have the following installed:
 
    Push the database schema:
    ```bash
-   npm run db:push
+   bun run db:push
    ```
 
 5. **Start the development server**
 
-   Using Bun:
    ```bash
    bun dev
-   ```
-
-   Or using npm:
-   ```bash
-   npm run dev
    ```
 
    Open [http://localhost:3000](http://localhost:3000) in your browser.
@@ -107,17 +91,17 @@ Before you begin, ensure you have the following installed:
 6. **Build for production**
 
    ```bash
-   npm run build
-   npm start
+   bun run build
+   bun start
    ```
 
 ### Additional Commands
 
-- `npm run db:generate` - Generate database migrations
-- `npm run db:migrate` - Apply database migrations
-- `npm run db:studio` - Open Drizzle Studio for database management
-- `npm run check` - Run Biome linter and formatter checks
-- `npm run typecheck` - Run TypeScript type checking
+- `bun run db:generate` - Generate database migrations
+- `bun run db:migrate` - Apply database migrations
+- `bun run db:studio` - Open Drizzle Studio for database management
+- `bun run check` - Run Biome linter and formatter checks
+- `bun run typecheck` - Run TypeScript type checking
 
 ## License
 
