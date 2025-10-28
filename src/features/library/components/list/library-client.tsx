@@ -36,17 +36,17 @@ export function LibraryClientProvider({ isAdministratorUser }: { isAdministrator
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-size-[40px_40px] opacity-[0.15]" />
             </div>
             <div className="relative z-10">
-                <div className="flex min-h-screen flex-col">
-                    <DesktopLibraryControls isAdministratorUser={isAdministratorUser} />
+                <LibraryDataProvider {...providerProps}>
+                    <div className="flex min-h-screen flex-col">
+                        <DesktopLibraryControls isAdministratorUser={isAdministratorUser} />
 
-                    <div className="min-h-0 flex-1 grow overflow-hidden p-1 pb-20 sm:p-2 sm:pb-2">
-                        <LibraryDataProvider {...providerProps}>
+                        <div className="min-h-0 flex-1 grow overflow-hidden p-1 pb-20 sm:p-2 sm:pb-2">
                             <LibraryListSection isAdministratorUser={isAdministratorUser} />
-                        </LibraryDataProvider>
-                    </div>
+                        </div>
 
-                    <MobileLibraryControls isAdministratorUser={isAdministratorUser} />
-                </div>
+                        <MobileLibraryControls isAdministratorUser={isAdministratorUser} />
+                    </div>
+                </LibraryDataProvider>
             </div>
         </div>
     );

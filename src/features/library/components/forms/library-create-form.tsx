@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "#/components/ui/button";
 import { Form } from "#/components/ui/form";
 import { SheetClose, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "#/components/ui/sheet";

@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "#/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "#/components/ui/form";
 import { ProgressControls } from "#/components/ui/progress-controls";

@@ -1,3 +1,5 @@
+"use client";
+
 import { ClipboardIcon } from "lucide-react";
 import * as React from "react";
 import type { Control, Path } from "react-hook-form";
