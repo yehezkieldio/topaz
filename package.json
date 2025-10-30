@@ -74,6 +74,7 @@
         "@tailwindcss/postcss": "^4.1.16",
         "@tanstack/react-query-devtools": "^5.90.2",
         "@total-typescript/ts-reset": "^0.6.1",
+        "@types/minimatch": "^6.0.0",
         "@types/node": "^20.19.24",
         "@types/react": "^19.2.2",
         "@types/react-dom": "^19.2.2",
