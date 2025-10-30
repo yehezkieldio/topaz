@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.5.4 (October 30, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`645f245`](https://github.com/yehezkieldio/topaz/commit/645f24527ac63deda304d3e98bdba262097d59b3) deps: Update dependency @biomejs/biome to v2.3.2 by renovate[bot] ([#151](https://github.com/yehezkieldio/topaz/issues/151))
+- [`addd612`](https://github.com/yehezkieldio/topaz/commit/addd61224779beeaf4c14f5df0d4aa5fab6ba079) deps: Update dependency @types/node to ^20.19.24 by renovate[bot] ([#152](https://github.com/yehezkieldio/topaz/issues/152))
+- [`e5fc1cf`](https://github.com/yehezkieldio/topaz/commit/e5fc1cf473715a0be6f92b33b74b4c9ac52c9e5f) deps: Update dependency drizzle-kit to ^0.31.6 by renovate[bot] ([#153](https://github.com/yehezkieldio/topaz/issues/153))
+- [`56b3e4d`](https://github.com/yehezkieldio/topaz/commit/56b3e4db4b9670cb0bab7c70862634cea42db029) deps: Update dependency fireflyy to ^3.0.6 by renovate[bot] ([#154](https://github.com/yehezkieldio/topaz/issues/154))
+- [`b54ea3a`](https://github.com/yehezkieldio/topaz/commit/b54ea3ac4318a85bf52151c6bde915808e2599f4) deps: Update dependency next to ^16.0.1 by renovate[bot] ([#155](https://github.com/yehezkieldio/topaz/issues/155))
+- [`90ed609`](https://github.com/yehezkieldio/topaz/commit/90ed609b9201f7ed7d19bc2c2a635171002be71c) deps: Update dependency next-devtools-mcp to ^0.2.2 by renovate[bot] ([#156](https://github.com/yehezkieldio/topaz/issues/156))
+- [`de541f7`](https://github.com/yehezkieldio/topaz/commit/de541f73aa666d22d609d17c9230760a27671824) deps: Update dependency superjson to ^2.2.5 by renovate[bot] ([#157](https://github.com/yehezkieldio/topaz/issues/157))
+- [`872eb4a`](https://github.com/yehezkieldio/topaz/commit/872eb4a8078af56fc11f28e70cbcdc2cfa301f2f) deps: Update dependency next-devtools-mcp to ^0.2.3 by renovate[bot] ([#158](https://github.com/yehezkieldio/topaz/issues/158))
+- [`cca1a2a`](https://github.com/yehezkieldio/topaz/commit/cca1a2a60fbbd189ebe4eafb67fe246e9349e45f) deps: Add minimatch types to address upstream dependency issue
 ## topaz@0.5.3 (October 28, 2025)
 
 ### <!-- 11 -->🛠️ Miscellaneous
