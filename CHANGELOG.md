@@ -6,6 +6,27 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.5.5 (November 8, 2025)
+
+### <!-- 11 -->🛠️ Miscellaneous
+- [`395a9cc`](https://github.com/yehezkieldio/topaz/commit/395a9ccd0216219fd3e27c0e5f3b6bd85a30e46c) lockfile: Add configVersion
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`5a213cb`](https://github.com/yehezkieldio/topaz/commit/5a213cb4cf54a44053a98944e0d99db88f6022cd) deps: Update dependency lucide-react to ^0.552.0 by renovate[bot] ([#159](https://github.com/yehezkieldio/topaz/issues/159))
+- [`ece5d5a`](https://github.com/yehezkieldio/topaz/commit/ece5d5afd4207516a2219aa3221db05920b1bf78) deps: Update dependency react-hook-form to ^7.66.0 by renovate[bot] ([#160](https://github.com/yehezkieldio/topaz/issues/160))
+- [`ff84ef6`](https://github.com/yehezkieldio/topaz/commit/ff84ef60e6caf9ba7fcf6618a465dd7d4778f906) deps: Update tanstack-query monorepo by renovate[bot] ([#161](https://github.com/yehezkieldio/topaz/issues/161))
+- [`1a7647e`](https://github.com/yehezkieldio/topaz/commit/1a7647e4334c0746c93277624047e662c9d2fa8a) deps: Update dependency @biomejs/biome to v2.3.3 by renovate[bot] ([#162](https://github.com/yehezkieldio/topaz/issues/162))
+- [`931510d`](https://github.com/yehezkieldio/topaz/commit/931510de0c12a69661c2f531412e8671f0222582) deps: Update dependency next-devtools-mcp to ^0.2.4 by renovate[bot] ([#163](https://github.com/yehezkieldio/topaz/issues/163))
+- [`71482a2`](https://github.com/yehezkieldio/topaz/commit/71482a2f8acc4555ed1932c5767b934833d1db55) deps: Update dependency next-devtools-mcp to ^0.2.5 by renovate[bot] ([#164](https://github.com/yehezkieldio/topaz/issues/164))
+- [`73028e4`](https://github.com/yehezkieldio/topaz/commit/73028e49312a0ef44473b54d2e46f0ca0db654e2) deps: Update dependency next-devtools-mcp to ^0.2.6 by renovate[bot] ([#165](https://github.com/yehezkieldio/topaz/issues/165))
+- [`c242411`](https://github.com/yehezkieldio/topaz/commit/c24241105d23b7053855d305e1caf402c50afd2a) deps: Update radix-ui-primitives monorepo by renovate[bot] ([#166](https://github.com/yehezkieldio/topaz/issues/166))
+- [`1a201d8`](https://github.com/yehezkieldio/topaz/commit/1a201d853d5c9806665a15be1abc9aafb34bff44) deps: Update dependency @biomejs/biome to v2.3.4 by renovate[bot] ([#167](https://github.com/yehezkieldio/topaz/issues/167))
+- [`451c698`](https://github.com/yehezkieldio/topaz/commit/451c698c92c756d663ad21928cd8ce896f39f51e) deps: Update tanstack-query monorepo by renovate[bot] ([#168](https://github.com/yehezkieldio/topaz/issues/168))
+- [`0b83f56`](https://github.com/yehezkieldio/topaz/commit/0b83f56b7cf902e00cad9a9f279c62258ec859ed) deps: Update dependency next-devtools-mcp to ^0.3.0 by renovate[bot] ([#169](https://github.com/yehezkieldio/topaz/issues/169))
+- [`1f9708f`](https://github.com/yehezkieldio/topaz/commit/1f9708ff1efc27ca2a926c7802083c67bbbbc81b) deps: Update dependency next-devtools-mcp to ^0.3.1 by renovate[bot] ([#170](https://github.com/yehezkieldio/topaz/issues/170))
+- [`59f9786`](https://github.com/yehezkieldio/topaz/commit/59f978675463d4fd2085446ae0c16c4280052cc9) deps: Update tailwindcss monorepo to ^4.1.17 by renovate[bot] ([#171](https://github.com/yehezkieldio/topaz/issues/171))
+- [`c3400c5`](https://github.com/yehezkieldio/topaz/commit/c3400c5b59cacbbc12771b1cd314408d728b1de2) deps: Update dependency lucide-react to ^0.553.0 by renovate[bot] ([#172](https://github.com/yehezkieldio/topaz/issues/172))
+- [`adbb97b`](https://github.com/yehezkieldio/topaz/commit/adbb97b7d768b13460a672341a17b9760cab39e2) deps: Update dependency nuqs to v2.7.3 by renovate[bot] ([#173](https://github.com/yehezkieldio/topaz/issues/173))
 ## topaz@0.5.4 (October 30, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
