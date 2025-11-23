@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.5.6 (November 23, 2025)
 ## topaz@0.5.5 (November 8, 2025)
 
 ### <!-- 11 -->🛠️ Miscellaneous
