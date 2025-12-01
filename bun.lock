@@ -65,7 +65,7 @@
         "@types/react": "^19.2.7",
         "@types/react-dom": "^19.2.3",
         "drizzle-kit": "^0.31.7",
-        "fireflyy": "^3.0.7",
+        "fireflyy": "^3.0.10",
         "tailwindcss": "^4.1.17",
         "tw-animate-css": "^1.4.0",
         "typescript": "^5.9.3",
@@ -557,7 +557,7 @@
 
     "find-process": ["find-process@2.0.0", "", { "dependencies": { "chalk": "~4.1.2", "commander": "^12.1.0", "loglevel": "^1.9.2" }, "bin": { "find-process": "dist/bin/find-process.js" } }, "sha512-YUBQnteWGASJoEVVsOXy6XtKAY2O1FCsWnnvQ8y0YwgY1rZiKeVptnFvMu6RSELZAJOGklqseTnUGGs5D0bKmg=="],
 
-    "fireflyy": ["fireflyy@3.0.7", "", { "dependencies": { "c12": "^3.3.1", "commander": "^14.0.2", "consola": "^3.4.2", "git-cliff": "^2.10.1", "neverthrow": "^8.2.0", "semver": "^7.7.3", "zod": "^4.1.12" }, "bin": { "firefly": "dist/main.js", "ff": "dist/main.js" } }, "sha512-jLwg1LCTDKRHrYhaV/Xs2+oWzj0+ghJGHAMpRSonjZ2UyK6ak8yWdZcUy3Jgsfm+kj8vNGZwKJFuFHkj4VZKeg=="],
+    "fireflyy": ["fireflyy@3.0.10", "", { "dependencies": { "c12": "^3.3.1", "commander": "^14.0.2", "consola": "^3.4.2", "git-cliff": "^2.10.1", "neverthrow": "^8.2.0", "semver": "^7.7.3", "zod": "^4.1.12" }, "bin": { "ff": "dist/main.js", "firefly": "dist/main.js" } }, "sha512-g9RlhDb/+kibnOO/Ad7BIWblOK3dshqS/USagEgKhpfCEX1BwLO7GYWRzH8KU4MgYH9OhFOZ4fPUyP+xlqyL7A=="],
 
     "forwarded": ["forwarded@0.2.0", "", {}, "sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow=="],
 
@@ -912,8 +912,6 @@
     "body-parser/iconv-lite": ["iconv-lite@0.6.3", "", { "dependencies": { "safer-buffer": ">= 2.1.2 < 3.0.0" } }, "sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw=="],
 
     "find-process/commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
-
-    "fireflyy/zod": ["zod@4.1.12", "", {}, "sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ=="],
 
     "http-errors/statuses": ["statuses@2.0.1", "", {}, "sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ=="],
 
