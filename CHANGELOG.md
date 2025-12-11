@@ -6,6 +6,25 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.5.8 (December 11, 2025)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`d1f4665`](https://github.com/yehezkieldio/topaz/commit/d1f4665aa3b6c39042c2c1bab58a0ac5d58cbbd4) deps: Update dependency drizzle-kit to ^0.31.8 by renovate[bot] ([#222](https://github.com/yehezkieldio/topaz/issues/222))
+- [`4e907c5`](https://github.com/yehezkieldio/topaz/commit/4e907c50c78aea3b324e8141270eefb1533dcfba) deps: Update dependency drizzle-orm to ^0.45.0 by renovate[bot] ([#223](https://github.com/yehezkieldio/topaz/issues/223))
+- [`be166f8`](https://github.com/yehezkieldio/topaz/commit/be166f876cc76341569b3647000dfe52422525c7) deps: Update dependency next-devtools-mcp to ^0.3.6 by renovate[bot] ([#224](https://github.com/yehezkieldio/topaz/issues/224))
+- [`5c86b56`](https://github.com/yehezkieldio/topaz/commit/5c86b569692fdbe387ca2521d42cac6fb48dba64) deps: Update dependency nuqs to v2.8.3 by renovate[bot] ([#225](https://github.com/yehezkieldio/topaz/issues/225))
+- [`bb1304a`](https://github.com/yehezkieldio/topaz/commit/bb1304ac32e859e3cda97be862357522b47e335c) deps: Update dependency lucide-react to ^0.556.0 by renovate[bot] ([#226](https://github.com/yehezkieldio/topaz/issues/226))
+- [`ae21840`](https://github.com/yehezkieldio/topaz/commit/ae21840d3a72153405c18d418ad0907c9675770d) deps: Update dependency @tanstack/react-virtual to ^3.13.13 by renovate[bot] ([#227](https://github.com/yehezkieldio/topaz/issues/227))
+- [`0231dd9`](https://github.com/yehezkieldio/topaz/commit/0231dd9dd0d86f06d3f3e757879b077710a86f51) deps: Update dependency @types/node to ^20.19.26 by renovate[bot] ([#228](https://github.com/yehezkieldio/topaz/issues/228))
+- [`bad9799`](https://github.com/yehezkieldio/topaz/commit/bad97992fc6aa3f67df57a130b566a30d0c9b7c3) deps: Update dependency next to ^16.0.8 by renovate[bot] ([#229](https://github.com/yehezkieldio/topaz/issues/229))
+- [`8e51b9f`](https://github.com/yehezkieldio/topaz/commit/8e51b9f5735911878a50a80b4b01493a260afae9) deps: Update dependency nuqs to v2.8.4 by renovate[bot] ([#230](https://github.com/yehezkieldio/topaz/issues/230))
+- [`32099d7`](https://github.com/yehezkieldio/topaz/commit/32099d78dfee2ee8fe9a953ab8e437abfcbed2f6) deps: Update dependency lucide-react to ^0.559.0 by renovate[bot] ([#231](https://github.com/yehezkieldio/topaz/issues/231))
+- [`8af0b4a`](https://github.com/yehezkieldio/topaz/commit/8af0b4a60be49db9593e429d277f4bf63ee10694) deps: Update dependency drizzle-orm to ^0.45.1 by renovate[bot] ([#232](https://github.com/yehezkieldio/topaz/issues/232))
+- [`8897869`](https://github.com/yehezkieldio/topaz/commit/88978697c454829cc369f6298e0dbdd59d341a52) deps: Update dependency nuqs to v2.8.5 by renovate[bot] ([#233](https://github.com/yehezkieldio/topaz/issues/233))
+- [`ba769d6`](https://github.com/yehezkieldio/topaz/commit/ba769d6577d47ceac4f0a9841a67bfd4685510cb) deps: Update dependency lucide-react to ^0.560.0 by renovate[bot] ([#234](https://github.com/yehezkieldio/topaz/issues/234))
+- [`b40aa26`](https://github.com/yehezkieldio/topaz/commit/b40aa26f4b0dbec33e10f174235e621adfcb94bb) deps: Update tailwindcss monorepo to ^4.1.18 by renovate[bot] ([#235](https://github.com/yehezkieldio/topaz/issues/235))
+- [`8cf534a`](https://github.com/yehezkieldio/topaz/commit/8cf534a7a7343cfd988bcd857efe55b275a42389) deps: Update dependency next to ^16.0.9 by renovate[bot] ([#236](https://github.com/yehezkieldio/topaz/issues/236))
+- [`ba1a5f5`](https://github.com/yehezkieldio/topaz/commit/ba1a5f5cb1e0e66749d13410e98891d3d43dbc66) deps: Update react, react-dom, and @types/node versions
 ## topaz@0.5.7 (December 4, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
