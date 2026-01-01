@@ -6,6 +6,37 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.5.9 (January 1, 2026)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`cf24a93`](https://github.com/yehezkieldio/topaz/commit/cf24a9396875e672ed361ea389b70115d5e77939) deps: Update dependency @types/node to ^25.0.1 by renovate[bot] ([#237](https://github.com/yehezkieldio/topaz/issues/237))
+- [`8602720`](https://github.com/yehezkieldio/topaz/commit/86027205fdc63f0b89d2bbe006003e1cc3d1c1c0) deps: Update react monorepo to ^19.2.3 by renovate[bot] ([#238](https://github.com/yehezkieldio/topaz/issues/238))
+- [`b7998c7`](https://github.com/yehezkieldio/topaz/commit/b7998c7c593ae660307adac093b2acc21a67bf78) deps: Update dependency next-devtools-mcp to ^0.3.7 by renovate[bot] ([#239](https://github.com/yehezkieldio/topaz/issues/239))
+- [`4bdd114`](https://github.com/yehezkieldio/topaz/commit/4bdd114016cf8dfcfa57adf180ba8c920c654469) deps: Update dependency lucide-react to ^0.561.0 by renovate[bot] ([#240](https://github.com/yehezkieldio/topaz/issues/240))
+- [`6c8c9c5`](https://github.com/yehezkieldio/topaz/commit/6c8c9c5b5a3306bb4172f53452ff057ad06fc4f5) deps: Update trpc monorepo to ^11.8.0 by renovate[bot] ([#241](https://github.com/yehezkieldio/topaz/issues/241))
+- [`9d130fc`](https://github.com/yehezkieldio/topaz/commit/9d130fc79107745758087b0384d2e15a58f36ddc) deps: Update dependency @types/node to ^25.0.2 by renovate[bot] ([#242](https://github.com/yehezkieldio/topaz/issues/242))
+- [`93ea9ce`](https://github.com/yehezkieldio/topaz/commit/93ea9ceb1d6ea50302ac907110a89a6aada95a66) deps: Update dependency @t3-oss/env-nextjs to ^0.13.10 by renovate[bot] ([#243](https://github.com/yehezkieldio/topaz/issues/243))
+- [`43ed703`](https://github.com/yehezkieldio/topaz/commit/43ed703b09940370d9022669b06a8952a8d2ccbd) deps: Update dependency zod to ^4.2.0 by renovate[bot] ([#244](https://github.com/yehezkieldio/topaz/issues/244))
+- [`092589d`](https://github.com/yehezkieldio/topaz/commit/092589d13bc81fae2016478ab466a9fc63db1a30) deps: Update dependency @biomejs/biome to v2.3.9 by renovate[bot] ([#245](https://github.com/yehezkieldio/topaz/issues/245))
+- [`13bc305`](https://github.com/yehezkieldio/topaz/commit/13bc30572cd5999ec79c3185d9bbbde8482a5b81) deps: Update dependency zod to ^4.2.1 by renovate[bot] ([#246](https://github.com/yehezkieldio/topaz/issues/246))
+- [`252ca83`](https://github.com/yehezkieldio/topaz/commit/252ca831f3a39f87ecfba2137978d8e501c7d07a) deps: Update dependency @types/node to ^25.0.3 by renovate[bot] ([#247](https://github.com/yehezkieldio/topaz/issues/247))
+- [`b301339`](https://github.com/yehezkieldio/topaz/commit/b301339f0ba1e92f794d4fee07c7a4fed259e55a) deps: Update dependency @biomejs/biome to v2.3.10 by renovate[bot] ([#248](https://github.com/yehezkieldio/topaz/issues/248))
+- [`9ff8e2e`](https://github.com/yehezkieldio/topaz/commit/9ff8e2e11ff3845e9f7e00cca6890c836b81282c) deps: Update dependency lucide-react to ^0.562.0 by renovate[bot] ([#249](https://github.com/yehezkieldio/topaz/issues/249))
+- [`7198aad`](https://github.com/yehezkieldio/topaz/commit/7198aad8dd6b6cbc91537b4d0b96e0e3ab9e0820) deps: Update dependency next to ^16.1.0 by renovate[bot] ([#250](https://github.com/yehezkieldio/topaz/issues/250))
+- [`a93b36f`](https://github.com/yehezkieldio/topaz/commit/a93b36f8ba4aac308eba831e5971acc3d7e978a2) deps: Update dependency react-hook-form to ^7.69.0 by renovate[bot] ([#251](https://github.com/yehezkieldio/topaz/issues/251))
+- [`cc3bc7b`](https://github.com/yehezkieldio/topaz/commit/cc3bc7b89f577c87111815b2b743b4573aa288ef) deps: Update trpc monorepo to ^11.8.1 by renovate[bot] ([#252](https://github.com/yehezkieldio/topaz/issues/252))
+- [`2eac6be`](https://github.com/yehezkieldio/topaz/commit/2eac6bed8a53c8a2ff3d64c40206b54fa8c74435) deps: Update dependency next to ^16.1.1 by renovate[bot] ([#253](https://github.com/yehezkieldio/topaz/issues/253))
+- [`b048adb`](https://github.com/yehezkieldio/topaz/commit/b048adb46f4be5b84799d1ac36f9c1f60e924b48) deps: Update dependency nuqs to v2.8.6 by renovate[bot] ([#254](https://github.com/yehezkieldio/topaz/issues/254))
+- [`08b6d30`](https://github.com/yehezkieldio/topaz/commit/08b6d30d8e39c1d1c8dab5171f684f68499c7c04) deps: Update tanstack-query monorepo by renovate[bot] ([#255](https://github.com/yehezkieldio/topaz/issues/255))
+- [`2a3cbcf`](https://github.com/yehezkieldio/topaz/commit/2a3cbcf80aaf62204d4a7ebe7d73f54b39d5e7cf) deps: Update tanstack-query monorepo by renovate[bot] ([#256](https://github.com/yehezkieldio/topaz/issues/256))
+- [`728baeb`](https://github.com/yehezkieldio/topaz/commit/728baebaccefcb3d5d3512a25bd305a215a223be) deps: Update dependency react-error-boundary to ^6.0.1 by renovate[bot] ([#257](https://github.com/yehezkieldio/topaz/issues/257))
+- [`19e7047`](https://github.com/yehezkieldio/topaz/commit/19e70477682fce33cc04cd8a5359685e4a758056) deps: Update tanstack-query monorepo by renovate[bot] ([#258](https://github.com/yehezkieldio/topaz/issues/258))
+- [`9635eaf`](https://github.com/yehezkieldio/topaz/commit/9635eafb08dd7fe777e19774a4af09dad818b9d5) deps: Update dependency @tanstack/react-virtual to ^3.13.14 by renovate[bot] ([#259](https://github.com/yehezkieldio/topaz/issues/259))
+- [`0f70a0e`](https://github.com/yehezkieldio/topaz/commit/0f70a0e873e59fcadfd06174166f571c8d38d4c5) deps: Update tanstack-query monorepo by renovate[bot] ([#260](https://github.com/yehezkieldio/topaz/issues/260))
+- [`4654607`](https://github.com/yehezkieldio/topaz/commit/465460740c42d66cd4b411f8c495ccccf8492e3b) deps: Update dependency zod to ^4.3.0 by renovate[bot] ([#261](https://github.com/yehezkieldio/topaz/issues/261))
+- [`7d1be18`](https://github.com/yehezkieldio/topaz/commit/7d1be18242b4651a80032c473edccef0d07641a1) deps: Update dependency zod to ^4.3.2 by renovate[bot] ([#262](https://github.com/yehezkieldio/topaz/issues/262))
+- [`f3de2c0`](https://github.com/yehezkieldio/topaz/commit/f3de2c05813a16ac64a30df8715cbf1a5dc11525) deps: Update dependency zod to ^4.3.3 by renovate[bot] ([#263](https://github.com/yehezkieldio/topaz/issues/263))
+- [`0232938`](https://github.com/yehezkieldio/topaz/commit/023293897f1bc92900cffc76e8bca8510ca87bb7) deps: Update dependency zod to ^4.3.4 by renovate[bot] ([#264](https://github.com/yehezkieldio/topaz/issues/264))
 ## topaz@0.5.8 (December 11, 2025)
 
 ### <!-- 2 -->🧩 Dependencies Updates
