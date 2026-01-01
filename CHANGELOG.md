@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.5.10 (January 1, 2026)
+
+### <!-- 4 -->🐛 Bug Fixes
+- [`a110cb2`](https://github.com/yehezkieldio/topaz/commit/a110cb21d096946b2e065e9da3fd8973829910de) Sort tailwindcss classes
 ## topaz@0.5.9 (January 1, 2026)
 
 ### <!-- 2 -->🧩 Dependencies Updates
