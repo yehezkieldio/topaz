@@ -24,7 +24,7 @@ export function LibrarySearchInput() {
 
     return (
         <div className="relative w-full max-w-sm">
-            <SearchIcon className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-foreground" />
+            <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-foreground" />
             <Input
                 className="rounded-md pr-9 pl-9 focus-visible:border-accent focus-visible:ring-0"
                 onChange={(e) => setSearch(e.target.value)}
@@ -34,7 +34,7 @@ export function LibrarySearchInput() {
             />
             {search && (
                 <Button
-                    className="-translate-y-1/2 absolute top-1/2 right-1 size-7 p-0"
+                    className="absolute top-1/2 right-1 size-7 -translate-y-1/2 p-0"
                     onClick={handleClearSearch}
                     size="sm"
                     variant="ghost"

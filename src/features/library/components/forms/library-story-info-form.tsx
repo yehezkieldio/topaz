@@ -157,7 +157,7 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
                                         }}
                                     />
                                     <Button
-                                        className="-translate-y-1/2 absolute top-1/2 right-1 size-7 p-0 sm:hidden"
+                                        className="absolute top-1/2 right-1 size-7 -translate-y-1/2 p-0 sm:hidden"
                                         onClick={() => handlePasteFromClipboard(field.onChange)}
                                         size="sm"
                                         type="button"
