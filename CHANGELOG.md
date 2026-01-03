@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.5.11 (January 3, 2026)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`fb52464`](https://github.com/yehezkieldio/topaz/commit/fb52464f558fa98b9d9cd19a36496cf31f9f2b3a) deps: Update dependency next-devtools-mcp to ^0.3.8 by renovate[bot] ([#265](https://github.com/yehezkieldio/topaz/issues/265))
+- [`30d00bf`](https://github.com/yehezkieldio/topaz/commit/30d00bfbfdc38aa69070ff74c4b874610406f70b) deps: Update dependency @biomejs/biome to v2.3.11 by renovate[bot] ([#266](https://github.com/yehezkieldio/topaz/issues/266))
+- [`c91bd4d`](https://github.com/yehezkieldio/topaz/commit/c91bd4d76698e05efb90623b20c71636241976fa) deps: Update dependency @tanstack/react-virtual to ^3.13.15 by renovate[bot] ([#267](https://github.com/yehezkieldio/topaz/issues/267))
 ## topaz@0.5.10 (January 1, 2026)
 
 ### <!-- 4 -->🐛 Bug Fixes
