@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.5.12 (January 4, 2026)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`ca92070`](https://github.com/yehezkieldio/topaz/commit/ca920703aec3be8461da9a5f019685a530027e01) deps: Update dependency @tanstack/react-virtual to ^3.13.16 by renovate[bot] ([#268](https://github.com/yehezkieldio/topaz/issues/268))
+- [`f4cc806`](https://github.com/yehezkieldio/topaz/commit/f4cc806707a43cd605c2f828a277061db03d044e) deps: Update dependency react-hook-form to ^7.70.0 by renovate[bot] ([#269](https://github.com/yehezkieldio/topaz/issues/269))
 ## topaz@0.5.11 (January 3, 2026)
 
 ### <!-- 2 -->🧩 Dependencies Updates
