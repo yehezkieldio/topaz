@@ -3,9 +3,10 @@ import { type SQL, and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-o
 import z from "zod/v4";
 import { sortOrderEnum } from "#/lib/utils";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "#/server/api/trpc";
+import { invalidateLibraryStats } from "#/server/cache/actions";
 import { type ProgressSortBy, progressSortByEnum, progressStatusEnum, progresses } from "#/server/db/schema/progress";
 import { sourceEnum } from "#/server/db/schema/story";
-import { getSortColumn, libraryMaterializedView } from "#/server/db/schema/view";
+import { getSortColumn, libraryMaterializedView, libraryStatsMaterializedView } from "#/server/db/schema/view";
 
 const MAX_SEARCH_LENGTH = 255;
 const MIN_RATING = 0;
@@ -347,6 +348,11 @@ export const progressRouter = createTRPCRouter({
                     message: "Progress not found",
                 });
             }
+
+            await ctx.db.refreshMaterializedView(libraryMaterializedView).concurrently();
+            await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
+
+            await invalidateLibraryStats();
 
             return deletedProgress;
         }),

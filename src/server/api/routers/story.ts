@@ -15,6 +15,7 @@ import {
     storyUpdateSchema,
 } from "#/server/db/schema/story";
 import { tags } from "#/server/db/schema/tag";
+import { libraryMaterializedView, libraryStatsMaterializedView } from "#/server/db/schema/view";
 
 // Constants for validation
 const RATING_MIN = 0;
@@ -41,6 +42,9 @@ export const storyRouter = createTRPCRouter({
                 });
             }
 
+            await ctx.db.refreshMaterializedView(libraryMaterializedView).concurrently();
+            await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
+
             await invalidateLibraryStats();
             await invalidateHotFandoms();
             await invalidateHotTags();
@@ -50,7 +54,7 @@ export const storyRouter = createTRPCRouter({
     update: protectedProcedure.input(storyUpdateSchema).mutation(async ({ ctx, input }) => {
         const { publicId, ...updateData } = input;
 
-        return await ctx.db.transaction(async (tx) => {
+        const result = await ctx.db.transaction(async (tx) => {
             if (updateData.url) {
                 const [existingStory] = await tx
                     .select({
@@ -98,11 +102,17 @@ export const storyRouter = createTRPCRouter({
 
             return updatedStory;
         });
+
+        await ctx.db.refreshMaterializedView(libraryMaterializedView).concurrently();
+        await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
+        await invalidateLibraryStats();
+
+        return result;
     }),
     updateWithRelations: protectedProcedure.input(storyCreateWithProgressSchema).mutation(async ({ ctx, input }) => {
         const { storyPublicId, progressPublicId, tagIds, fandomIds, ...rest } = input;
 
-        return await ctx.db.transaction(async (tx) => {
+        const result = await ctx.db.transaction(async (tx) => {
             let resolvedTags: { publicId: string; name: string; id: string }[] = [];
             if (tagIds.length > 0) {
                 const existingTags = await tx
@@ -230,24 +240,27 @@ export const storyRouter = createTRPCRouter({
                 );
             }
 
-            const result = {
+            return {
                 storyPublicId: updatedStory.publicId,
                 progressPublicId: updatedProgress.publicId,
                 updatedTags: resolvedTags.map((t) => t.publicId),
                 updatedFandoms: resolvedFandoms.map((f) => f.publicId),
             };
-
-            await invalidateLibraryStats();
-            await invalidateHotFandoms();
-            await invalidateHotTags();
-
-            return result;
         });
+
+        await ctx.db.refreshMaterializedView(libraryMaterializedView).concurrently();
+        await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
+
+        await invalidateLibraryStats();
+        await invalidateHotFandoms();
+        await invalidateHotTags();
+
+        return result;
     }),
     create: protectedProcedure.input(storyCreateSchema).mutation(async ({ ctx, input }) => {
         const { tagIds, fandomIds, ...storyData } = input;
 
-        return await ctx.db.transaction(async (tx) => {
+        const result = await ctx.db.transaction(async (tx) => {
             const existingStory = await tx
                 .select({ id: stories.id })
                 .from(stories)
@@ -315,12 +328,17 @@ export const storyRouter = createTRPCRouter({
                 );
             }
 
-            await invalidateLibraryStats();
-            await invalidateHotFandoms();
-            await invalidateHotTags();
-
             return newStory;
         });
+
+        await ctx.db.refreshMaterializedView(libraryMaterializedView).concurrently();
+        await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
+
+        await invalidateLibraryStats();
+        await invalidateHotFandoms();
+        await invalidateHotTags();
+
+        return result;
     }),
     createWithProgress: protectedProcedure
         .input(
@@ -335,7 +353,7 @@ export const storyRouter = createTRPCRouter({
             const { tagIds, fandomIds, progressStatus, current_chapter, rating, notes, ...storyData } = input;
             const userId = ctx.session.user.id;
 
-            return await ctx.db.transaction(async (tx) => {
+            const result = await ctx.db.transaction(async (tx) => {
                 const existingStory = await tx
                     .select({ id: stories.id })
                     .from(stories)
@@ -424,14 +442,19 @@ export const storyRouter = createTRPCRouter({
                     });
                 }
 
-                await invalidateLibraryStats();
-                await invalidateHotFandoms();
-                await invalidateHotTags();
-
                 return {
                     story: newStory,
                     progress: newProgress,
                 };
             });
+
+            await ctx.db.refreshMaterializedView(libraryMaterializedView).concurrently();
+            await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
+
+            await invalidateLibraryStats();
+            await invalidateHotFandoms();
+            await invalidateHotTags();
+
+            return result;
         }),
 });
