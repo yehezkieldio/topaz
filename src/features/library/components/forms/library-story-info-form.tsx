@@ -25,6 +25,59 @@ type LibraryStoryInfoFormProps<T extends StoryInfo> = {
     control?: Control<T>;
 };
 
+function useStorySourceHandlers(sourceOnChangeRef: React.MutableRefObject<((value: string) => void) | null>) {
+    const autoDetectSource = React.useCallback(
+        (url: string) => {
+            if (!isValidUrl(url)) return;
+
+            if (sourceOnChangeRef.current) {
+                const detectedSource = detectSourceFromUrl(url);
+                sourceOnChangeRef.current(detectedSource);
+
+                if (detectedSource === "Other") {
+                    toast.warning("Could not detect source from URL", {
+                        description: "Please select the source manually.",
+                    });
+                } else {
+                    toast.success(`Detected source: ${sourceLabels[detectedSource]}`);
+                }
+            }
+        },
+        [sourceOnChangeRef.current],
+    );
+
+    const handlePasteFromClipboard = React.useCallback(
+        async (onChange: (value: string) => void) => {
+            if (!navigator?.clipboard) {
+                toast.error("Clipboard API not supported", {
+                    description:
+                        "Your browser does not support reading from the clipboard. Please paste the URL manually.",
+                });
+                return;
+            }
+
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    onChange(text);
+                    autoDetectSource(text);
+                    toast.success("Pasted URL from clipboard");
+                } else {
+                    toast.warning("Clipboard is empty");
+                }
+            } catch (error) {
+                console.error("Failed to read clipboard:", error);
+                toast.error("Failed to access clipboard", {
+                    description: "Please check permissions or paste the URL manually.",
+                });
+            }
+        },
+        [autoDetectSource],
+    );
+
+    return { autoDetectSource, handlePasteFromClipboard };
+}
+
 export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl }: LibraryStoryInfoFormProps<T>) {
     const context = useLibraryFormContext<T>();
     const isInCompoundContext = context !== null;
@@ -36,37 +89,7 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
         throw new Error("LibraryStoryInfoForm requires either control prop or compound component context");
     }
 
-    const autoDetectSource = React.useCallback((url: string) => {
-        if (!isValidUrl(url)) return;
-
-        if (sourceOnChangeRef.current) {
-            const detectedSource = detectSourceFromUrl(url);
-            sourceOnChangeRef.current(detectedSource);
-
-            if (detectedSource === "Other") {
-                toast.warning("Could not detect source from URL", {
-                    description: "Please select the source manually.",
-                });
-            } else {
-                toast.success(`Detected source: ${sourceLabels[detectedSource]}`);
-            }
-        }
-    }, []);
-
-    const handlePasteFromClipboard = React.useCallback(
-        async (onChange: (value: string) => void) => {
-            try {
-                const text = await navigator.clipboard.readText();
-                if (text) {
-                    onChange(text);
-                    autoDetectSource(text);
-                }
-            } catch (error) {
-                console.error("Failed to read clipboard:", error);
-            }
-        },
-        [autoDetectSource],
-    );
+    const { autoDetectSource, handlePasteFromClipboard } = useStorySourceHandlers(sourceOnChangeRef);
 
     const formFields = (
         <>
