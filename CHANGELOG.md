@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 > This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages.
 
+## topaz@0.5.13 (January 5, 2026)
+
+### <!-- 2 -->🧩 Dependencies Updates
+- [`546c28e`](https://github.com/yehezkieldio/topaz/commit/546c28e4ff948717e44530d9289fb86bd7b41978) deps: Update dependency zod to ^4.3.5 by renovate[bot] ([#270](https://github.com/yehezkieldio/topaz/issues/270))
+- [`615943f`](https://github.com/yehezkieldio/topaz/commit/615943f860854da86193e8f6449226aef7400933) deps: Update dependency react-error-boundary to ^6.0.2 by renovate[bot] ([#271](https://github.com/yehezkieldio/topaz/issues/271))
 ## topaz@0.5.12 (January 4, 2026)
 
 ### <!-- 2 -->🧩 Dependencies Updates
