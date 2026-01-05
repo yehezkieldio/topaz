@@ -3,6 +3,7 @@
 import { ClipboardIcon } from "lucide-react";
 import * as React from "react";
 import type { Control, Path } from "react-hook-form";
+import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "#/components/ui/form";
 import { Input } from "#/components/ui/input";
@@ -36,9 +37,19 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
     }
 
     const autoDetectSource = React.useCallback((url: string) => {
-        if (isValidUrl(url) && sourceOnChangeRef.current) {
+        if (!isValidUrl(url)) return;
+
+        if (sourceOnChangeRef.current) {
             const detectedSource = detectSourceFromUrl(url);
             sourceOnChangeRef.current(detectedSource);
+
+            if (detectedSource === "Other") {
+                toast.warning("Could not detect source from URL", {
+                    description: "Please select the source manually.",
+                });
+            } else {
+                toast.success(`Detected source: ${sourceLabels[detectedSource]}`);
+            }
         }
     }, []);
 

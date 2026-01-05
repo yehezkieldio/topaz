@@ -63,38 +63,42 @@ export function formatRating(value: number): string {
     return value.toFixed(1);
 }
 
-const SOURCE_PATTERNS: Record<Source, RegExp[]> = {
-    ArchiveOfOurOwn: [/archiveofourown\.org/i, /ao3\.org/i],
-    FanFictionNet: [/fanfiction\.net/i, /ffnet\.net/i, /www\.fanfiction\.net/i],
-    Wattpad: [/wattpad\.com/i],
-    SpaceBattles: [/spacebattles\.com/i, /forums\.spacebattles\.com/i],
-    SufficientVelocity: [/sufficientvelocity\.com/i, /forums\.sufficientvelocity\.com/i],
-    QuestionableQuesting: [
-        /questionablequesting\.com/i,
-        /forum\.questionablequesting\.com/i,
-        /forums\.questionablequesting\.com/i,
-    ],
-    RoyalRoad: [/royalroad\.com/i, /www\.royalroad\.com/i],
-    WebNovel: [/webnovel\.com/i, /www\.webnovel\.com/i],
-    ScribbleHub: [/scribblehub\.com/i, /www\.scribblehub\.com/i],
-    NovelBin: [/novelbin\.com/i, /www\.novelbin\.com/i, /novelbin\.net/i, /www\.novelbin\.net/i, /novelbin\.me/i],
+const SOURCE_DOMAINS: Partial<Record<Source, string[]>> = {
+    ArchiveOfOurOwn: ["archiveofourown.org", "ao3.org"],
+    FanFictionNet: ["fanfiction.net", "ffnet.net"],
+    Wattpad: ["wattpad.com"],
+    SpaceBattles: ["spacebattles.com"],
+    SufficientVelocity: ["sufficientvelocity.com"],
+    QuestionableQuesting: ["questionablequesting.com"],
+    RoyalRoad: ["royalroad.com"],
+    WebNovel: ["webnovel.com"],
+    ScribbleHub: ["scribblehub.com"],
+    NovelBin: ["novelbin.com", "novelbin.net", "novelbin.me"],
     Other: [],
 };
+
+const WWW_PREFIX_REGEX = /^www\./;
 
 export function detectSourceFromUrl(url: string): Source {
     if (!url || typeof url !== "string") {
         return "Other";
     }
 
-    const normalizedUrl = url.toLowerCase().trim();
+    try {
+        const { hostname } = new URL(url);
+        const cleanHostname = hostname.replace(WWW_PREFIX_REGEX, "").toLowerCase();
 
-    for (const [source, patterns] of Object.entries(SOURCE_PATTERNS) as [Source, RegExp[]][]) {
-        if (source === "Other") continue;
+        for (const [source, domains] of Object.entries(SOURCE_DOMAINS) as [Source, string[]][]) {
+            if (source === "Other") continue;
 
-        const isMatch = patterns.some((pattern) => pattern.test(normalizedUrl));
-        if (isMatch) {
-            return source;
+            if (domains.some((domain) => cleanHostname === domain || cleanHostname.endsWith(`.${domain}`))) {
+                return source;
+            }
         }
+    } catch {
+        // If URL parsing fails, we return Other.
+        // This is safer than regex matching on invalid URLs which might produce false positives.
+        return "Other";
     }
 
     return "Other";
