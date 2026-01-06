@@ -57,6 +57,7 @@ export const progresses = createTable(
         current_chapter: d.integer().notNull().default(0),
         rating: d.numeric({ precision: 2, scale: 1 }).notNull().default("0.0"),
         notes: d.text(),
+        version: d.integer().notNull().default(0),
         ...timestamps,
     }),
     (t) => [

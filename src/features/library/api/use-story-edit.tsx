@@ -46,6 +46,8 @@ export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
         defaultValues: {
             storyPublicId: item.storyPublicId,
             progressPublicId: item.progressPublicId,
+            storyVersion: item.storyVersion,
+            progressVersion: item.progressVersion,
             title: item.storyTitle || "",
             author: item.storyAuthor || "",
             url: item.storyUrl || "",
@@ -72,6 +74,8 @@ export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
             await updateStoryWithRelations.mutateAsync({
                 storyPublicId: data.storyPublicId,
                 progressPublicId: data.progressPublicId,
+                storyVersion: data.storyVersion,
+                progressVersion: data.progressVersion,
                 title: data.title,
                 author: data.author,
                 url: data.url,

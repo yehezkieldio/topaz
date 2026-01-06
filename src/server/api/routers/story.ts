@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { formatRating } from "#/lib/utils";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
@@ -51,66 +51,81 @@ export const storyRouter = createTRPCRouter({
 
             return deletedStory;
         }),
-    update: protectedProcedure.input(storyUpdateSchema).mutation(async ({ ctx, input }) => {
-        const { publicId, ...updateData } = input;
+    update: protectedProcedure
+        .input(storyUpdateSchema.extend({ version: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+            const { publicId, version, ...updateData } = input;
 
-        const result = await ctx.db.transaction(async (tx) => {
-            if (updateData.url) {
-                const [existingStory] = await tx
-                    .select({
-                        id: stories.id,
-                        hasConflict: sql<boolean>`EXISTS(
+            const result = await ctx.db.transaction(async (tx) => {
+                if (updateData.url) {
+                    const [existingStory] = await tx
+                        .select({
+                            id: stories.id,
+                            hasConflict: sql<boolean>`EXISTS(
                                 SELECT 1 FROM ${stories} s2
                                 WHERE s2.url = ${updateData.url}
                                 AND s2.public_id != ${publicId}
                             )`.as("hasConflict"),
-                    })
-                    .from(stories)
-                    .where(eq(stories.publicId, publicId))
-                    .limit(1);
+                        })
+                        .from(stories)
+                        .where(eq(stories.publicId, publicId))
+                        .limit(1);
 
-                if (!existingStory) {
+                    if (!existingStory) {
+                        throw new TRPCError({
+                            code: "NOT_FOUND",
+                            message: "Story not found",
+                        });
+                    }
+
+                    if (existingStory.hasConflict) {
+                        throw new TRPCError({
+                            code: "CONFLICT",
+                            message: "Story with this URL already exists",
+                        });
+                    }
+                }
+
+                const [updatedStory] = await tx
+                    .update(stories)
+                    .set({ ...updateData, version: sql`${stories.version} + 1` })
+                    .where(and(eq(stories.publicId, publicId), eq(stories.version, version)))
+                    .returning({
+                        id: stories.id,
+                        publicId: stories.publicId,
+                    });
+
+                if (!updatedStory) {
+                    const [freshStory] = await tx
+                        .select({ version: stories.version })
+                        .from(stories)
+                        .where(eq(stories.publicId, publicId))
+                        .limit(1);
+
+                    if (freshStory) {
+                        throw new TRPCError({
+                            code: "CONFLICT",
+                            message: "The story has been modified by another user. Please refresh and try again.",
+                        });
+                    }
+
                     throw new TRPCError({
                         code: "NOT_FOUND",
                         message: "Story not found",
                     });
                 }
 
-                if (existingStory.hasConflict) {
-                    throw new TRPCError({
-                        code: "CONFLICT",
-                        message: "Story with this URL already exists",
-                    });
-                }
-            }
+                return updatedStory;
+            });
 
-            const [updatedStory] = await tx
-                .update(stories)
-                .set(updateData)
-                .where(eq(stories.publicId, publicId))
-                .returning({
-                    id: stories.id,
-                    publicId: stories.publicId,
-                });
+            await ctx.db.refreshMaterializedView(libraryMaterializedView).concurrently();
+            await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
+            await invalidateLibraryStats();
 
-            if (!updatedStory) {
-                throw new TRPCError({
-                    code: "NOT_FOUND",
-                    message: "Story not found",
-                });
-            }
-
-            return updatedStory;
-        });
-
-        await ctx.db.refreshMaterializedView(libraryMaterializedView).concurrently();
-        await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
-        await invalidateLibraryStats();
-
-        return result;
-    }),
+            return result;
+        }),
     updateWithRelations: protectedProcedure.input(storyCreateWithProgressSchema).mutation(async ({ ctx, input }) => {
-        const { storyPublicId, progressPublicId, tagIds, fandomIds, ...rest } = input;
+        const { storyPublicId, progressPublicId, tagIds, fandomIds, storyVersion, progressVersion, ...rest } = input;
 
         const result = await ctx.db.transaction(async (tx) => {
             let resolvedTags: { publicId: string; name: string; id: string }[] = [];
@@ -182,14 +197,28 @@ export const storyRouter = createTRPCRouter({
                     is_nsfw: rest.is_nsfw,
                     status: rest.status,
                     updated_at: new Date(),
+                    version: sql`${stories.version} + 1`,
                 })
-                .where(eq(stories.publicId, storyPublicId))
+                .where(and(eq(stories.publicId, storyPublicId), eq(stories.version, storyVersion)))
                 .returning({
                     id: stories.id,
                     publicId: stories.publicId,
                 });
 
             if (!updatedStory) {
+                const [freshStory] = await tx
+                    .select({ version: stories.version })
+                    .from(stories)
+                    .where(eq(stories.publicId, storyPublicId))
+                    .limit(1);
+
+                if (freshStory) {
+                    throw new TRPCError({
+                        code: "CONFLICT",
+                        message: "The story has been modified by another user. Please refresh and try again.",
+                    });
+                }
+
                 throw new TRPCError({
                     code: "NOT_FOUND",
                     message: "Failed to update story or story not found.",
@@ -206,14 +235,28 @@ export const storyRouter = createTRPCRouter({
                     rating,
                     notes: rest.notes,
                     updated_at: new Date(),
+                    version: sql`${progresses.version} + 1`,
                 })
-                .where(eq(progresses.publicId, progressPublicId))
+                .where(and(eq(progresses.publicId, progressPublicId), eq(progresses.version, progressVersion)))
                 .returning({
                     id: progresses.id,
                     publicId: progresses.publicId,
                 });
 
             if (!updatedProgress) {
+                const [freshProgress] = await tx
+                    .select({ version: progresses.version })
+                    .from(progresses)
+                    .where(eq(progresses.publicId, progressPublicId))
+                    .limit(1);
+
+                if (freshProgress) {
+                    throw new TRPCError({
+                        code: "CONFLICT",
+                        message: "The progress has been modified by another user. Please refresh and try again.",
+                    });
+                }
+
                 throw new TRPCError({
                     code: "NOT_FOUND",
                     message: "Failed to update progress or progress not found.",

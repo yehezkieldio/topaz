@@ -11,6 +11,8 @@ import { useTRPC } from "#/trpc/react";
 export const createStorySchema = storyCreateWithProgressSchema.omit({
     storyPublicId: true,
     progressPublicId: true,
+    storyVersion: true,
+    progressVersion: true,
 });
 
 export type CreateStoryFormData = z.infer<typeof createStorySchema>;

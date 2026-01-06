@@ -75,6 +75,7 @@ export const stories = createTable(
         summary: citext(),
         title: citext().notNull(),
         url: d.text().notNull(),
+        version: d.integer().notNull().default(0),
         ...timestamps,
     }),
     (t) => [
@@ -129,6 +130,8 @@ export const storyCreateWithProgressSchema = z.object({
 
     storyPublicId: z.string(),
     progressPublicId: z.string(),
+    storyVersion: z.number(),
+    progressVersion: z.number(),
 });
 export type StoryCreateWithProgressValues = z.infer<typeof storyCreateWithProgressSchema>;
 

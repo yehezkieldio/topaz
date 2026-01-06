@@ -40,6 +40,8 @@ export type ProgressQueryResult = {
         storyDescription?: string;
         progressNotes?: string | null;
         createdAt?: Date;
+        storyVersion: number;
+        progressVersion: number;
     }>;
     meta: {
         hasNextPage: boolean;
@@ -392,6 +394,8 @@ export const progressRouter = createTRPCRouter({
             storyIsNsfw: libraryMaterializedView.storyIsNsfw,
             tags: libraryMaterializedView.tags,
             fandoms: libraryMaterializedView.fandoms,
+            storyVersion: libraryMaterializedView.storyVersion,
+            progressVersion: libraryMaterializedView.progressVersion,
         };
 
         const selectFields = {

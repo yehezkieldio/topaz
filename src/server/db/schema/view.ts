@@ -31,10 +31,12 @@ export const libraryMaterializedView = pgMaterializedView("library_mv").as((qb) 
             storyWordCount: sql<number>`${stories.word_count}`.as("story_word_count"),
             storyIsNsfw: sql<boolean>`${stories.is_nsfw}`.as("story_is_nsfw"),
             storyDescription: sql<string>`${stories.description}`.as("story_description"),
+            storyVersion: sql<number>`${stories.version}`.as("story_version"),
             progressStatus: sql<string>`${progresses.status}`.as("progress_status"),
             progressCurrentChapter: sql<number>`${progresses.current_chapter}`.as("progress_current_chapter"),
             progressRating: sql<number>`${progresses.rating}`.as("progress_rating"),
             progressNotes: sql<string>`${progresses.notes}`.as("progress_notes"),
+            progressVersion: sql<number>`${progresses.version}`.as("progress_version"),
             searchVector: sql<string>`(
                 setweight(to_tsvector('english', ${stories.title}), 'A') ||
                 setweight(to_tsvector('english', ${stories.author}), 'B') ||

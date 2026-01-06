@@ -15,6 +15,13 @@
             "when": 1756894613149,
             "tag": "0001_round_purifiers",
             "breakpoints": true
+        },
+        {
+            "idx": 2,
+            "version": "7",
+            "when": 1767654582440,
+            "tag": "0002_graceful_guardsmen",
+            "breakpoints": true
         }
     ]
 }
