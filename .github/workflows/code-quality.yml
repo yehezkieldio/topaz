@@ -25,9 +25,6 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run Biome
-        # FIXME: Remove `--css-parse-tailwind-directives=true`
-        # when `biome ci` actually reads biome.jsonc config since it currently doesn't do that.
-        # tailwind directives parsing is literally true on the config file.
         run: bunx biome ci --css-parse-tailwind-directives=true .
   typecheck:
     name: Typecheck
