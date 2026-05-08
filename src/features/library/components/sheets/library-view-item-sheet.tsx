@@ -27,7 +27,7 @@ export type ViewSheetProps = {
     onClose: () => void;
 };
 
-function _LibraryItemViewSheet({ item, isOpen, onClose }: ViewSheetProps) {
+function LibraryItemViewSheetComponent({ item, isOpen, onClose }: ViewSheetProps) {
     const { hasDescription, hasNotes, hasValidUrl, hasFandomsOrTags, hasReadingProgress } = useLibraryItemValues(item);
 
     const contextValue = useMemo(
@@ -37,7 +37,7 @@ function _LibraryItemViewSheet({ item, isOpen, onClose }: ViewSheetProps) {
             onEdit: undefined,
             onDelete: undefined,
         }),
-        [item],
+        [item]
     );
 
     const ItemContent = useMemo(
@@ -141,7 +141,7 @@ function _LibraryItemViewSheet({ item, isOpen, onClose }: ViewSheetProps) {
                 </div>
             </LibraryItemProvider>
         ),
-        [contextValue, item, onClose, hasDescription, hasNotes, hasValidUrl, hasFandomsOrTags, hasReadingProgress],
+        [contextValue, item, onClose, hasDescription, hasNotes, hasValidUrl, hasFandomsOrTags, hasReadingProgress]
     );
 
     return (
@@ -153,5 +153,5 @@ function _LibraryItemViewSheet({ item, isOpen, onClose }: ViewSheetProps) {
     );
 }
 
-export const LibraryItemViewSheet = memo(_LibraryItemViewSheet);
+export const LibraryItemViewSheet = memo(LibraryItemViewSheetComponent);
 LibraryItemViewSheet.displayName = "LibraryItemViewSheet";

@@ -29,7 +29,7 @@ export const useFandomSearch = (initialSearch = "") => {
                 limit: 25,
                 includeHot: true,
                 hotLimit: 20,
-            }),
+            })
         );
     }, []);
 
@@ -71,7 +71,7 @@ export const useFandomSearch = (initialSearch = "") => {
                 fandomResponse.fandoms.map((fandom) => ({
                     value: fandom.publicId,
                     label: fandom.name,
-                })),
+                }))
             );
         }
     }, [fandomResponse?.fandoms]);
@@ -104,7 +104,7 @@ export const useFandomSearch = (initialSearch = "") => {
                 label: newFandom.name,
             };
         },
-        [createFandomMutation],
+        [createFandomMutation]
     );
 
     const setFandomSearchNormalized = React.useCallback((val: string) => {

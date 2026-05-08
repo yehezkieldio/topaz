@@ -1,0 +1,113 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": [
+    "ultracite/biome/core",
+    "ultracite/biome/next",
+    "ultracite/biome/react"
+  ],
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "!node_modules",
+      "!.next",
+      "!dist",
+      "!build",
+      "!bun.lock",
+      "!drizzle"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 4,
+    "lineWidth": 120
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
+      "correctness": {
+        "noUnusedVariables": "off",
+        "noUndeclaredVariables": "off",
+        "noNestedComponentDefinitions": "off"
+      },
+      "suspicious": {
+        "noEmptySource": "off",
+        "noUnknownAtRules": "off",
+        "noConsole": "off",
+        "useAwait": "off",
+        "noEmptyBlockStatements": "off",
+        "noArrayIndexKey": "off",
+        "noDocumentCookie": "off",
+        "noDuplicateJsxProps": "off"
+      },
+      "style": {
+        "useNumericSeparators": "off",
+        "useBlockStatements": "off",
+        "noMagicNumbers": "off",
+        "useConsistentTypeDefinitions": "off",
+        "noParameterProperties": "off",
+        "noNestedTernary": "off"
+      },
+      "performance": {
+        "noBarrelFile": "off",
+        "noNamespaceImport": "off",
+        "noImgElement": "off"
+      },
+      "complexity": {
+        "noVoid": "off",
+        "noExcessiveLinesPerFunction": "off",
+        "noExcessiveCognitiveComplexity": {
+          "level": "warn",
+          "options": {
+            "maxAllowedComplexity": 150
+          }
+        }
+      },
+      "a11y": {
+        "noRedundantRoles": "off",
+        "useAnchorContent": "off",
+        "useSemanticElements": "off",
+        "noLabelWithoutControl": "off",
+        "noStaticElementInteractions": "off",
+        "noNoninteractiveElementInteractions": "off",
+        "useKeyWithClickEvents": "off"
+      }
+    },
+    "domains": {
+      "next": "recommended",
+      "react": "recommended"
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    },
+    "globals": ["Bun"]
+  },
+  "css": {
+    "formatter": {
+      "lineWidth": 160
+    }
+  },
+  "json": {
+    "formatter": {
+      "trailingCommas": "none"
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
+}

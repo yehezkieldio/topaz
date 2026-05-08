@@ -1,10 +1,10 @@
 import { TRPCError } from "@trpc/server";
-import { type SQL, and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, or, type SQL, sql } from "drizzle-orm";
 import z from "zod/v4";
 import { sortOrderEnum } from "#/lib/utils";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "#/server/api/trpc";
 import { invalidateLibraryStats } from "#/server/cache/actions";
-import { type ProgressSortBy, progressSortByEnum, progressStatusEnum, progresses } from "#/server/db/schema/progress";
+import { type ProgressSortBy, progresses, progressSortByEnum, progressStatusEnum } from "#/server/db/schema/progress";
 import { sourceEnum } from "#/server/db/schema/story";
 import { getSortColumn, libraryMaterializedView, libraryStatsMaterializedView } from "#/server/db/schema/view";
 
@@ -181,7 +181,7 @@ function buildWhereConditions(
     input: BuildWhereConditionsInput,
     cursorData: CursorData | null,
     sortBy: ProgressSortBy,
-    sortOrder: "asc" | "desc",
+    sortOrder: "asc" | "desc"
 ): SQL[] {
     const whereConditions: SQL[] = [];
 
@@ -211,7 +211,7 @@ function buildWhereConditions(
             ilike(libraryMaterializedView.storyAuthor, `%${sanitizedSearch}%`),
             ilike(libraryMaterializedView.progressNotes, `%${sanitizedSearch}%`),
             sql`similarity(lower(${libraryMaterializedView.storyTitle}), lower(${sanitizedSearch})) > 0.2`,
-            sql`similarity(lower(${libraryMaterializedView.storyAuthor}), lower(${sanitizedSearch})) > 0.2`,
+            sql`similarity(lower(${libraryMaterializedView.storyAuthor}), lower(${sanitizedSearch})) > 0.2`
         );
         if (searchCondition) {
             whereConditions.push(searchCondition);
@@ -220,7 +220,7 @@ function buildWhereConditions(
 
     if (input.status && input.status.length > 0) {
         const validStatuses = input.status.filter((status) =>
-            progressStatusEnum.enumValues.includes(status as (typeof progressStatusEnum.enumValues)[number]),
+            progressStatusEnum.enumValues.includes(status as (typeof progressStatusEnum.enumValues)[number])
         );
         if (validStatuses.length > 0) {
             whereConditions.push(inArray(libraryMaterializedView.progressStatus, validStatuses));
@@ -229,7 +229,7 @@ function buildWhereConditions(
 
     if (input.source && input.source.length > 0) {
         const validSources = input.source.filter((source) =>
-            sourceEnum.enumValues.includes(source as (typeof sourceEnum.enumValues)[number]),
+            sourceEnum.enumValues.includes(source as (typeof sourceEnum.enumValues)[number])
         );
         if (validSources.length > 0) {
             whereConditions.push(inArray(libraryMaterializedView.storySource, validSources));
@@ -253,7 +253,7 @@ function buildWhereConditions(
         whereConditions.push(
             input.hasNotes
                 ? sql`${libraryMaterializedView.progressNotes} IS NOT NULL AND ${libraryMaterializedView.progressNotes} != ''`
-                : sql`${libraryMaterializedView.progressNotes} IS NULL OR ${libraryMaterializedView.progressNotes} = ''`,
+                : sql`${libraryMaterializedView.progressNotes} IS NULL OR ${libraryMaterializedView.progressNotes} = ''`
         );
     }
 
@@ -325,7 +325,7 @@ const progressQuerySchema = z
         {
             message: "minRating must be less than or equal to maxRating",
             path: ["minRating", "maxRating"],
-        },
+        }
     );
 
 export const progressRouter = createTRPCRouter({
@@ -333,7 +333,7 @@ export const progressRouter = createTRPCRouter({
         .input(
             z.object({
                 publicId: z.string().min(PUBLIC_ID_MIN).max(PUBLIC_ID_MAX),
-            }),
+            })
         )
         .mutation(async ({ ctx, input }) => {
             const [deletedProgress] = await ctx.db

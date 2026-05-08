@@ -16,9 +16,9 @@ export function useLibraryFormContext<T extends FieldValues = FieldValues>() {
 }
 
 interface LibraryFormProps<T extends FieldValues = FieldValues> extends React.HTMLAttributes<HTMLDivElement> {
+    children: React.ReactNode;
     control: Control<T>;
     isLoading?: boolean;
-    children: React.ReactNode;
 }
 
 function LibraryFormRoot<T extends FieldValues = FieldValues>({
@@ -32,7 +32,7 @@ function LibraryFormRoot<T extends FieldValues = FieldValues>({
             control: control as Control<FieldValues>,
             isLoading,
         }),
-        [control, isLoading],
+        [control, isLoading]
     );
 
     return (
@@ -108,9 +108,9 @@ export const LibraryForm = Object.assign(LibraryFormRoot, {
 });
 
 export type {
-    LibraryFormProps,
-    LibraryFormInfoProps,
-    LibraryFormDetailsProps,
     LibraryFormCategoriesProps,
+    LibraryFormDetailsProps,
+    LibraryFormInfoProps,
     LibraryFormProgressProps,
+    LibraryFormProps,
 };

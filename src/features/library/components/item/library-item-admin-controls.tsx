@@ -16,7 +16,7 @@ type AdminControlsProps = {
     onDelete: () => void;
 };
 
-function _AdminControls({ onEdit, onDelete }: AdminControlsProps) {
+function AdminControlsComponent({ onEdit, onDelete }: AdminControlsProps) {
     return (
         <>
             <Button className="h-8 w-8 p-0" onClick={onEdit} size="sm" variant="ghost">
@@ -44,5 +44,5 @@ function _AdminControls({ onEdit, onDelete }: AdminControlsProps) {
     );
 }
 
-export const LibraryItemAdminControls = memo(_AdminControls);
+export const LibraryItemAdminControls = memo(AdminControlsComponent);
 LibraryItemAdminControls.displayName = "LibraryItemAdminControls";

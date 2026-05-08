@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
 import { invalidateHotTags, invalidateTagSearch } from "#/server/cache/actions";
 import { getCachedHotTags, getCachedTagSearch } from "#/server/cache/tags";
-import { tagCreateSchema, tagUpdateSchema, tags } from "#/server/db/schema/tag";
+import { tagCreateSchema, tags, tagUpdateSchema } from "#/server/db/schema/tag";
 
 // Tag router configuration constants
 const TAG_LIMIT_MIN = 1;
@@ -21,7 +21,7 @@ export const tagRouter = createTRPCRouter({
         .input(
             z.object({
                 publicId: z.string(),
-            }),
+            })
         )
         .mutation(async ({ ctx, input }) => {
             const [deletedTag] = await ctx.db.delete(tags).where(eq(tags.publicId, input.publicId)).returning({
@@ -92,35 +92,40 @@ export const tagRouter = createTRPCRouter({
             return updatedTag;
         });
     }),
-    create: protectedProcedure.input(tagCreateSchema).mutation(async ({ ctx, input }) => {
-        return await ctx.db.transaction(async (tx) => {
-            const existingTag = await tx.select({ id: tags.id }).from(tags).where(eq(tags.name, input.name)).limit(1);
+    create: protectedProcedure.input(tagCreateSchema).mutation(
+        async ({ ctx, input }) =>
+            await ctx.db.transaction(async (tx) => {
+                const existingTag = await tx
+                    .select({ id: tags.id })
+                    .from(tags)
+                    .where(eq(tags.name, input.name))
+                    .limit(1);
 
-            if (existingTag.length > 0) {
-                throw new TRPCError({
-                    code: "CONFLICT",
-                    message: "Tag with this name already exists",
+                if (existingTag.length > 0) {
+                    throw new TRPCError({
+                        code: "CONFLICT",
+                        message: "Tag with this name already exists",
+                    });
+                }
+
+                const [newTag] = await tx.insert(tags).values(input).returning({
+                    id: tags.id,
+                    publicId: tags.publicId,
                 });
-            }
 
-            const [newTag] = await tx.insert(tags).values(input).returning({
-                id: tags.id,
-                publicId: tags.publicId,
-            });
+                if (!newTag) {
+                    throw new TRPCError({
+                        code: "INTERNAL_SERVER_ERROR",
+                        message: "Failed to create tag",
+                    });
+                }
 
-            if (!newTag) {
-                throw new TRPCError({
-                    code: "INTERNAL_SERVER_ERROR",
-                    message: "Failed to create tag",
-                });
-            }
+                await invalidateHotTags();
+                await invalidateTagSearch();
 
-            await invalidateHotTags();
-            await invalidateTagSearch();
-
-            return newTag;
-        });
-    }),
+                return newTag;
+            })
+    ),
     forMultiselect: protectedProcedure
         .input(
             z.object({
@@ -128,7 +133,7 @@ export const tagRouter = createTRPCRouter({
                 limit: z.number().min(TAG_LIMIT_MIN).max(TAG_LIMIT_MAX).default(TAG_LIMIT_DEFAULT),
                 includeHot: z.boolean().default(true),
                 hotLimit: z.number().min(TAG_HOT_LIMIT_MIN).max(TAG_HOT_LIMIT_MAX).default(TAG_HOT_LIMIT_DEFAULT),
-            }),
+            })
         )
         .query(async ({ ctx, input }) => {
             const { search, limit, includeHot, hotLimit } = input;
@@ -179,7 +184,7 @@ export const tagRouter = createTRPCRouter({
         .input(
             z.object({
                 name: z.string().min(TAG_NAME_MIN_LENGTH).max(TAG_NAME_MAX_LENGTH),
-            }),
+            })
         )
         .mutation(async ({ ctx, input }) => {
             const { name } = input;

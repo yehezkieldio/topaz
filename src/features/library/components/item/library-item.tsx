@@ -21,7 +21,7 @@ const LibraryItemAdminControls = dynamic(
         })),
     {
         ssr: false,
-    },
+    }
 );
 
 export type LibraryItemProps = {
@@ -174,7 +174,14 @@ function LibraryItemActionsComponent({ showAdminControls = false, children }: Li
     );
 }
 
-function _LibraryItem({ item, showAdminControls = false, onView, onEdit, onDelete, children }: LibraryItemProps) {
+function LibraryItemComponent({
+    item,
+    showAdminControls = false,
+    onView,
+    onEdit,
+    onDelete,
+    children,
+}: LibraryItemProps) {
     const contextValue = React.useMemo(
         () => ({
             item,
@@ -182,7 +189,7 @@ function _LibraryItem({ item, showAdminControls = false, onView, onEdit, onDelet
             onEdit,
             onDelete,
         }),
-        [item, onView, onEdit, onDelete],
+        [item, onView, onEdit, onDelete]
     );
 
     if (children) {
@@ -212,7 +219,7 @@ function _LibraryItem({ item, showAdminControls = false, onView, onEdit, onDelet
     );
 }
 
-export const LibraryItem = Object.assign(memo(_LibraryItem), {
+export const LibraryItem = Object.assign(memo(LibraryItemComponent), {
     Header: LibraryItemHeaderComponent,
     Metadata: LibraryItemMetadataComponent,
     Progress: LibraryItemProgressComponent,
@@ -226,12 +233,12 @@ export const LibraryItem = Object.assign(memo(_LibraryItem), {
 LibraryItem.displayName = "LibraryItem";
 
 export type {
+    LibraryItemActionsProps,
+    LibraryItemAdminControlsProps,
     LibraryItemHeaderProps,
     LibraryItemMetadataProps,
+    LibraryItemNotesProps,
     LibraryItemProgressProps,
     LibraryItemRatingProps,
     LibraryItemTagsProps,
-    LibraryItemNotesProps,
-    LibraryItemAdminControlsProps,
-    LibraryItemActionsProps,
 };

@@ -83,7 +83,7 @@ export const stories = createTable(
         index("story_source_status_idx").on(t.source, t.status).concurrently(),
         index("story_created_idx").on(t.created_at).concurrently(),
         index("story_updated_idx").on(t.updated_at).concurrently(),
-    ],
+    ]
 );
 
 export const storyCreateSchema = createInsertSchema(stories).extend({
@@ -121,7 +121,7 @@ export const storyCreateWithProgressSchema = z.object({
                     ratingRegex.test(val)),
             {
                 message: "Rating must be a number between 0 and 5",
-            },
+            }
         ),
     notes: z.string().optional(),
 
@@ -155,7 +155,7 @@ export const storyTags = createTable(
         primaryKey({ columns: [t.storyId, t.tagId] }),
         index("storytag_story_idx").on(t.storyId).concurrently(),
         index("storytag_tag_idx").on(t.tagId).concurrently(),
-    ],
+    ]
 );
 
 export const storyTagsRelations = relations(storyTags, ({ one }) => ({
@@ -183,7 +183,7 @@ export const storyFandoms = createTable(
         primaryKey({ columns: [t.storyId, t.fandomId] }),
         index("storyfandom_story_idx").on(t.storyId).concurrently(),
         index("storyfandom_fandom_idx").on(t.fandomId).concurrently(),
-    ],
+    ]
 );
 
 export const storyRelations = relations(stories, ({ many }) => ({

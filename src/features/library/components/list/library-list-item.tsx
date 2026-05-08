@@ -53,7 +53,7 @@ export const LibraryListItem = memo(function LibraryListItem({
                 root: scrollContainer,
                 rootMargin: "600px 0px",
                 threshold: 0,
-            },
+            }
         );
         obs.observe(el);
         return () => obs.disconnect();

@@ -17,7 +17,7 @@ export const tags = createTable(
         uniqueIndex("tag_name_uidx").on(t.name).concurrently(),
         index("tag_created_idx").on(t.created_at).concurrently(),
         index("tag_updated_idx").on(t.updated_at).concurrently(),
-    ],
+    ]
 );
 
 export const tagsRelations = relations(tags, ({ many }) => ({

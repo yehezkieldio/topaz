@@ -4,7 +4,7 @@ import { memo } from "react";
 import { useLibraryItemContext } from "#/features/library/components/item/library-item-context";
 import { useLibraryItemValues } from "#/features/library/hooks/use-library-item";
 
-function _LibraryItemNotes() {
+function LibraryItemNotesComponent() {
     const { item } = useLibraryItemContext();
     const { hasNotes } = useLibraryItemValues(item);
 
@@ -19,5 +19,5 @@ function _LibraryItemNotes() {
     );
 }
 
-export const LibraryItemNotes = memo(_LibraryItemNotes);
+export const LibraryItemNotes = memo(LibraryItemNotesComponent);
 LibraryItemNotes.displayName = "LibraryItemNotes";

@@ -2,15 +2,15 @@ import z from "zod";
 import { estimateWordCount } from "#/lib/utils";
 
 export interface LibraryStats {
-    totalWordsRead?: number;
-    totalChaptersRead?: number;
-    fandomCount?: number;
-    storyCount?: number;
-    completedCount?: number;
-    pausedCount?: number;
-    droppedCount?: number;
-    readingCount?: number;
     averageRating?: number;
+    completedCount?: number;
+    droppedCount?: number;
+    fandomCount?: number;
+    pausedCount?: number;
+    readingCount?: number;
+    storyCount?: number;
+    totalChaptersRead?: number;
+    totalWordsRead?: number;
 }
 
 interface LibraryStatsProps {

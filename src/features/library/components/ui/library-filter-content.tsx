@@ -63,14 +63,14 @@ export const LibraryFilterContent = React.memo(function FilterContent({
         (value: string) => {
             setStatus(value as typeof status);
         },
-        [setStatus],
+        [setStatus]
     );
 
     const handleSortChange = useCallback(
         (value: string) => {
             setSortBy(value as ProgressSortBy);
         },
-        [setSortBy],
+        [setSortBy]
     );
 
     return (

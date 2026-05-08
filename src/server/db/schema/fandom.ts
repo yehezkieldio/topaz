@@ -18,7 +18,7 @@ export const fandoms = createTable(
         index("fandom_created_idx").on(t.created_at).concurrently(),
         index("fandom_updated_idx").on(t.updated_at).concurrently(),
         index("fandom_name_trgm_idx").using("gin", sql`${t.name} gin_trgm_ops`).concurrently(),
-    ],
+    ]
 );
 
 export const fandomRelations = relations(fandoms, ({ many }) => ({

@@ -28,7 +28,7 @@ export function LibraryTagMultiselect({
                 console.error("Failed to create tag:", error);
             }
         },
-        [createTag, selectedTags, onTagsChangeAction],
+        [createTag, selectedTags, onTagsChangeAction]
     );
 
     return (

@@ -36,7 +36,5 @@ export const viewRouter = createTRPCRouter({
 
         return { success: true };
     }),
-    getStats: publicProcedure.query(async () => {
-        return await getCachedLibraryStats();
-    }),
+    getStats: publicProcedure.query(async () => await getCachedLibraryStats()),
 });

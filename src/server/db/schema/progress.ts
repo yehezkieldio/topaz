@@ -70,7 +70,7 @@ export const progresses = createTable(
         index("prog_status_idx").on(t.status).concurrently(),
         index("prog_updated_idx").on(t.updated_at).concurrently(),
         index("prog_created_idx").on(t.created_at).concurrently(),
-    ],
+    ]
 );
 
 export const progressRelations = relations(progresses, ({ one }) => ({

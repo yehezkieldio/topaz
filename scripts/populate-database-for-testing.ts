@@ -1,13 +1,13 @@
 import { parseArgs } from "node:util";
 import { db } from "#/server/db";
 import {
-    type ProgressStatus,
-    type Source,
-    type StoryStatus,
     fandoms,
     libraryMaterializedView,
     libraryStatsMaterializedView,
+    type ProgressStatus,
     progresses,
+    type Source,
+    type StoryStatus,
     stories,
     storyFandoms,
     storyTags,
@@ -570,7 +570,7 @@ async function populate(): Promise<void> {
         }
 
         const randomDecimalRating = (Math.random() * (MAX_RATING - MIN_RATING) + MIN_RATING).toFixed(
-            RATING_DECIMAL_PRECISION,
+            RATING_DECIMAL_PRECISION
         );
 
         progressesToInsert.push({

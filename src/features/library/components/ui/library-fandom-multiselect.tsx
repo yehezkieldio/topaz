@@ -29,7 +29,7 @@ export function LibraryFandomMultiselect({
                 console.error("Failed to create fandom:", error);
             }
         },
-        [createFandom, selectedFandoms, onFandomsChangeAction],
+        [createFandom, selectedFandoms, onFandomsChangeAction]
     );
 
     return (

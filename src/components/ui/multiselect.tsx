@@ -62,7 +62,7 @@ export function MultiSelect({
             setInputValue(trimmedValue);
             onSearchAction?.(trimmedValue);
         },
-        [onSearchAction],
+        [onSearchAction]
     );
 
     const selectedValueSet = React.useMemo(() => new Set(selectedValues.map((item) => item.value)), [selectedValues]);
@@ -80,14 +80,14 @@ export function MultiSelect({
                 setOpen(false);
             }
         },
-        [selectedValues, selectedValueSet, onSelectionChangeAction, keepOpenOnSelect],
+        [selectedValues, selectedValueSet, onSelectionChangeAction, keepOpenOnSelect]
     );
 
     const removeOption = React.useCallback(
         (option: MultiSelectOption) => {
             onSelectionChangeAction(selectedValues.filter((item) => item.value !== option.value));
         },
-        [selectedValues, onSelectionChangeAction],
+        [selectedValues, onSelectionChangeAction]
     );
 
     const handleCreate = React.useCallback(() => {
@@ -124,7 +124,7 @@ export function MultiSelect({
                 setInputValue("");
             }
         },
-        [inputValue, onSearchAction],
+        [inputValue, onSearchAction]
     );
 
     return (
@@ -188,7 +188,7 @@ export function MultiSelect({
                                                     <CheckIcon
                                                         className={cn(
                                                             "mr-2 h-4 w-4",
-                                                            isSelected ? "opacity-100" : "opacity-0",
+                                                            isSelected ? "opacity-100" : "opacity-0"
                                                         )}
                                                     />
                                                     {option.label}

@@ -19,7 +19,7 @@ export function LibrarySearchInput() {
                 handleClearSearch();
             }
         },
-        [handleClearSearch],
+        [handleClearSearch]
     );
 
     return (

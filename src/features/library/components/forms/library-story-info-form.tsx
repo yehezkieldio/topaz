@@ -43,7 +43,7 @@ function useStorySourceHandlers(sourceOnChangeRef: React.MutableRefObject<((valu
                 }
             }
         },
-        [sourceOnChangeRef.current],
+        [sourceOnChangeRef.current]
     );
 
     const handlePasteFromClipboard = React.useCallback(
@@ -72,7 +72,7 @@ function useStorySourceHandlers(sourceOnChangeRef: React.MutableRefObject<((valu
                 });
             }
         },
-        [autoDetectSource],
+        [autoDetectSource]
     );
 
     return { autoDetectSource, handlePasteFromClipboard };

@@ -9,7 +9,7 @@ export function AuthorLink() {
                 buttonVariants({
                     variant: "link",
                 }),
-                "p-0 text-sm lg:text-base",
+                "p-0 text-sm lg:text-base"
             )}
             href="https://github.com/yehezkieldio"
             rel="noopener noreferrer"

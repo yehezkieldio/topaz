@@ -7,9 +7,7 @@ export const parseAsSource = createParser({
         if (value === "all") return null;
         return value as Source;
     },
-    serialize: (value: Source | null): string => {
-        return value ?? "all";
-    },
+    serialize: (value: Source | null): string => value ?? "all",
 });
 
 export const parseAsProgressSortBy = createParser({
@@ -31,9 +29,7 @@ export const parseAsProgressStatus = createParser({
         if (value === "all") return "all";
         return value as ProgressStatus;
     },
-    serialize: (value: ProgressStatus | "all"): string => {
-        return value === "all" ? "all" : value;
-    },
+    serialize: (value: ProgressStatus | "all"): string => (value === "all" ? "all" : value),
 });
 
 export function useLibraryFilter() {

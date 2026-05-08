@@ -12,7 +12,7 @@ const LibraryCreate = dynamic(
     {
         ssr: false,
         loading: () => <></>,
-    },
+    }
 );
 
 type LibraryControlsProps = {

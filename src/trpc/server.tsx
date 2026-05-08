@@ -1,10 +1,10 @@
 import "server-only";
 
 import {
+    dehydrate,
     type FetchInfiniteQueryOptions,
     type FetchQueryOptions,
     HydrationBoundary,
-    dehydrate,
 } from "@tanstack/react-query";
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import { cache } from "react";
@@ -37,7 +37,7 @@ type PrefetchQueryOptions<
     | FetchInfiniteQueryOptions<TQueryFnData, TError, TData, TQueryKey>;
 
 function isInfiniteQuery<TQueryFnData, TError, TData, TQueryKey extends readonly unknown[]>(
-    options: PrefetchQueryOptions<TQueryFnData, TError, TData, TQueryKey>,
+    options: PrefetchQueryOptions<TQueryFnData, TError, TData, TQueryKey>
 ): options is FetchInfiniteQueryOptions<TQueryFnData, TError, TData, TQueryKey> {
     return "initialPageParam" in options && options.initialPageParam !== undefined;
 }

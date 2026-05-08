@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, memo, useMemo } from "react";
+import { memo, Suspense, useMemo } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { LibraryDataProvider } from "#/features/library/api/use-library-data";
 import { LibraryList } from "#/features/library/components/list/library-list";
@@ -21,7 +21,7 @@ export function LibraryClientProvider({ isAdministratorUser }: { isAdministrator
             sortOrder,
             status,
         }),
-        [search, sortBy, sortOrder, status],
+        [search, sortBy, sortOrder, status]
     );
 
     return (

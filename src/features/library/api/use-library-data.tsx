@@ -1,7 +1,7 @@
 "use client";
 
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { type ReactNode, createContext, useContext, useMemo } from "react";
+import { createContext, type ReactNode, useContext, useMemo } from "react";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
 import type { SortOrder } from "#/lib/utils";
 import type { ProgressSortBy, ProgressStatus } from "#/server/db/schema";
@@ -47,7 +47,7 @@ export function LibraryDataProvider({ children, search, status, sortBy, sortOrde
             isLoading,
             refetch,
         }),
-        [allItems, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, refetch],
+        [allItems, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, refetch]
     );
 
     return <LibraryDataContext.Provider value={contextValue}>{children}</LibraryDataContext.Provider>;
@@ -83,7 +83,7 @@ export function useLibraryData({ search, status, sortBy, sortOrder }: UseLibrary
             sortOrder,
             limit: 20,
         }),
-        [search, status, sortBy, sortOrder],
+        [search, status, sortBy, sortOrder]
     );
 
     const { data, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, isPending, refetch } =
@@ -108,12 +108,10 @@ export function useLibraryData({ search, status, sortBy, sortOrder }: UseLibrary
                     "isLoading",
                     "isPending",
                 ],
-            }),
+            })
         );
 
-    const allItems = useMemo(() => {
-        return data?.pages.flatMap((page) => page.data) ?? [];
-    }, [data?.pages]);
+    const allItems = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data?.pages]);
 
     return {
         allItems,

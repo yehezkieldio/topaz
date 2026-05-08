@@ -12,7 +12,7 @@ type LibraryItemTagsProps = {
 const MAX_FANDOMS_TO_SHOW = 4;
 const MAX_TAGS_TO_SHOW = 6;
 
-function _LibraryItemTags({ showAllFandoms = false, showAllTags = false }: LibraryItemTagsProps) {
+function LibraryItemTagsComponent({ showAllFandoms = false, showAllTags = false }: LibraryItemTagsProps) {
     const { item } = useLibraryItemContext();
     const [expandedFandoms, setExpandedFandoms] = useState(false);
     const [expandedTags, setExpandedTags] = useState(false);
@@ -31,7 +31,7 @@ function _LibraryItemTags({ showAllFandoms = false, showAllTags = false }: Libra
                     }
                 }
             },
-            { root: null, threshold: 0 },
+            { root: null, threshold: 0 }
         );
 
         observer.observe(containerRef.current);
@@ -110,7 +110,7 @@ function _LibraryItemTags({ showAllFandoms = false, showAllTags = false }: Libra
     );
 }
 
-export const LibraryItemTags = memo(_LibraryItemTags);
+export const LibraryItemTags = memo(LibraryItemTagsComponent);
 LibraryItemTags.displayName = "LibraryItemTags";
 
 export type { LibraryItemTagsProps };

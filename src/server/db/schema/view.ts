@@ -16,8 +16,8 @@ export type StoryFandom = {
     publicId: string;
 };
 
-export const libraryMaterializedView = pgMaterializedView("library_mv").as((qb) => {
-    return qb
+export const libraryMaterializedView = pgMaterializedView("library_mv").as((qb) =>
+    qb
         .select({
             progressPublicId: sql<string>`${progresses.publicId}`.as("progress_public_id"),
             userPublicId: sql<string>`${users.publicId}`.as("user_public_id"),
@@ -94,12 +94,12 @@ export const libraryMaterializedView = pgMaterializedView("library_mv").as((qb) 
             progresses.rating,
             progresses.notes,
             progresses.updated_at,
-            progresses.created_at,
-        );
-});
+            progresses.created_at
+        )
+);
 
-export const libraryStatsMaterializedView = pgMaterializedView("library_stats_mv").as((qb) => {
-    return qb
+export const libraryStatsMaterializedView = pgMaterializedView("library_stats_mv").as((qb) =>
+    qb
         .select({
             totalWordsRead: sql<number>`COALESCE(SUM(${stories.word_count}), 0)`.as("total_words_read"),
             totalChaptersRead: sql<number>`COALESCE(SUM(${stories.chapter_count}), 0)`.as("total_chapters_read"),
@@ -114,8 +114,8 @@ export const libraryStatsMaterializedView = pgMaterializedView("library_stats_mv
         .from(progresses)
         .innerJoin(stories, sql`${stories.id} = ${progresses.storyId}`)
         .leftJoin(storyFandoms, sql`${storyFandoms.storyId} = ${stories.id}`)
-        .leftJoin(fandoms, sql`${fandoms.id} = ${storyFandoms.fandomId}`);
-});
+        .leftJoin(fandoms, sql`${fandoms.id} = ${storyFandoms.fandomId}`)
+);
 
 const sortColumnMap: Record<
     ProgressSortBy,
@@ -138,7 +138,7 @@ const sortColumnMap: Record<
 };
 
 export function getSortColumn(
-    sortBy: ProgressSortBy,
+    sortBy: ProgressSortBy
 ): SQL<unknown> | SQL.Aliased<string> | SQL.Aliased<number> | SQL.Aliased<Date> | SQL.Aliased<boolean> {
     return sortColumnMap[sortBy];
 }

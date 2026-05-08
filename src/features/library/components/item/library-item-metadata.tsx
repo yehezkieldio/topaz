@@ -6,7 +6,7 @@ import { useLibraryItemValues } from "#/features/library/hooks/use-library-item"
 import { useIsMobile } from "#/hooks/use-mobile";
 import { type Source, sourceLabels, sourceShortLabels } from "#/server/db/schema";
 
-function _LibraryItemMetadata() {
+function LibraryItemMetadataComponent() {
     const { item } = useLibraryItemContext();
     const { hasWordCount, wordCount, totalChapters, hasCurrentChapterOnly, currentChapter, isComplete, lastUpdated } =
         useLibraryItemValues(item);
@@ -40,7 +40,7 @@ function _LibraryItemMetadata() {
                             )
                         ) : (
                             <>
-                                {totalChapters} chapter{totalChapters !== 1 ? "s" : ""}
+                                {totalChapters} chapter{totalChapters === 1 ? "" : "s"}
                                 {isComplete && <span className="ml-1 font-medium text-emerald-600">(Complete)</span>}
                             </>
                         )}
@@ -61,5 +61,5 @@ function _LibraryItemMetadata() {
     );
 }
 
-export const LibraryItemMetadata = memo(_LibraryItemMetadata);
+export const LibraryItemMetadata = memo(LibraryItemMetadataComponent);
 LibraryItemMetadata.displayName = "LibraryItemMetadata";

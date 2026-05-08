@@ -5,14 +5,14 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createTRPCClient, httpBatchStreamLink, loggerLink } from "@trpc/client";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { createTRPCContext } from "@trpc/tanstack-react-query";
-import { Suspense, lazy, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import SuperJSON from "superjson";
 import type { AppRouter } from "#/server/api/root";
 import { getPersister } from "#/trpc/persister";
 import { createQueryClient } from "#/trpc/query-client";
 
 const ReactQueryDevtools = lazy(() =>
-    import("@tanstack/react-query-devtools").then((mod) => ({ default: mod.ReactQueryDevtools })),
+    import("@tanstack/react-query-devtools").then((mod) => ({ default: mod.ReactQueryDevtools }))
 );
 
 export const { TRPCProvider, useTRPC, useTRPCClient } = createTRPCContext<AppRouter>();
@@ -52,7 +52,7 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
                     },
                 }),
             ],
-        }),
+        })
     );
 
     const shouldShowDevtools = process.env.NODE_ENV === "development" || process.env.USE_REACTQUERY_DEVTOOLS;

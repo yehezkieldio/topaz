@@ -46,7 +46,7 @@ export function LibraryCreateSheet() {
                 isHandlingKeyboardRef.current = false;
             }, 100);
         },
-        [isOpen, setIsOpen],
+        [isOpen, setIsOpen]
     );
 
     useEffect(() => {
@@ -60,7 +60,7 @@ export function LibraryCreateSheet() {
         (open: boolean) => {
             setIsOpen(open);
         },
-        [setIsOpen],
+        [setIsOpen]
     );
 
     const handleClose = useCallback(() => {

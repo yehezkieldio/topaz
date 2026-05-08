@@ -25,7 +25,7 @@ export type LibraryItemDeleteDialogProps = {
     onDelete?: (item: LibraryItem) => void;
 };
 
-function _LibraryItemDeleteDialog({ item, isOpen, onClose, onDelete }: LibraryItemDeleteDialogProps) {
+function LibraryItemDeleteDialogComponent({ item, isOpen, onClose, onDelete }: LibraryItemDeleteDialogProps) {
     const trpc = useTRPC();
     const refetchLibrary = useLibraryRefetch();
 
@@ -63,7 +63,7 @@ function _LibraryItemDeleteDialog({ item, isOpen, onClose, onDelete }: LibraryIt
             item,
             onDelete,
         }),
-        [item, onDelete],
+        [item, onDelete]
     );
 
     return (
@@ -95,5 +95,5 @@ function _LibraryItemDeleteDialog({ item, isOpen, onClose, onDelete }: LibraryIt
     );
 }
 
-export const LibraryItemDeleteDialog = memo(_LibraryItemDeleteDialog);
+export const LibraryItemDeleteDialog = memo(LibraryItemDeleteDialogComponent);
 LibraryItemDeleteDialog.displayName = "LibraryItemDeleteDialog";

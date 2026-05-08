@@ -5,7 +5,7 @@ import { formatRating } from "#/lib/utils";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
 import { invalidateHotFandoms, invalidateHotTags, invalidateLibraryStats } from "#/server/cache/actions";
 import { fandoms } from "#/server/db/schema/fandom";
-import { progressStatusEnum, progresses } from "#/server/db/schema/progress";
+import { progresses, progressStatusEnum } from "#/server/db/schema/progress";
 import {
     stories,
     storyCreateSchema,
@@ -27,7 +27,7 @@ export const storyRouter = createTRPCRouter({
         .input(
             z.object({
                 publicId: z.string(),
-            }),
+            })
         )
         .mutation(async ({ ctx, input }) => {
             const [deletedStory] = await ctx.db.delete(stories).where(eq(stories.publicId, input.publicId)).returning({
@@ -225,7 +225,7 @@ export const storyRouter = createTRPCRouter({
                 });
             }
 
-            const rating = rest.rating != null ? formatRating(Number(rest.rating)) : "0.0";
+            const rating = rest.rating == null ? "0.0" : formatRating(Number(rest.rating));
 
             const [updatedProgress] = await tx
                 .update(progresses)
@@ -269,7 +269,7 @@ export const storyRouter = createTRPCRouter({
                     resolvedTags.map((tag) => ({
                         storyId,
                         tagId: tag.id,
-                    })),
+                    }))
                 );
             }
 
@@ -279,7 +279,7 @@ export const storyRouter = createTRPCRouter({
                     resolvedFandoms.map((fandom) => ({
                         storyId,
                         fandomId: fandom.id,
-                    })),
+                    }))
                 );
             }
 
@@ -346,7 +346,7 @@ export const storyRouter = createTRPCRouter({
                     tagRecords.map((tag) => ({
                         storyId: newStory.id,
                         tagId: tag.id,
-                    })),
+                    }))
                 );
             }
 
@@ -367,7 +367,7 @@ export const storyRouter = createTRPCRouter({
                     fandomRecords.map((fandom) => ({
                         storyId: newStory.id,
                         fandomId: fandom.id,
-                    })),
+                    }))
                 );
             }
 
@@ -390,7 +390,7 @@ export const storyRouter = createTRPCRouter({
                 current_chapter: z.number().min(0),
                 rating: z.number().min(RATING_MIN).max(RATING_MAX),
                 notes: z.string().optional(),
-            }),
+            })
         )
         .mutation(async ({ ctx, input }) => {
             const { tagIds, fandomIds, progressStatus, current_chapter, rating, notes, ...storyData } = input;
@@ -439,7 +439,7 @@ export const storyRouter = createTRPCRouter({
                         tagRecords.map((tag) => ({
                             storyId: newStory.id,
                             tagId: tag.id,
-                        })),
+                        }))
                     );
                 }
 
@@ -460,14 +460,14 @@ export const storyRouter = createTRPCRouter({
                         fandomRecords.map((fandom) => ({
                             storyId: newStory.id,
                             fandomId: fandom.id,
-                        })),
+                        }))
                     );
                 }
 
                 const sanitizedProgressData = {
                     status: progressStatus,
                     current_chapter: Math.max(0, Number(current_chapter)),
-                    rating: rating != null ? formatRating(rating) : "0.0",
+                    rating: rating == null ? "0.0" : formatRating(rating),
                     notes: notes?.slice(0, NOTES_MAX_LENGTH),
                     userId,
                     storyId: newStory.id,

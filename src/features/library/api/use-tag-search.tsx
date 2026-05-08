@@ -28,7 +28,7 @@ export const useTagSearch = (initialSearch = "") => {
                 limit: 25,
                 includeHot: true,
                 hotLimit: 20,
-            }),
+            })
         );
     }, []);
 
@@ -70,7 +70,7 @@ export const useTagSearch = (initialSearch = "") => {
                 tagResponse.tags.map((tag) => ({
                     value: tag.publicId,
                     label: tag.name,
-                })),
+                }))
             );
         }
     }, [tagResponse?.tags]);
@@ -103,7 +103,7 @@ export const useTagSearch = (initialSearch = "") => {
                 label: newTag.name,
             };
         },
-        [createTagMutation],
+        [createTagMutation]
     );
 
     const setTagSearchNormalized = React.useCallback((val: string) => {

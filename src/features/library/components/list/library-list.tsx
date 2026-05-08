@@ -20,7 +20,7 @@ const LibraryEditSheet = dynamic(
         })),
     {
         ssr: false,
-    },
+    }
 );
 
 const LibraryItemDeleteDialog = dynamic(
@@ -30,7 +30,7 @@ const LibraryItemDeleteDialog = dynamic(
         })),
     {
         ssr: false,
-    },
+    }
 );
 
 const LibraryItemViewSheet = dynamic(
@@ -40,7 +40,7 @@ const LibraryItemViewSheet = dynamic(
         })),
     {
         ssr: false,
-    },
+    }
 );
 
 const DESKTOP_ITEM_HEIGHT = 380;
@@ -90,9 +90,9 @@ function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
         estimateSize: () => itemHeight,
         overscan: OVERSCAN,
         measureElement:
-            typeof window !== "undefined"
-                ? (element) => element?.getBoundingClientRect()?.height ?? itemHeight
-                : undefined,
+            typeof window === "undefined"
+                ? undefined
+                : (element) => element?.getBoundingClientRect()?.height ?? itemHeight,
     });
 
     const items = virtualizer.getVirtualItems();
@@ -131,7 +131,7 @@ function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
         (element: Element | null) => {
             virtualizer.measureElement(element);
         },
-        [virtualizer],
+        [virtualizer]
     );
 
     if (isLoading) {

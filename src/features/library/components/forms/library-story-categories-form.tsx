@@ -91,7 +91,7 @@ export function LibraryStoryCategoriesForm<T extends Categories & FieldValues>({
             }
             setCreatedFandoms(newCreatedFandoms);
         },
-        [createdFandoms, fandomIdToName],
+        [createdFandoms, fandomIdToName]
     );
 
     const handleTagsChange = React.useCallback(
@@ -104,7 +104,7 @@ export function LibraryStoryCategoriesForm<T extends Categories & FieldValues>({
             }
             setCreatedTags(newCreatedTags);
         },
-        [createdTags, tagIdToName],
+        [createdTags, tagIdToName]
     );
 
     const formFields = (

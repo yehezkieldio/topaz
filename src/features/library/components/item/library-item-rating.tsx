@@ -37,7 +37,7 @@ export const LibraryItemRating = memo(function LibraryItemRating({
             // Toggle tooltip on mobile for any star interaction
             handleTooltipToggle();
         },
-        [onChange, readOnly, handleTooltipToggle],
+        [onChange, readOnly, handleTooltipToggle]
     );
 
     // Close tooltip when clicking outside
@@ -82,12 +82,12 @@ export const LibraryItemRating = memo(function LibraryItemRating({
                     {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map((star) => {
                         const fillPercentage = Math.max(
                             MIN_PERCENTAGE,
-                            Math.min(MAX_PERCENTAGE, (clampedValue - (star - 1)) * MAX_PERCENTAGE),
+                            Math.min(MAX_PERCENTAGE, (clampedValue - (star - 1)) * MAX_PERCENTAGE)
                         );
 
                         return (
                             <button
-                                aria-label={`${star} star${star !== 1 ? "s" : ""}`}
+                                aria-label={`${star} star${star === 1 ? "" : "s"}`}
                                 className={`transition-colors ${readOnly ? "cursor-default" : "hover:text-foreground"}`}
                                 disabled={readOnly}
                                 key={star}

@@ -6,7 +6,7 @@ import { useLibraryItemValues } from "#/features/library/hooks/use-library-item"
 
 const MAX_PROGRESS_PERCENTAGE = 100;
 
-function _LibraryItemProgress() {
+function LibraryItemProgressComponent() {
     const { item } = useLibraryItemContext();
     const { hasValidChapterData, hasCurrentChapterOnly, totalChapters, currentChapter, progressPercentage } =
         useLibraryItemValues(item);
@@ -43,5 +43,5 @@ function _LibraryItemProgress() {
     return null;
 }
 
-export const LibraryItemProgress = memo(_LibraryItemProgress);
+export const LibraryItemProgress = memo(LibraryItemProgressComponent);
 LibraryItemProgress.displayName = "LibraryItemProgress";

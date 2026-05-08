@@ -8,7 +8,7 @@ import { useLibraryItemContext } from "#/features/library/components/item/librar
 import { useLibraryItemValues } from "#/features/library/hooks/use-library-item";
 import { type ProgressStatus, progressStatusLabels } from "#/server/db/schema";
 
-function _LibraryItemHeader() {
+function LibraryItemHeaderComponent() {
     const { item } = useLibraryItemContext();
     const { hasValidUrl, isNsfw } = useLibraryItemValues(item);
     const progressStatus = item.progressStatus as ProgressStatus;
@@ -57,5 +57,5 @@ function _LibraryItemHeader() {
     );
 }
 
-export const LibraryItemHeader = memo(_LibraryItemHeader);
+export const LibraryItemHeader = memo(LibraryItemHeaderComponent);
 LibraryItemHeader.displayName = "LibraryItemHeader";

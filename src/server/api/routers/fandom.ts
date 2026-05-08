@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
 import { invalidateFandomSearch, invalidateHotFandoms } from "#/server/cache/actions";
 import { getCachedFandomSearch, getCachedHotFandoms } from "#/server/cache/fandoms";
-import { fandomCreateSchema, fandomUpdateSchema, fandoms } from "#/server/db/schema/fandom";
+import { fandomCreateSchema, fandoms, fandomUpdateSchema } from "#/server/db/schema/fandom";
 
 // Magic numbers extracted to constants
 const MULTISELECT_LIMIT_MIN = 1;
@@ -21,7 +21,7 @@ export const fandomRouter = createTRPCRouter({
         .input(
             z.object({
                 publicId: z.string(),
-            }),
+            })
         )
         .mutation(async ({ ctx, input }) => {
             const [deletedFandom] = await ctx.db.delete(fandoms).where(eq(fandoms.publicId, input.publicId)).returning({
@@ -96,39 +96,40 @@ export const fandomRouter = createTRPCRouter({
             return updatedFandom;
         });
     }),
-    create: protectedProcedure.input(fandomCreateSchema).mutation(async ({ ctx, input }) => {
-        return await ctx.db.transaction(async (tx) => {
-            const existingFandom = await tx
-                .select({ id: fandoms.id })
-                .from(fandoms)
-                .where(eq(fandoms.name, input.name))
-                .limit(1);
+    create: protectedProcedure.input(fandomCreateSchema).mutation(
+        async ({ ctx, input }) =>
+            await ctx.db.transaction(async (tx) => {
+                const existingFandom = await tx
+                    .select({ id: fandoms.id })
+                    .from(fandoms)
+                    .where(eq(fandoms.name, input.name))
+                    .limit(1);
 
-            if (existingFandom.length > 0) {
-                throw new TRPCError({
-                    code: "CONFLICT",
-                    message: "Fandom with this name already exists",
+                if (existingFandom.length > 0) {
+                    throw new TRPCError({
+                        code: "CONFLICT",
+                        message: "Fandom with this name already exists",
+                    });
+                }
+
+                const [newFandom] = await tx.insert(fandoms).values(input).returning({
+                    id: fandoms.id,
+                    publicId: fandoms.publicId,
                 });
-            }
 
-            const [newFandom] = await tx.insert(fandoms).values(input).returning({
-                id: fandoms.id,
-                publicId: fandoms.publicId,
-            });
+                if (!newFandom) {
+                    throw new TRPCError({
+                        code: "INTERNAL_SERVER_ERROR",
+                        message: "Failed to create fandom",
+                    });
+                }
 
-            if (!newFandom) {
-                throw new TRPCError({
-                    code: "INTERNAL_SERVER_ERROR",
-                    message: "Failed to create fandom",
-                });
-            }
+                await invalidateHotFandoms();
+                await invalidateFandomSearch();
 
-            await invalidateHotFandoms();
-            await invalidateFandomSearch();
-
-            return newFandom;
-        });
-    }),
+                return newFandom;
+            })
+    ),
     forMultiselect: protectedProcedure
         .input(
             z.object({
@@ -140,7 +141,7 @@ export const fandomRouter = createTRPCRouter({
                     .default(MULTISELECT_LIMIT_DEFAULT),
                 includeHot: z.boolean().default(true),
                 hotLimit: z.number().min(HOT_LIMIT_MIN).max(HOT_LIMIT_MAX).default(HOT_LIMIT_DEFAULT),
-            }),
+            })
         )
         .query(async ({ ctx, input }) => {
             const { search, limit, includeHot, hotLimit } = input;
@@ -191,7 +192,7 @@ export const fandomRouter = createTRPCRouter({
         .input(
             z.object({
                 name: z.string().min(FANDOM_NAME_MIN).max(FANDOM_NAME_MAX),
-            }),
+            })
         )
         .mutation(async ({ ctx, input }) => {
             const { name } = input;

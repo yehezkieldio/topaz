@@ -29,9 +29,7 @@ export const authConfig = {
         verificationTokensTable: verificationTokens,
     }),
     callbacks: {
-        authorized: ({ auth }) => {
-            return Boolean(auth);
-        },
+        authorized: ({ auth }) => Boolean(auth),
         session: ({ session, token }) => ({
             ...session,
             user: {
