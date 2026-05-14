@@ -17,7 +17,7 @@ export type LibraryItemValues = {
     hasDescription: boolean;
     lastUpdated: string | null;
     isNsfw?: boolean;
-    hasFandomsOrTags: boolean;
+    hasTaxonomyTerms: boolean;
     hasReadingProgress: boolean;
     storyVersion: number;
     progressVersion: number;
@@ -42,7 +42,7 @@ export function getLibraryItemValues(item: LibraryItem): LibraryItemValues {
     const lastUpdated = formatDate(item.updatedAt);
     const isNsfw = item.storyIsNsfw ?? false;
 
-    const hasFandomsOrTags = (item.fandoms?.length ?? 0) > 0 || (item.tags?.length ?? 0) > 0;
+    const hasTaxonomyTerms = (item.taxonomyTerms?.length ?? 0) > 0;
     const hasReadingProgress = hasValidChapterData || hasCurrentChapterOnly;
 
     const storyVersion = item.storyVersion ?? 0;
@@ -62,7 +62,7 @@ export function getLibraryItemValues(item: LibraryItem): LibraryItemValues {
         hasDescription,
         lastUpdated,
         isNsfw,
-        hasFandomsOrTags,
+        hasTaxonomyTerms,
         hasReadingProgress,
         storyVersion,
         progressVersion,

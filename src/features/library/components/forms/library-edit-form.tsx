@@ -79,11 +79,8 @@ export function LibraryEditForm({ item, onCloseAction }: LibraryEditFormProps) {
                         <LibraryForm.Details>
                             <LibraryStoryDetailsForm />
                         </LibraryForm.Details>
-                        <LibraryForm.Categories initialFandoms={item.fandoms || []} initialTags={item.tags || []}>
-                            <LibraryStoryCategoriesForm
-                                initialFandoms={item.fandoms || []}
-                                initialTags={item.tags || []}
-                            />
+                        <LibraryForm.Categories>
+                            <LibraryStoryCategoriesForm initialTaxonomyTerms={item.taxonomyTerms || []} />
                         </LibraryForm.Categories>
                         <LibraryForm.Progress>
                             <LibraryStoryProgressForm />

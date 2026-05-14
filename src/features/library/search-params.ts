@@ -1,4 +1,4 @@
-import { debounce, type inferParserType, parseAsString, parseAsStringEnum } from "nuqs";
+import { debounce, type inferParserType, parseAsString, parseAsStringEnum } from "nuqs/server";
 import type { SortOrder } from "#/lib/utils";
 import type { ProgressSortBy, ProgressStatus, Source } from "#/server/db/schema";
 

@@ -3,31 +3,30 @@
 import * as React from "react";
 import type { Control, FieldValues, Path } from "react-hook-form";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "#/components/ui/form";
-import { useFandomSearch } from "#/features/library/api/use-fandom-search";
-import { type SelectedItem, useTagSearch } from "#/features/library/api/use-tag-search";
+import { type SelectedTaxonomyItem, useTaxonomySearch } from "#/features/library/api/use-taxonomy-search";
 import { useLibraryFormContext } from "#/features/library/components/forms/library-form";
-import { LibraryFandomMultiselect } from "#/features/library/components/ui/library-fandom-multiselect";
-import { LibraryTagMultiselect } from "#/features/library/components/ui/library-tag-multiselect";
+import { LibraryTaxonomyMultiselect } from "#/features/library/components/ui/library-taxonomy-multiselect";
 
 type Categories = {
-    fandomIds?: string[];
-    tagIds?: string[];
+    taxonomyTermIds?: string[];
+};
+
+type InitialTaxonomyTerm = {
+    kind?: string;
+    publicId: string;
+    name: string;
 };
 
 type LibraryStoryCategoriesFormProps<T extends Categories & FieldValues> = {
     control?: Control<T>;
-    fandomsField?: Path<T>;
-    tagsField?: Path<T>;
-    initialFandoms?: Array<{ publicId: string; name: string }>;
-    initialTags?: Array<{ publicId: string; name: string }>;
+    taxonomyTermsField?: Path<T>;
+    initialTaxonomyTerms?: InitialTaxonomyTerm[];
 };
 
 export function LibraryStoryCategoriesForm<T extends Categories & FieldValues>({
     control: propControl,
-    fandomsField = "fandomIds" as Path<T>,
-    tagsField = "tagIds" as Path<T>,
-    initialFandoms = [],
-    initialTags = [],
+    taxonomyTermsField = "taxonomyTermIds" as Path<T>,
+    initialTaxonomyTerms = [],
 }: LibraryStoryCategoriesFormProps<T>) {
     const context = useLibraryFormContext<T>();
     const isInCompoundContext = context !== null;
@@ -37,134 +36,78 @@ export function LibraryStoryCategoriesForm<T extends Categories & FieldValues>({
         throw new Error("LibraryStoryCategoriesForm requires either control prop or compound component context");
     }
 
-    const { fandomData } = useFandomSearch();
-    const { tagData } = useTagSearch();
+    const { taxonomyData } = useTaxonomySearch();
+    const [createdTerms, setCreatedTerms] = React.useState<Map<string, SelectedTaxonomyItem>>(new Map());
 
-    const [createdFandoms, setCreatedFandoms] = React.useState<Map<string, string>>(new Map());
-    const [createdTags, setCreatedTags] = React.useState<Map<string, string>>(new Map());
+    const termIdToItem = React.useMemo(() => {
+        const map = new Map<string, SelectedTaxonomyItem>();
 
-    const fandomIdToName = React.useMemo(() => {
-        const map = new Map<string, string>();
-
-        for (const fandom of initialFandoms) {
-            map.set(fandom.publicId, fandom.name);
+        for (const term of initialTaxonomyTerms) {
+            map.set(term.publicId, {
+                value: term.publicId,
+                label: term.name,
+                kind: term.kind,
+            });
         }
 
-        if (fandomData) {
-            for (const fandom of fandomData) {
-                map.set(fandom.publicId, fandom.name);
+        if (taxonomyData) {
+            for (const term of taxonomyData) {
+                map.set(term.publicId, {
+                    value: term.publicId,
+                    label: term.name,
+                    kind: term.kind,
+                });
             }
         }
 
-        for (const [id, name] of createdFandoms) {
-            map.set(id, name);
+        for (const [id, term] of createdTerms) {
+            map.set(id, term);
         }
+
         return map;
-    }, [initialFandoms, fandomData, createdFandoms]);
+    }, [initialTaxonomyTerms, taxonomyData, createdTerms]);
 
-    const tagIdToName = React.useMemo(() => {
-        const map = new Map<string, string>();
-
-        for (const tag of initialTags) {
-            map.set(tag.publicId, tag.name);
-        }
-
-        if (tagData) {
-            for (const tag of tagData) {
-                map.set(tag.publicId, tag.name);
-            }
-        }
-
-        for (const [id, name] of createdTags) {
-            map.set(id, name);
-        }
-        return map;
-    }, [initialTags, tagData, createdTags]);
-
-    const handleFandomsChange = React.useCallback(
-        (fandoms: SelectedItem[]) => {
-            const newCreatedFandoms = new Map(createdFandoms);
-            for (const fandom of fandoms) {
-                if (!fandomIdToName.has(fandom.value)) {
-                    newCreatedFandoms.set(fandom.value, fandom.label);
+    const handleTermsChange = React.useCallback(
+        (terms: SelectedTaxonomyItem[]) => {
+            const newCreatedTerms = new Map(createdTerms);
+            for (const term of terms) {
+                if (!termIdToItem.has(term.value)) {
+                    newCreatedTerms.set(term.value, term);
                 }
             }
-            setCreatedFandoms(newCreatedFandoms);
+            setCreatedTerms(newCreatedTerms);
         },
-        [createdFandoms, fandomIdToName]
-    );
-
-    const handleTagsChange = React.useCallback(
-        (tags: SelectedItem[]) => {
-            const newCreatedTags = new Map(createdTags);
-            for (const tag of tags) {
-                if (!tagIdToName.has(tag.value)) {
-                    newCreatedTags.set(tag.value, tag.label);
-                }
-            }
-            setCreatedTags(newCreatedTags);
-        },
-        [createdTags, tagIdToName]
+        [createdTerms, termIdToItem]
     );
 
     const formFields = (
-        <>
-            <FormField
-                control={control}
-                name={fandomsField}
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Fandoms</FormLabel>
-                        <FormControl>
-                            <LibraryFandomMultiselect
-                                onFandomsChangeAction={(fandoms: SelectedItem[]) => {
-                                    handleFandomsChange(fandoms);
-                                    field.onChange(fandoms.map((fandom) => fandom.value));
-                                }}
-                                placeholder="Select fandoms..."
-                                selectedFandoms={
-                                    Array.isArray(field.value)
-                                        ? (field.value as string[]).map((fandomId: string) => ({
-                                              value: fandomId,
-                                              label: fandomIdToName.get(fandomId) ?? fandomId,
-                                          }))
-                                        : []
-                                }
-                            />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-
-            <FormField
-                control={control}
-                name={tagsField}
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Tags</FormLabel>
-                        <FormControl>
-                            <LibraryTagMultiselect
-                                onTagsChangeAction={(tags: SelectedItem[]) => {
-                                    handleTagsChange(tags);
-                                    field.onChange(tags.map((tag) => tag.value));
-                                }}
-                                placeholder="Select tags..."
-                                selectedTags={
-                                    Array.isArray(field.value)
-                                        ? (field.value as string[]).map((tagId: string) => ({
-                                              value: tagId,
-                                              label: tagIdToName.get(tagId) ?? tagId,
-                                          }))
-                                        : []
-                                }
-                            />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-        </>
+        <FormField
+            control={control}
+            name={taxonomyTermsField}
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Taxonomy</FormLabel>
+                    <FormControl>
+                        <LibraryTaxonomyMultiselect
+                            onTermsChangeAction={(terms: SelectedTaxonomyItem[]) => {
+                                handleTermsChange(terms);
+                                field.onChange(terms.map((term) => term.value));
+                            }}
+                            placeholder="Select fandoms, tags, genres..."
+                            selectedTerms={
+                                Array.isArray(field.value)
+                                    ? (field.value as string[]).map((termId: string) => {
+                                          const term = termIdToItem.get(termId);
+                                          return term ?? { value: termId, label: termId };
+                                      })
+                                    : []
+                            }
+                        />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
     );
 
     if (isInCompoundContext) {
@@ -173,7 +116,7 @@ export function LibraryStoryCategoriesForm<T extends Categories & FieldValues>({
 
     return (
         <div className="space-y-4">
-            <h3 className="font-medium text-lg">Categories</h3>
+            <h3 className="font-medium text-lg">Taxonomy</h3>
             {formFields}
         </div>
     );

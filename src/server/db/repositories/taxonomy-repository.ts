@@ -1,13 +1,12 @@
 import "server-only";
 
 import { TRPCError } from "@trpc/server";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { backendCacheTags } from "#/server/backend/cache/tags";
 import { db } from "#/server/db";
-import { fandoms } from "#/server/db/schema/fandom";
-import { storyFandoms, storyTags } from "#/server/db/schema/story";
-import { tags } from "#/server/db/schema/tag";
+import { storyTaxonomyTerms } from "#/server/db/schema/story";
+import { type TaxonomyKind, taxonomyTerms } from "#/server/db/schema/taxonomy";
 
 type Database = typeof db;
 
@@ -20,58 +19,98 @@ export const HOT_LIMIT_MIN = 1;
 export const HOT_LIMIT_MAX = 20;
 export const HOT_LIMIT_DEFAULT = 8;
 
+export type TaxonomyTermSummary = {
+    kind: TaxonomyKind;
+    name: string;
+    publicId: string;
+};
+
 export type TaxonomyMultiselectResult = {
     canCreate: boolean;
     searchTerm: string | null;
+    terms: TaxonomyTermSummary[];
 };
 
-export async function getHotFandoms(limit = HOT_LIMIT_DEFAULT) {
-    "use cache";
-    cacheTag(backendCacheTags.hotFandoms);
-    cacheLife("hours");
+type TaxonomySearchInput = {
+    kind?: TaxonomyKind;
+    search?: string;
+};
 
-    return await db
-        .select({
-            publicId: fandoms.publicId,
-            name: fandoms.name,
-        })
-        .from(fandoms)
-        .leftJoin(storyFandoms, eq(fandoms.id, storyFandoms.fandomId))
-        .groupBy(fandoms.id, fandoms.publicId, fandoms.name)
-        .orderBy(desc(sql`COUNT(${storyFandoms.fandomId})`), asc(fandoms.name))
-        .limit(limit);
-}
-
-export async function searchFandoms(searchTerm: string, limit = MULTISELECT_LIMIT_DEFAULT) {
-    "use cache";
-    cacheTag(backendCacheTags.fandomSearch);
-    cacheLife("minutes");
-
-    const normalizedTerm = searchTerm.trim().toLowerCase();
-    const similarityExpr = sql<number>`similarity(LOWER(${fandoms.name}), ${normalizedTerm})`;
-    const minSimilarity = searchTerm.length < 4 ? 0.1 : 0.2;
-
-    return await db
-        .select({
-            publicId: fandoms.publicId,
-            name: fandoms.name,
-        })
-        .from(fandoms)
-        .where(sql`LOWER(${fandoms.name}) ILIKE ${`%${normalizedTerm}%`} OR ${similarityExpr} >= ${minSimilarity}`)
-        .orderBy(desc(similarityExpr), asc(fandoms.name))
-        .limit(limit);
-}
-
-export async function getFandomMultiselect(input: {
+type TaxonomyMultiselectInput = TaxonomySearchInput & {
     includeHot: boolean;
     hotLimit: number;
     limit: number;
-    search?: string;
-}): Promise<TaxonomyMultiselectResult & { fandoms: { publicId: string; name: string }[] }> {
+};
+
+function slugifyTaxonomyName(name: string) {
+    const slug = name
+        .trim()
+        .toLowerCase()
+        .replace(/['"]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, TAXONOMY_NAME_MAX);
+
+    return slug || "term";
+}
+
+function kindPredicate(kind?: TaxonomyKind) {
+    return kind ? eq(taxonomyTerms.kind, kind) : undefined;
+}
+
+export async function getHotTaxonomyTerms(input: { kind?: TaxonomyKind; limit?: number } = {}) {
+    "use cache";
+    cacheTag(backendCacheTags.hotTaxonomyTerms);
+    cacheLife("hours");
+
+    const whereClause = kindPredicate(input.kind);
+
+    return await db
+        .select({
+            publicId: taxonomyTerms.publicId,
+            name: taxonomyTerms.name,
+            kind: taxonomyTerms.kind,
+        })
+        .from(taxonomyTerms)
+        .leftJoin(storyTaxonomyTerms, eq(taxonomyTerms.id, storyTaxonomyTerms.termId))
+        .where(whereClause)
+        .groupBy(taxonomyTerms.id, taxonomyTerms.publicId, taxonomyTerms.name, taxonomyTerms.kind)
+        .orderBy(desc(sql`COUNT(${storyTaxonomyTerms.termId})`), asc(taxonomyTerms.kind), asc(taxonomyTerms.name))
+        .limit(input.limit ?? HOT_LIMIT_DEFAULT);
+}
+
+export async function searchTaxonomyTerms(input: TaxonomySearchInput & { limit?: number }) {
+    "use cache";
+    cacheTag(backendCacheTags.taxonomySearch);
+    cacheLife("minutes");
+
+    const normalizedTerm = input.search?.trim().toLowerCase() ?? "";
+    const similarityExpr = sql<number>`similarity(LOWER(${taxonomyTerms.name}), ${normalizedTerm})`;
+    const minSimilarity = normalizedTerm.length < 4 ? 0.1 : 0.2;
+    const searchClause = sql`(
+        LOWER(${taxonomyTerms.name}) ILIKE ${`%${normalizedTerm}%`}
+        OR LOWER(${taxonomyTerms.slug}) ILIKE ${`%${normalizedTerm}%`}
+        OR ${similarityExpr} >= ${minSimilarity}
+    )`;
+    const whereClause = input.kind ? and(eq(taxonomyTerms.kind, input.kind), searchClause) : searchClause;
+
+    return await db
+        .select({
+            publicId: taxonomyTerms.publicId,
+            name: taxonomyTerms.name,
+            kind: taxonomyTerms.kind,
+        })
+        .from(taxonomyTerms)
+        .where(whereClause)
+        .orderBy(desc(similarityExpr), asc(taxonomyTerms.kind), asc(taxonomyTerms.name))
+        .limit(input.limit ?? MULTISELECT_LIMIT_DEFAULT);
+}
+
+export async function getTaxonomyMultiselect(input: TaxonomyMultiselectInput): Promise<TaxonomyMultiselectResult> {
     const term = input.search?.trim();
     if (!term && input.includeHot) {
         return {
-            fandoms: await getHotFandoms(input.hotLimit),
+            terms: await getHotTaxonomyTerms({ kind: input.kind, limit: input.hotLimit }),
             canCreate: false,
             searchTerm: null,
         };
@@ -79,336 +118,186 @@ export async function getFandomMultiselect(input: {
 
     if (!term) {
         return {
-            fandoms: [],
+            terms: [],
             canCreate: false,
             searchTerm: null,
         };
     }
 
+    const exactMatchClause = input.kind
+        ? and(eq(taxonomyTerms.kind, input.kind), sql`LOWER(${taxonomyTerms.name}) = LOWER(${term})`)
+        : sql`LOWER(${taxonomyTerms.name}) = LOWER(${term})`;
+
     const [searchResults, exactMatch] = await Promise.all([
-        searchFandoms(term, input.limit),
-        db.select({ id: fandoms.id }).from(fandoms).where(sql`LOWER(${fandoms.name}) = LOWER(${term})`).limit(1),
+        searchTaxonomyTerms({ kind: input.kind, search: term, limit: input.limit }),
+        db.select({ id: taxonomyTerms.id }).from(taxonomyTerms).where(exactMatchClause).limit(1),
     ]);
 
     return {
-        fandoms: searchResults,
+        terms: searchResults,
         canCreate: exactMatch.length === 0,
         searchTerm: term,
     };
 }
 
-export async function createFandom(database: Database, name: string) {
-    const existingFandom = await database
-        .select({ id: fandoms.id })
-        .from(fandoms)
-        .where(eq(fandoms.name, name))
+export async function createTaxonomyTerm(
+    database: Database,
+    input: { description?: string | null; kind: TaxonomyKind; name: string; slug?: string }
+) {
+    const name = input.name.trim();
+    const slug = input.slug?.trim() || slugifyTaxonomyName(name);
+
+    const existingTerm = await database
+        .select({ id: taxonomyTerms.id })
+        .from(taxonomyTerms)
+        .where(and(eq(taxonomyTerms.kind, input.kind), eq(taxonomyTerms.name, name)))
         .limit(1);
-    if (existingFandom.length > 0) {
+
+    if (existingTerm.length > 0) {
         throw new TRPCError({
             code: "CONFLICT",
-            message: "Fandom with this name already exists",
+            message: "Taxonomy term with this kind and name already exists",
         });
     }
 
-    const [newFandom] = await database.insert(fandoms).values({ name: name.trim() }).returning({
-        id: fandoms.id,
-        publicId: fandoms.publicId,
-    });
+    const [newTerm] = await database
+        .insert(taxonomyTerms)
+        .values({
+            kind: input.kind,
+            name,
+            slug,
+            description: input.description ?? null,
+        })
+        .returning({
+            id: taxonomyTerms.id,
+            publicId: taxonomyTerms.publicId,
+            kind: taxonomyTerms.kind,
+            name: taxonomyTerms.name,
+        });
 
-    if (!newFandom) {
+    if (!newTerm) {
         throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to create fandom",
+            message: "Failed to create taxonomy term",
         });
     }
 
-    return newFandom;
+    return newTerm;
 }
 
-export async function updateFandom(database: Database, input: { name?: string; publicId: string }) {
+export async function updateTaxonomyTerm(
+    database: Database,
+    input: { description?: string | null; kind?: TaxonomyKind; name?: string; publicId: string; slug?: string }
+) {
     const { publicId, ...updateData } = input;
 
     return await database.transaction(async (tx) => {
-        if (updateData.name) {
-            const [existingFandom] = await tx
-                .select({
-                    id: fandoms.id,
-                    hasConflict: sql<boolean>`EXISTS(
-                        SELECT 1 FROM ${fandoms} f2
-                        WHERE f2.name = ${updateData.name}
-                        AND f2.public_id != ${publicId}
-                    )`.as("hasConflict"),
-                })
-                .from(fandoms)
-                .where(eq(fandoms.publicId, publicId))
+        const [existingTerm] = await tx
+            .select({
+                id: taxonomyTerms.id,
+                kind: taxonomyTerms.kind,
+            })
+            .from(taxonomyTerms)
+            .where(eq(taxonomyTerms.publicId, publicId))
+            .limit(1);
+
+        if (!existingTerm) {
+            throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "Taxonomy term not found",
+            });
+        }
+
+        const nextKind = updateData.kind ?? existingTerm.kind;
+        const nextName = updateData.name?.trim();
+        const nextSlug = updateData.slug?.trim() || (nextName ? slugifyTaxonomyName(nextName) : undefined);
+
+        if (nextName) {
+            const [conflictingTerm] = await tx
+                .select({ id: taxonomyTerms.id })
+                .from(taxonomyTerms)
+                .where(
+                    and(
+                        eq(taxonomyTerms.kind, nextKind),
+                        eq(taxonomyTerms.name, nextName),
+                        sql`${taxonomyTerms.publicId} != ${publicId}`
+                    )
+                )
                 .limit(1);
 
-            if (!existingFandom) {
-                throw new TRPCError({
-                    code: "NOT_FOUND",
-                    message: "Fandom not found",
-                });
-            }
-
-            if (existingFandom.hasConflict) {
+            if (conflictingTerm) {
                 throw new TRPCError({
                     code: "CONFLICT",
-                    message: "Fandom with this name already exists",
+                    message: "Taxonomy term with this kind and name already exists",
                 });
             }
         }
 
-        const [updatedFandom] = await tx
-            .update(fandoms)
-            .set(updateData)
-            .where(eq(fandoms.publicId, publicId))
+        const [updatedTerm] = await tx
+            .update(taxonomyTerms)
+            .set({
+                ...updateData,
+                ...(nextName && { name: nextName }),
+                ...(nextSlug && { slug: nextSlug }),
+                version: sql`${taxonomyTerms.version} + 1`,
+            })
+            .where(eq(taxonomyTerms.publicId, publicId))
             .returning({
-                id: fandoms.id,
-                publicId: fandoms.publicId,
+                id: taxonomyTerms.id,
+                publicId: taxonomyTerms.publicId,
+                kind: taxonomyTerms.kind,
+                name: taxonomyTerms.name,
             });
 
-        if (!updatedFandom) {
+        if (!updatedTerm) {
             throw new TRPCError({
                 code: "NOT_FOUND",
-                message: "Fandom not found",
+                message: "Taxonomy term not found",
             });
         }
 
-        return updatedFandom;
+        return updatedTerm;
     });
 }
 
-export async function createFandomForMultiselect(database: Database, name: string) {
-    const existingFandom = await database
+export async function createTaxonomyTermForMultiselect(
+    database: Database,
+    input: { kind: TaxonomyKind; name: string }
+) {
+    const name = input.name.trim();
+    const existingTerm = await database
         .select({
-            publicId: fandoms.publicId,
-            name: fandoms.name,
+            publicId: taxonomyTerms.publicId,
+            name: taxonomyTerms.name,
+            kind: taxonomyTerms.kind,
         })
-        .from(fandoms)
-        .where(sql`LOWER(${fandoms.name}) = LOWER(${name})`)
+        .from(taxonomyTerms)
+        .where(and(eq(taxonomyTerms.kind, input.kind), sql`LOWER(${taxonomyTerms.name}) = LOWER(${name})`))
         .limit(1);
 
-    if (existingFandom.length > 0) {
-        return existingFandom[0];
+    if (existingTerm.length > 0) {
+        return existingTerm[0];
     }
 
-    const [newFandom] = await database.insert(fandoms).values({ name: name.trim() }).returning({
-        publicId: fandoms.publicId,
-        name: fandoms.name,
+    return await createTaxonomyTerm(database, {
+        kind: input.kind,
+        name,
+        slug: slugifyTaxonomyName(name),
     });
-
-    if (!newFandom) {
-        throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to create fandom",
-        });
-    }
-
-    return newFandom;
 }
 
-export async function deleteFandom(database: Database, publicId: string) {
-    const [deletedFandom] = await database.delete(fandoms).where(eq(fandoms.publicId, publicId)).returning({
-        id: fandoms.id,
-        publicId: fandoms.publicId,
+export async function deleteTaxonomyTerm(database: Database, publicId: string) {
+    const [deletedTerm] = await database.delete(taxonomyTerms).where(eq(taxonomyTerms.publicId, publicId)).returning({
+        id: taxonomyTerms.id,
+        publicId: taxonomyTerms.publicId,
     });
 
-    if (!deletedFandom) {
+    if (!deletedTerm) {
         throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Fandom not found",
+            message: "Taxonomy term not found",
         });
     }
 
-    return deletedFandom;
-}
-
-export async function getHotTags(limit = HOT_LIMIT_DEFAULT) {
-    "use cache";
-    cacheTag(backendCacheTags.hotTags);
-    cacheLife("hours");
-
-    return await db
-        .select({
-            publicId: tags.publicId,
-            name: tags.name,
-        })
-        .from(tags)
-        .leftJoin(storyTags, eq(tags.id, storyTags.tagId))
-        .groupBy(tags.id, tags.publicId, tags.name)
-        .orderBy(desc(sql`COUNT(${storyTags.tagId})`), asc(tags.name))
-        .limit(limit);
-}
-
-export async function searchTags(searchTerm: string, limit = MULTISELECT_LIMIT_DEFAULT) {
-    "use cache";
-    cacheTag(backendCacheTags.tagSearch);
-    cacheLife("minutes");
-
-    const normalizedTerm = searchTerm.trim().toLowerCase();
-    const similarityExpr = sql<number>`similarity(LOWER(${tags.name}), ${normalizedTerm})`;
-    const minSimilarity = searchTerm.length < 4 ? 0.1 : 0.2;
-
-    return await db
-        .select({
-            publicId: tags.publicId,
-            name: tags.name,
-        })
-        .from(tags)
-        .where(sql`LOWER(${tags.name}) ILIKE ${`%${normalizedTerm}%`} OR ${similarityExpr} >= ${minSimilarity}`)
-        .orderBy(desc(similarityExpr), asc(tags.name))
-        .limit(limit);
-}
-
-export async function getTagMultiselect(input: {
-    includeHot: boolean;
-    hotLimit: number;
-    limit: number;
-    search?: string;
-}): Promise<TaxonomyMultiselectResult & { tags: { publicId: string; name: string }[] }> {
-    const term = input.search?.trim();
-    if (!term && input.includeHot) {
-        return {
-            tags: await getHotTags(input.hotLimit),
-            canCreate: false,
-            searchTerm: null,
-        };
-    }
-
-    if (!term) {
-        return {
-            tags: [],
-            canCreate: false,
-            searchTerm: null,
-        };
-    }
-
-    const [searchResults, exactMatch] = await Promise.all([
-        searchTags(term, input.limit),
-        db.select({ id: tags.id }).from(tags).where(sql`LOWER(${tags.name}) = LOWER(${term})`).limit(1),
-    ]);
-
-    return {
-        tags: searchResults,
-        canCreate: exactMatch.length === 0,
-        searchTerm: term,
-    };
-}
-
-export async function createTag(database: Database, name: string) {
-    const existingTag = await database.select({ id: tags.id }).from(tags).where(eq(tags.name, name)).limit(1);
-    if (existingTag.length > 0) {
-        throw new TRPCError({
-            code: "CONFLICT",
-            message: "Tag with this name already exists",
-        });
-    }
-
-    const [newTag] = await database.insert(tags).values({ name: name.trim() }).returning({
-        id: tags.id,
-        publicId: tags.publicId,
-    });
-
-    if (!newTag) {
-        throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to create tag",
-        });
-    }
-
-    return newTag;
-}
-
-export async function updateTag(database: Database, input: { name?: string; publicId: string }) {
-    const { publicId, ...updateData } = input;
-
-    return await database.transaction(async (tx) => {
-        if (updateData.name) {
-            const [existingTag] = await tx
-                .select({
-                    id: tags.id,
-                    hasConflict: sql<boolean>`EXISTS(
-                        SELECT 1 FROM ${tags} t2
-                        WHERE t2.name = ${updateData.name}
-                        AND t2.public_id != ${publicId}
-                    )`.as("hasConflict"),
-                })
-                .from(tags)
-                .where(eq(tags.publicId, publicId))
-                .limit(1);
-
-            if (!existingTag) {
-                throw new TRPCError({
-                    code: "NOT_FOUND",
-                    message: "Tag not found",
-                });
-            }
-
-            if (existingTag.hasConflict) {
-                throw new TRPCError({
-                    code: "CONFLICT",
-                    message: "Tag with this name already exists",
-                });
-            }
-        }
-
-        const [updatedTag] = await tx.update(tags).set(updateData).where(eq(tags.publicId, publicId)).returning({
-            id: tags.id,
-            publicId: tags.publicId,
-        });
-
-        if (!updatedTag) {
-            throw new TRPCError({
-                code: "NOT_FOUND",
-                message: "Tag not found",
-            });
-        }
-
-        return updatedTag;
-    });
-}
-
-export async function createTagForMultiselect(database: Database, name: string) {
-    const existingTag = await database
-        .select({
-            publicId: tags.publicId,
-            name: tags.name,
-        })
-        .from(tags)
-        .where(sql`LOWER(${tags.name}) = LOWER(${name})`)
-        .limit(1);
-
-    if (existingTag.length > 0) {
-        return existingTag[0];
-    }
-
-    const [newTag] = await database.insert(tags).values({ name: name.trim() }).returning({
-        publicId: tags.publicId,
-        name: tags.name,
-    });
-
-    if (!newTag) {
-        throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to create tag",
-        });
-    }
-
-    return newTag;
-}
-
-export async function deleteTag(database: Database, publicId: string) {
-    const [deletedTag] = await database.delete(tags).where(eq(tags.publicId, publicId)).returning({
-        id: tags.id,
-        publicId: tags.publicId,
-    });
-
-    if (!deletedTag) {
-        throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Tag not found",
-        });
-    }
-
-    return deletedTag;
+    return deletedTerm;
 }

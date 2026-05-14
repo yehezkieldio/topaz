@@ -70,18 +70,12 @@ function LibraryFormDetails({ children }: LibraryFormDetailsProps) {
 
 type LibraryFormCategoriesProps = {
     children?: React.ReactNode;
-    initialFandoms?: Array<{ publicId: string; name: string }>;
-    initialTags?: Array<{ publicId: string; name: string }>;
 };
 
-function LibraryFormCategories({
-    children,
-    initialFandoms: _initialFandoms,
-    initialTags: _initialTags,
-}: LibraryFormCategoriesProps) {
+function LibraryFormCategories({ children }: LibraryFormCategoriesProps) {
     return (
         <div className="space-y-4">
-            <h3 className="font-medium text-lg">Categories</h3>
+            <h3 className="font-medium text-lg">Taxonomy</h3>
             {children}
         </div>
     );

@@ -5,17 +5,15 @@ import { formatRating } from "#/lib/utils";
 import { protectedProcedure } from "#/server/api/trpc";
 import { invalidateLibraryReadModels, invalidateTaxonomyReadModels } from "#/server/backend/cache/tags";
 import { refreshLibraryReadModels } from "#/server/db/repositories/library-repository";
-import { fandoms } from "#/server/db/schema/fandom";
 import { progresses, progressStatusEnum } from "#/server/db/schema/progress";
 import {
     stories,
     storyCreateSchema,
     storyCreateWithProgressSchema,
-    storyFandoms,
-    storyTags,
+    storyTaxonomyTerms,
     storyUpdateSchema,
 } from "#/server/db/schema/story";
-import { tags } from "#/server/db/schema/tag";
+import { taxonomyTerms } from "#/server/db/schema/taxonomy";
 
 // Constants for validation
 const RATING_MIN = 0;
@@ -121,49 +119,28 @@ export const storyProcedures = {
             return result;
         }),
     updateWithRelations: protectedProcedure.input(storyCreateWithProgressSchema).mutation(async ({ ctx, input }) => {
-        const { storyPublicId, progressPublicId, tagIds, fandomIds, storyVersion, progressVersion, ...rest } = input;
+        const { storyPublicId, progressPublicId, taxonomyTermIds, storyVersion, progressVersion, ...rest } = input;
 
         const result = await ctx.db.transaction(async (tx) => {
-            let resolvedTags: { publicId: string; name: string; id: string }[] = [];
-            if (tagIds.length > 0) {
-                const existingTags = await tx
+            let resolvedTerms: { publicId: string; name: string; id: string }[] = [];
+            if (taxonomyTermIds.length > 0) {
+                const existingTerms = await tx
                     .select({
-                        id: tags.id,
-                        publicId: tags.publicId,
-                        name: tags.name,
+                        id: taxonomyTerms.id,
+                        publicId: taxonomyTerms.publicId,
+                        name: taxonomyTerms.name,
                     })
-                    .from(tags)
-                    .where(inArray(tags.publicId, tagIds));
+                    .from(taxonomyTerms)
+                    .where(inArray(taxonomyTerms.publicId, taxonomyTermIds));
 
-                if (existingTags.length !== tagIds.length) {
+                if (existingTerms.length !== taxonomyTermIds.length) {
                     throw new TRPCError({
                         code: "BAD_REQUEST",
-                        message: "One or more tag IDs are invalid",
+                        message: "One or more taxonomy term IDs are invalid",
                     });
                 }
 
-                resolvedTags = existingTags;
-            }
-
-            let resolvedFandoms: { publicId: string; name: string; id: string }[] = [];
-            if (fandomIds.length > 0) {
-                const existingFandoms = await tx
-                    .select({
-                        id: fandoms.id,
-                        publicId: fandoms.publicId,
-                        name: fandoms.name,
-                    })
-                    .from(fandoms)
-                    .where(inArray(fandoms.publicId, fandomIds));
-
-                if (existingFandoms.length !== fandomIds.length) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
-                        message: "One or more fandom IDs are invalid",
-                    });
-                }
-
-                resolvedFandoms = existingFandoms;
+                resolvedTerms = existingTerms;
             }
 
             const [storyRecord] = await tx
@@ -259,22 +236,12 @@ export const storyProcedures = {
                 });
             }
 
-            await tx.delete(storyTags).where(eq(storyTags.storyId, storyId));
-            if (resolvedTags.length > 0) {
-                await tx.insert(storyTags).values(
-                    resolvedTags.map((tag) => ({
+            await tx.delete(storyTaxonomyTerms).where(eq(storyTaxonomyTerms.storyId, storyId));
+            if (resolvedTerms.length > 0) {
+                await tx.insert(storyTaxonomyTerms).values(
+                    resolvedTerms.map((term) => ({
                         storyId,
-                        tagId: tag.id,
-                    }))
-                );
-            }
-
-            await tx.delete(storyFandoms).where(eq(storyFandoms.storyId, storyId));
-            if (resolvedFandoms.length > 0) {
-                await tx.insert(storyFandoms).values(
-                    resolvedFandoms.map((fandom) => ({
-                        storyId,
-                        fandomId: fandom.id,
+                        termId: term.id,
                     }))
                 );
             }
@@ -282,8 +249,7 @@ export const storyProcedures = {
             return {
                 storyPublicId: updatedStory.publicId,
                 progressPublicId: updatedProgress.publicId,
-                updatedTags: resolvedTags.map((t) => t.publicId),
-                updatedFandoms: resolvedFandoms.map((f) => f.publicId),
+                updatedTaxonomyTerms: resolvedTerms.map((term) => term.publicId),
             };
         });
 
@@ -294,7 +260,7 @@ export const storyProcedures = {
         return result;
     }),
     create: protectedProcedure.input(storyCreateSchema).mutation(async ({ ctx, input }) => {
-        const { tagIds, fandomIds, ...storyData } = input;
+        const { taxonomyTermIds, ...storyData } = input;
 
         const result = await ctx.db.transaction(async (tx) => {
             const existingStory = await tx
@@ -322,44 +288,23 @@ export const storyProcedures = {
                 });
             }
 
-            if (tagIds.length > 0) {
-                const tagRecords = await tx
-                    .select({ id: tags.id, publicId: tags.publicId })
-                    .from(tags)
-                    .where(inArray(tags.publicId, tagIds));
+            if (taxonomyTermIds.length > 0) {
+                const termRecords = await tx
+                    .select({ id: taxonomyTerms.id, publicId: taxonomyTerms.publicId })
+                    .from(taxonomyTerms)
+                    .where(inArray(taxonomyTerms.publicId, taxonomyTermIds));
 
-                if (tagRecords.length !== tagIds.length) {
+                if (termRecords.length !== taxonomyTermIds.length) {
                     throw new TRPCError({
                         code: "BAD_REQUEST",
-                        message: "One or more tag IDs are invalid",
+                        message: "One or more taxonomy term IDs are invalid",
                     });
                 }
 
-                await tx.insert(storyTags).values(
-                    tagRecords.map((tag) => ({
+                await tx.insert(storyTaxonomyTerms).values(
+                    termRecords.map((term) => ({
                         storyId: newStory.id,
-                        tagId: tag.id,
-                    }))
-                );
-            }
-
-            if (fandomIds.length > 0) {
-                const fandomRecords = await tx
-                    .select({ id: fandoms.id, publicId: fandoms.publicId })
-                    .from(fandoms)
-                    .where(inArray(fandoms.publicId, fandomIds));
-
-                if (fandomRecords.length !== fandomIds.length) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
-                        message: "One or more fandom IDs are invalid",
-                    });
-                }
-
-                await tx.insert(storyFandoms).values(
-                    fandomRecords.map((fandom) => ({
-                        storyId: newStory.id,
-                        fandomId: fandom.id,
+                        termId: term.id,
                     }))
                 );
             }
@@ -383,7 +328,7 @@ export const storyProcedures = {
             })
         )
         .mutation(async ({ ctx, input }) => {
-            const { tagIds, fandomIds, progressStatus, current_chapter, rating, notes, ...storyData } = input;
+            const { taxonomyTermIds, progressStatus, current_chapter, rating, notes, ...storyData } = input;
             const userId = ctx.session.user.id;
 
             const result = await ctx.db.transaction(async (tx) => {
@@ -412,44 +357,23 @@ export const storyProcedures = {
                     });
                 }
 
-                if (tagIds.length > 0) {
-                    const tagRecords = await tx
-                        .select({ id: tags.id, publicId: tags.publicId })
-                        .from(tags)
-                        .where(inArray(tags.publicId, tagIds));
+                if (taxonomyTermIds.length > 0) {
+                    const termRecords = await tx
+                        .select({ id: taxonomyTerms.id, publicId: taxonomyTerms.publicId })
+                        .from(taxonomyTerms)
+                        .where(inArray(taxonomyTerms.publicId, taxonomyTermIds));
 
-                    if (tagRecords.length !== tagIds.length) {
+                    if (termRecords.length !== taxonomyTermIds.length) {
                         throw new TRPCError({
                             code: "BAD_REQUEST",
-                            message: "One or more tag IDs are invalid",
+                            message: "One or more taxonomy term IDs are invalid",
                         });
                     }
 
-                    await tx.insert(storyTags).values(
-                        tagRecords.map((tag) => ({
+                    await tx.insert(storyTaxonomyTerms).values(
+                        termRecords.map((term) => ({
                             storyId: newStory.id,
-                            tagId: tag.id,
-                        }))
-                    );
-                }
-
-                if (fandomIds.length > 0) {
-                    const fandomRecords = await tx
-                        .select({ id: fandoms.id, publicId: fandoms.publicId })
-                        .from(fandoms)
-                        .where(inArray(fandoms.publicId, fandomIds));
-
-                    if (fandomRecords.length !== fandomIds.length) {
-                        throw new TRPCError({
-                            code: "BAD_REQUEST",
-                            message: "One or more fandom IDs are invalid",
-                        });
-                    }
-
-                    await tx.insert(storyFandoms).values(
-                        fandomRecords.map((fandom) => ({
-                            storyId: newStory.id,
-                            fandomId: fandom.id,
+                            termId: term.id,
                         }))
                     );
                 }

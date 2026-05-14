@@ -7,6 +7,7 @@ import { backendCacheTags } from "#/server/backend/cache/tags";
 import { db } from "#/server/db";
 import { type ProgressSortBy, progresses, type progressStatusEnum } from "#/server/db/schema/progress";
 import type { sourceEnum } from "#/server/db/schema/story";
+import type { TaxonomyKind } from "#/server/db/schema/taxonomy";
 import { getSortColumn, libraryMaterializedView, libraryStatsMaterializedView } from "#/server/db/schema/view";
 
 export const MAX_SEARCH_LENGTH = 255;
@@ -33,8 +34,7 @@ export type ProgressQueryResult = {
         progressRating: number;
         storyStatus: string;
         updatedAt: Date;
-        tags: { publicId: string; name: string }[];
-        fandoms: { publicId: string; name: string }[];
+        taxonomyTerms: { kind: TaxonomyKind; publicId: string; name: string }[];
         storySource?: string;
         storyUrl?: string;
         storyChapterCount?: number;
@@ -380,8 +380,7 @@ export async function listLibraryProgress(database: Database, input: LibraryQuer
         storyStatus: libraryMaterializedView.storyStatus,
         updatedAt: libraryMaterializedView.updatedAt,
         storyIsNsfw: libraryMaterializedView.storyIsNsfw,
-        tags: libraryMaterializedView.tags,
-        fandoms: libraryMaterializedView.fandoms,
+        taxonomyTerms: libraryMaterializedView.taxonomyTerms,
         storyVersion: libraryMaterializedView.storyVersion,
         progressVersion: libraryMaterializedView.progressVersion,
     };
@@ -420,8 +419,7 @@ export async function listLibraryProgress(database: Database, input: LibraryQuer
     const items = hasNextPage ? results.slice(0, effectiveLimit) : results;
     const mappedItems = items.map((item) => ({
         ...item,
-        tags: Array.isArray(item.tags) ? item.tags : [],
-        fandoms: Array.isArray(item.fandoms) ? item.fandoms : [],
+        taxonomyTerms: Array.isArray(item.taxonomyTerms) ? item.taxonomyTerms : [],
     }));
     const nextCursor = hasNextPage ? generateNextCursor(mappedItems, sortBy) : undefined;
 

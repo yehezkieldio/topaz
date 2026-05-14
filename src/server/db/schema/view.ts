@@ -1,17 +1,12 @@
 import { type SQL, sql } from "drizzle-orm";
 import { pgMaterializedView } from "drizzle-orm/pg-core";
-import { fandoms } from "#/server/db/schema/fandom";
 import { type ProgressSortBy, progresses } from "#/server/db/schema/progress";
-import { stories, storyFandoms, storyTags } from "#/server/db/schema/story";
-import { tags } from "#/server/db/schema/tag";
+import { stories, storyTaxonomyTerms } from "#/server/db/schema/story";
+import { type TaxonomyKind, taxonomyTerms } from "#/server/db/schema/taxonomy";
 import { users } from "#/server/db/schema/user";
 
-export type StoryTag = {
-    name: string;
-    publicId: string;
-};
-
-export type StoryFandom = {
+export type StoryTaxonomyTerm = {
+    kind: TaxonomyKind;
     name: string;
     publicId: string;
 };
@@ -42,39 +37,28 @@ export const libraryMaterializedView = pgMaterializedView("library_mv").as((qb) 
                 setweight(to_tsvector('english', ${stories.author}), 'B') ||
                 setweight(to_tsvector('english', coalesce(${stories.description}, '')), 'C') ||
                 setweight(to_tsvector('english', coalesce(${stories.summary}, '')), 'D') ||
-                setweight(to_tsvector('english', coalesce(string_agg(DISTINCT ${tags.name}, ' '), '')), 'C') ||
-                setweight(to_tsvector('english', coalesce(string_agg(DISTINCT ${fandoms.name}, ' '), '')), 'C') ||
+                setweight(to_tsvector('english', coalesce(string_agg(DISTINCT ${taxonomyTerms.name}, ' '), '')), 'C') ||
                 setweight(to_tsvector('english', coalesce(${progresses.status}::text, 'Reading')), 'D') ||
                 setweight(to_tsvector('english', coalesce(${progresses.notes}, '')), 'D')
             )`.as("search_vector"),
-            tags: sql<StoryTag[]>`COALESCE(
+            taxonomyTerms: sql<StoryTaxonomyTerm[]>`COALESCE(
                 json_agg(
                     DISTINCT jsonb_build_object(
-                        'publicId', ${tags.publicId},
-                        'name', ${tags.name}
+                        'publicId', ${taxonomyTerms.publicId},
+                        'name', ${taxonomyTerms.name},
+                        'kind', ${taxonomyTerms.kind}
                     )
-                ) FILTER (WHERE ${tags.id} IS NOT NULL),
+                ) FILTER (WHERE ${taxonomyTerms.id} IS NOT NULL),
                 '[]'::json
-            )`.as("tags"),
-            fandoms: sql<StoryFandom[]>`COALESCE(
-                json_agg(
-                    DISTINCT jsonb_build_object(
-                        'publicId', ${fandoms.publicId},
-                        'name', ${fandoms.name}
-                    )
-                ) FILTER (WHERE ${fandoms.id} IS NOT NULL),
-                '[]'::json
-            )`.as("fandoms"),
+            )`.as("taxonomy_terms"),
             updatedAt: sql<Date>`${progresses.updated_at}`.as("updated_at"),
             createdAt: sql<Date>`${progresses.created_at}`.as("created_at"),
         })
         .from(progresses)
         .innerJoin(users, sql`${users.id} = ${progresses.userId}`)
         .innerJoin(stories, sql`${stories.id} = ${progresses.storyId}`)
-        .leftJoin(storyTags, sql`${storyTags.storyId} = ${stories.id}`)
-        .leftJoin(tags, sql`${tags.id} = ${storyTags.tagId}`)
-        .leftJoin(storyFandoms, sql`${storyFandoms.storyId} = ${stories.id}`)
-        .leftJoin(fandoms, sql`${fandoms.id} = ${storyFandoms.fandomId}`)
+        .leftJoin(storyTaxonomyTerms, sql`${storyTaxonomyTerms.storyId} = ${stories.id}`)
+        .leftJoin(taxonomyTerms, sql`${taxonomyTerms.id} = ${storyTaxonomyTerms.termId}`)
         .groupBy(
             progresses.publicId,
             users.publicId,
@@ -89,10 +73,12 @@ export const libraryMaterializedView = pgMaterializedView("library_mv").as((qb) 
             stories.chapter_count,
             stories.word_count,
             stories.is_nsfw,
+            stories.version,
             progresses.status,
             progresses.current_chapter,
             progresses.rating,
             progresses.notes,
+            progresses.version,
             progresses.updated_at,
             progresses.created_at
         )
@@ -103,7 +89,10 @@ export const libraryStatsMaterializedView = pgMaterializedView("library_stats_mv
         .select({
             totalWordsRead: sql<number>`COALESCE(SUM(${stories.word_count}), 0)`.as("total_words_read"),
             totalChaptersRead: sql<number>`COALESCE(SUM(${stories.chapter_count}), 0)`.as("total_chapters_read"),
-            fandomCount: sql<number>`COUNT(DISTINCT ${fandoms.id})`.as("fandom_count"),
+            taxonomyTermCount: sql<number>`(
+                SELECT COUNT(DISTINCT ${storyTaxonomyTerms.termId})
+                FROM ${storyTaxonomyTerms}
+            )`.as("taxonomy_term_count"),
             storyCount: sql<number>`COUNT(DISTINCT ${stories.id})`.as("story_count"),
             completedCount: sql<number>`COUNT(CASE WHEN ${progresses.status} = 'Completed' THEN 1 END)`.as("completed"),
             pausedCount: sql<number>`COUNT(CASE WHEN ${progresses.status} = 'Paused' THEN 1 END)`.as("paused"),
@@ -113,8 +102,6 @@ export const libraryStatsMaterializedView = pgMaterializedView("library_stats_mv
         })
         .from(progresses)
         .innerJoin(stories, sql`${stories.id} = ${progresses.storyId}`)
-        .leftJoin(storyFandoms, sql`${storyFandoms.storyId} = ${stories.id}`)
-        .leftJoin(fandoms, sql`${fandoms.id} = ${storyFandoms.fandomId}`)
 );
 
 const sortColumnMap: Record<

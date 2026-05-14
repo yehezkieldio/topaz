@@ -9,13 +9,31 @@ type LibraryItemTagsProps = {
     showAllTags?: boolean;
 };
 
-const MAX_FANDOMS_TO_SHOW = 4;
-const MAX_TAGS_TO_SHOW = 6;
+const MAX_TERMS_TO_SHOW = 10;
+const taxonomyKindLabels = {
+    Fandom: "Fandom",
+    Tag: "Tag",
+    Genre: "Genre",
+    Character: "Character",
+    Relationship: "Relationship",
+    Warning: "Warning",
+    SourceCategory: "Source category",
+    Custom: "Custom",
+} as const;
+
+function getTermVariant(kind?: string) {
+    return kind === "Fandom" ? "outline" : "secondary";
+}
+
+function getTermTitle(kind?: string) {
+    if (kind && kind in taxonomyKindLabels) {
+        return taxonomyKindLabels[kind as keyof typeof taxonomyKindLabels];
+    }
+}
 
 function LibraryItemTagsComponent({ showAllFandoms = false, showAllTags = false }: LibraryItemTagsProps) {
     const { item } = useLibraryItemContext();
-    const [expandedFandoms, setExpandedFandoms] = useState(false);
-    const [expandedTags, setExpandedTags] = useState(false);
+    const [expandedTerms, setExpandedTerms] = useState(false);
 
     const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -26,8 +44,7 @@ function LibraryItemTagsComponent({ showAllFandoms = false, showAllTags = false 
             (entries) => {
                 for (const entry of entries) {
                     if (!entry.isIntersecting) {
-                        setExpandedFandoms(false);
-                        setExpandedTags(false);
+                        setExpandedTerms(false);
                     }
                 }
             },
@@ -39,72 +56,44 @@ function LibraryItemTagsComponent({ showAllFandoms = false, showAllTags = false 
         return () => observer.disconnect();
     }, []);
 
-    if (!(item.fandoms?.length || item.tags?.length)) {
+    const taxonomyTerms = item.taxonomyTerms ?? [];
+
+    if (taxonomyTerms.length === 0) {
         return null;
     }
 
-    const effectiveShowAllFandoms = showAllFandoms || expandedFandoms;
-    const effectiveShowAllTags = showAllTags || expandedTags;
-
-    const fandomsToShow = effectiveShowAllFandoms ? item.fandoms : item.fandoms?.slice(0, MAX_FANDOMS_TO_SHOW);
-    const tagsToShow = effectiveShowAllTags ? item.tags : item.tags?.slice(0, MAX_TAGS_TO_SHOW);
+    const effectiveShowAllTerms = showAllFandoms || showAllTags || expandedTerms;
+    const termsToShow = effectiveShowAllTerms ? taxonomyTerms : taxonomyTerms.slice(0, MAX_TERMS_TO_SHOW);
 
     return (
-        <div className="space-y-2 lg:space-y-3">
-            {item.fandoms?.length > 0 && (
-                <div className="flex flex-wrap gap-1 lg:gap-2">
-                    {fandomsToShow.map((fandom) => (
-                        <Badge className="rounded-md text-xs lg:text-xs" key={fandom.publicId} variant="outline">
-                            {fandom.name || "Unknown Fandom"}
-                        </Badge>
-                    ))}
-                    {!effectiveShowAllFandoms && item.fandoms.length > MAX_FANDOMS_TO_SHOW && (
-                        <Badge
-                            aria-expanded={effectiveShowAllFandoms}
-                            className="cursor-pointer rounded-md text-muted-foreground text-xs lg:text-xs"
-                            onClick={() => setExpandedFandoms((prev) => !prev)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    setExpandedFandoms((prev) => !prev);
-                                }
-                            }}
-                            tabIndex={0}
-                            title={`Show ${item.fandoms.length - MAX_FANDOMS_TO_SHOW} more`}
-                            variant="outline"
-                        >
-                            +{item.fandoms.length - MAX_FANDOMS_TO_SHOW} more
-                        </Badge>
-                    )}
-                </div>
-            )}
-
-            {item.tags?.length > 0 && (
-                <div className="flex flex-wrap gap-1 lg:gap-1.5">
-                    {tagsToShow.map((tag) => (
-                        <Badge className="rounded-md text-xs lg:text-xs" key={tag.publicId} variant="secondary">
-                            {tag.name || "Unknown Tag"}
-                        </Badge>
-                    ))}
-                    {!effectiveShowAllTags && item.tags.length > MAX_TAGS_TO_SHOW && (
-                        <Badge
-                            aria-expanded={effectiveShowAllTags}
-                            className="cursor-pointer rounded-md text-muted-foreground text-xs lg:text-xs"
-                            onClick={() => setExpandedTags((prev) => !prev)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    setExpandedTags((prev) => !prev);
-                                }
-                            }}
-                            tabIndex={0}
-                            title={`Show ${item.tags.length - MAX_TAGS_TO_SHOW} more`}
-                            variant="secondary"
-                        >
-                            +{item.tags.length - MAX_TAGS_TO_SHOW}
-                        </Badge>
-                    )}
-                </div>
+        <div className="flex flex-wrap gap-1 lg:gap-1.5" ref={containerRef}>
+            {termsToShow.map((term) => (
+                <Badge
+                    className="rounded-md text-xs lg:text-xs"
+                    key={term.publicId}
+                    title={getTermTitle(term.kind)}
+                    variant={getTermVariant(term.kind)}
+                >
+                    {term.name || "Unknown Term"}
+                </Badge>
+            ))}
+            {!effectiveShowAllTerms && taxonomyTerms.length > MAX_TERMS_TO_SHOW && (
+                <Badge
+                    aria-expanded={effectiveShowAllTerms}
+                    className="cursor-pointer rounded-md text-muted-foreground text-xs lg:text-xs"
+                    onClick={() => setExpandedTerms((prev) => !prev)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setExpandedTerms((prev) => !prev);
+                        }
+                    }}
+                    tabIndex={0}
+                    title={`Show ${taxonomyTerms.length - MAX_TERMS_TO_SHOW} more`}
+                    variant="secondary"
+                >
+                    +{taxonomyTerms.length - MAX_TERMS_TO_SHOW}
+                </Badge>
             )}
         </div>
     );

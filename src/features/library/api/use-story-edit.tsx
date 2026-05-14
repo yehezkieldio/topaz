@@ -61,8 +61,7 @@ export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
             current_chapter: item.progressCurrentChapter || 0,
             rating: item.progressRating?.toString(),
             notes: item.progressNotes || "",
-            tagIds: item.tags?.map((tag) => tag.publicId) || [],
-            fandomIds: item.fandoms?.map((fandom) => fandom.publicId) || [],
+            taxonomyTermIds: item.taxonomyTerms?.map((term) => term.publicId) || [],
         },
     });
 
@@ -88,8 +87,7 @@ export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
                 current_chapter: data.current_chapter,
                 rating: data.rating.toString(),
                 notes: data.notes,
-                tagIds: data.tagIds,
-                fandomIds: data.fandomIds,
+                taxonomyTermIds: data.taxonomyTermIds,
             });
 
             onCloseAction();

@@ -38,8 +38,7 @@ export function useStoryCreate({ onClose }: { onClose: () => void }) {
             current_chapter: 0,
             rating: "0",
             notes: "",
-            tagIds: [],
-            fandomIds: [],
+            taxonomyTermIds: [],
         },
     });
 
@@ -57,8 +56,7 @@ export function useStoryCreate({ onClose }: { onClose: () => void }) {
                 chapter_count: data.chapter_count,
                 is_nsfw: data.is_nsfw,
                 status: data.status,
-                tagIds: data.tagIds,
-                fandomIds: data.fandomIds,
+                taxonomyTermIds: data.taxonomyTermIds,
                 progressStatus: data.progressStatus,
                 current_chapter: data.current_chapter,
                 rating: Number(data.rating),

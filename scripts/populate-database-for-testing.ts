@@ -1,7 +1,6 @@
 import { parseArgs } from "node:util";
 import { db } from "#/server/db";
 import {
-    fandoms,
     libraryMaterializedView,
     libraryStatsMaterializedView,
     type ProgressStatus,
@@ -9,9 +8,8 @@ import {
     type Source,
     type StoryStatus,
     stories,
-    storyFandoms,
-    storyTags,
-    tags,
+    storyTaxonomyTerms,
+    taxonomyTerms,
     users,
 } from "#/server/db/schema";
 
@@ -46,6 +44,18 @@ const MIN_RATING = 1;
 const MAX_RATING = 5;
 const RATING_DECIMAL_PRECISION = 1;
 const NOTES_PROBABILITY = 0.3;
+
+function slugifyTaxonomyName(name: string): string {
+    return (
+        name
+            .trim()
+            .toLowerCase()
+            .replace(/['"]/g, "")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "")
+            .slice(0, 255) || "term"
+    );
+}
 
 const SOURCES: Source[] = [
     "ArchiveOfOurOwn",
@@ -480,20 +490,14 @@ async function depopulate(): Promise<void> {
     await db.delete(progresses);
     console.log("   ✓ Deleted all progresses");
 
-    await db.delete(storyTags);
-    console.log("   ✓ Deleted all story tags");
-
-    await db.delete(storyFandoms);
-    console.log("   ✓ Deleted all story fandoms");
+    await db.delete(storyTaxonomyTerms);
+    console.log("   ✓ Deleted all story taxonomy terms");
 
     await db.delete(stories);
     console.log("   ✓ Deleted all stories");
 
-    await db.delete(tags);
-    console.log("   ✓ Deleted all tags");
-
-    await db.delete(fandoms);
-    console.log("   ✓ Deleted all fandoms");
+    await db.delete(taxonomyTerms);
+    console.log("   ✓ Deleted all taxonomy terms");
 
     await db.refreshMaterializedView(libraryMaterializedView);
     console.log("   ✓ Refreshed materialized view");
@@ -511,47 +515,42 @@ async function populate(): Promise<void> {
     }
     console.log(`   ✓ Using user: ${firstUser.id}`);
 
-    const fandomsToInsert = FANDOMS.map((name) => ({ name }));
-    const insertedFandoms = await db.insert(fandoms).values(fandomsToInsert).returning();
+    const fandomsToInsert = FANDOMS.map((name) => ({ kind: "Fandom" as const, name, slug: slugifyTaxonomyName(name) }));
+    const insertedFandoms = await db.insert(taxonomyTerms).values(fandomsToInsert).returning();
     console.log(`   ✓ Inserted ${insertedFandoms.length} fandoms`);
 
-    const tagsToInsert = TAGS.map((name) => ({ name }));
-    const insertedTags = await db.insert(tags).values(tagsToInsert).returning();
+    const tagsToInsert = TAGS.map((name) => ({ kind: "Tag" as const, name, slug: slugifyTaxonomyName(name) }));
+    const insertedTags = await db.insert(taxonomyTerms).values(tagsToInsert).returning();
     console.log(`   ✓ Inserted ${insertedTags.length} tags`);
 
     const storiesToInsert = Array.from({ length: 150 }, (_, i) => generateRandomStory(i));
     const insertedStories = await db.insert(stories).values(storiesToInsert).returning();
     console.log(`   ✓ Inserted ${insertedStories.length} stories`);
 
-    const storyFandomsToInsert: (typeof storyFandoms.$inferInsert)[] = [];
+    const storyTaxonomyTermsToInsert: (typeof storyTaxonomyTerms.$inferInsert)[] = [];
     for (const story of insertedStories) {
         const fandomCount = randomInt(MIN_FANDOMS_PER_STORY, MAX_FANDOMS_PER_STORY);
         const selectedFandoms = randomChoices(insertedFandoms, fandomCount);
 
         for (const fandom of selectedFandoms) {
-            storyFandomsToInsert.push({
+            storyTaxonomyTermsToInsert.push({
                 storyId: story.id,
-                fandomId: fandom.id,
+                termId: fandom.id,
             });
         }
-    }
-    await db.insert(storyFandoms).values(storyFandomsToInsert);
-    console.log(`   ✓ Created ${storyFandomsToInsert.length} story-fandom relationships`);
 
-    const storyTagsToInsert: (typeof storyTags.$inferInsert)[] = [];
-    for (const story of insertedStories) {
         const tagCount = randomInt(MIN_TAGS_PER_STORY, MAX_TAGS_PER_STORY);
         const selectedTags = randomChoices(insertedTags, tagCount);
 
         for (const tag of selectedTags) {
-            storyTagsToInsert.push({
+            storyTaxonomyTermsToInsert.push({
                 storyId: story.id,
-                tagId: tag.id,
+                termId: tag.id,
             });
         }
     }
-    await db.insert(storyTags).values(storyTagsToInsert);
-    console.log(`   ✓ Created ${storyTagsToInsert.length} story-tag relationships`);
+    await db.insert(storyTaxonomyTerms).values(storyTaxonomyTermsToInsert);
+    console.log(`   ✓ Created ${storyTaxonomyTermsToInsert.length} story-taxonomy relationships`);
 
     const progressesToInsert: (typeof progresses.$inferInsert)[] = [];
     const storiesToTrack = randomChoices(insertedStories, Math.floor(insertedStories.length * TRACKED_STORIES_RATIO));

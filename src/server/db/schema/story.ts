@@ -2,9 +2,7 @@ import { relations } from "drizzle-orm";
 import { index, pgEnum, primaryKey, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import z from "zod/v4";
-import { fandoms } from "#/server/db/schema/fandom";
-import { progressStatusEnum } from "#/server/db/schema/progress";
-import { tags } from "#/server/db/schema/tag";
+import { taxonomyTerms } from "#/server/db/schema/taxonomy";
 import { citext, createTable, ids, timestamps } from "#/server/db/utils";
 
 export const sourceEnum = pgEnum("source", [
@@ -87,8 +85,7 @@ export const stories = createTable(
 );
 
 export const storyCreateSchema = createInsertSchema(stories).extend({
-    tagIds: z.array(z.string()).default([]),
-    fandomIds: z.array(z.string()).default([]),
+    taxonomyTermIds: z.array(z.string()).default([]),
 });
 export const storyUpdateSchema = createUpdateSchema(stories).required({ publicId: true });
 export type StoryValues = z.infer<typeof storyCreateSchema>;
@@ -108,7 +105,15 @@ export const storyCreateWithProgressSchema = z.object({
     is_nsfw: z.boolean(),
     status: z.enum(storyStatusEnum.enumValues),
 
-    progressStatus: z.enum(progressStatusEnum.enumValues),
+    progressStatus: z.enum([
+        "NotStarted",
+        "Reading",
+        "Paused",
+        "Completed",
+        "Dropped",
+        "PlanToRead",
+        "DroppedAsAbandoned",
+    ]),
     current_chapter: z.number().min(0),
     rating: z
         .string()
@@ -125,8 +130,7 @@ export const storyCreateWithProgressSchema = z.object({
         ),
     notes: z.string().optional(),
 
-    tagIds: z.array(z.string()),
-    fandomIds: z.array(z.string()),
+    taxonomyTermIds: z.array(z.string()),
 
     storyPublicId: z.string(),
     progressPublicId: z.string(),
@@ -136,61 +140,40 @@ export const storyCreateWithProgressSchema = z.object({
 export type StoryCreateWithProgressValues = z.infer<typeof storyCreateWithProgressSchema>;
 
 export const storyCreateWithRelationsSchema = storyCreateSchema.extend({
-    tagIds: z.array(z.string()).default([]),
-    fandomIds: z.array(z.string()).default([]),
+    taxonomyTermIds: z.array(z.string()).default([]),
 });
 export type StoryCreateWithRelationsValues = z.infer<typeof storyCreateWithRelationsSchema>;
 
-export const storyTags = createTable(
-    "story_tag",
+export const storyTaxonomyTerms = createTable(
+    "story_taxonomy_term",
     (_d) => ({
         storyId: uuid()
             .notNull()
             .references(() => stories.id, { onDelete: "cascade" }),
-        tagId: uuid()
+        termId: uuid()
             .notNull()
-            .references(() => tags.id, { onDelete: "cascade" }),
+            .references(() => taxonomyTerms.id, { onDelete: "cascade" }),
     }),
     (t) => [
-        primaryKey({ columns: [t.storyId, t.tagId] }),
-        index("storytag_story_idx").on(t.storyId).concurrently(),
-        index("storytag_tag_idx").on(t.tagId).concurrently(),
+        primaryKey({ columns: [t.storyId, t.termId] }),
+        index("storytaxonomyterm_story_idx").on(t.storyId).concurrently(),
+        index("storytaxonomyterm_term_idx").on(t.termId).concurrently(),
     ]
 );
 
-export const storyTagsRelations = relations(storyTags, ({ one }) => ({
+export const storyTaxonomyTermsRelations = relations(storyTaxonomyTerms, ({ one }) => ({
     story: one(stories, {
-        fields: [storyTags.storyId],
+        fields: [storyTaxonomyTerms.storyId],
         references: [stories.id],
     }),
-    tag: one(tags, {
-        fields: [storyTags.tagId],
-        references: [tags.id],
+    term: one(taxonomyTerms, {
+        fields: [storyTaxonomyTerms.termId],
+        references: [taxonomyTerms.id],
     }),
 }));
 
-export const storyFandoms = createTable(
-    "story_fandom",
-    (_d) => ({
-        storyId: uuid()
-            .notNull()
-            .references(() => stories.id, { onDelete: "cascade" }),
-        fandomId: uuid()
-            .notNull()
-            .references(() => fandoms.id, { onDelete: "cascade" }),
-    }),
-    (t) => [
-        primaryKey({ columns: [t.storyId, t.fandomId] }),
-        index("storyfandom_story_idx").on(t.storyId).concurrently(),
-        index("storyfandom_fandom_idx").on(t.fandomId).concurrently(),
-    ]
-);
-
 export const storyRelations = relations(stories, ({ many }) => ({
-    tags: many(storyTags, {
-        relationName: "story_tag_relation",
-    }),
-    fandoms: many(storyFandoms, {
-        relationName: "story_fandom_relation",
+    taxonomyTerms: many(storyTaxonomyTerms, {
+        relationName: "story_taxonomy_term_relation",
     }),
 }));
