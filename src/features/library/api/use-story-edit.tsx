@@ -96,9 +96,8 @@ export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
 
             form.reset();
 
-            refetchLibrary();
-
-            setSearch("");
+            await setSearch("");
+            await refetchLibrary();
 
             toast.success("Library entry updated!");
         } catch (error) {

@@ -69,9 +69,8 @@ export function useStoryCreate({ onClose }: { onClose: () => void }) {
 
             form.reset();
 
-            refetchLibrary();
-
-            setSearch("");
+            await setSearch("");
+            await refetchLibrary();
 
             toast.success("Story added to library!");
         } catch (error) {

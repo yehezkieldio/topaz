@@ -56,9 +56,7 @@ export const useTagSearch = (initialSearch = "") => {
             return await createTagForMultiselect.mutateAsync({ name: trimmed });
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({
-                queryKey: [["tag", "forMultiselect"]],
-            });
+            queryClient.invalidateQueries(trpc.tag.forMultiselect.queryFilter());
         },
     });
 

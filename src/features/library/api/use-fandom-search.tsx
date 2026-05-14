@@ -57,9 +57,7 @@ export const useFandomSearch = (initialSearch = "") => {
             return await createFandomForMultiselect.mutateAsync({ name: trimmed });
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({
-                queryKey: [["fandom", "forMultiselect"]],
-            });
+            queryClient.invalidateQueries(trpc.fandom.forMultiselect.queryFilter());
         },
     });
 

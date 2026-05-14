@@ -40,7 +40,7 @@ function LibraryItemDeleteDialogComponent({ item, isOpen, onClose, onDelete }: L
 
             toast.success("Story deleted from library!");
 
-            refetchLibrary();
+            await refetchLibrary();
 
             onDelete?.(item);
             onClose();
