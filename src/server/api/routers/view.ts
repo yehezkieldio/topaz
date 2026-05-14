@@ -1,15 +1,17 @@
 import { isDevelopment } from "#/env";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "#/server/api/trpc";
-import { invalidateLibraryStats } from "#/server/cache/actions";
-import { getCachedLibraryStats } from "#/server/cache/stats";
-import { libraryMaterializedView, libraryStatsMaterializedView } from "#/server/db/schema/view";
+import { invalidateLibraryReadModels } from "#/server/backend/cache/tags";
+import {
+    getLibraryStats,
+    refreshLibraryReadModels,
+    refreshLibraryStatsView,
+    refreshLibraryView,
+} from "#/server/db/repositories/library-repository";
 
 export const viewRouter = createTRPCRouter({
     refreshAll: protectedProcedure.mutation(async ({ ctx }) => {
-        await ctx.db.refreshMaterializedView(libraryMaterializedView).concurrently();
-        await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
-
-        await invalidateLibraryStats();
+        await refreshLibraryReadModels(ctx.db);
+        await invalidateLibraryReadModels();
 
         if (isDevelopment === false) {
             console.log("[trpc] Refreshed all materialized views");
@@ -18,7 +20,7 @@ export const viewRouter = createTRPCRouter({
         return { success: true };
     }),
     refreshLibrary: protectedProcedure.mutation(async ({ ctx }) => {
-        await ctx.db.refreshMaterializedView(libraryMaterializedView).concurrently();
+        await refreshLibraryView(ctx.db);
         if (isDevelopment === false) {
             console.log("[trpc] Refreshed user library materialized view");
         }
@@ -26,9 +28,8 @@ export const viewRouter = createTRPCRouter({
         return { success: true };
     }),
     refreshLibraryStats: protectedProcedure.mutation(async ({ ctx }) => {
-        await ctx.db.refreshMaterializedView(libraryStatsMaterializedView);
-
-        await invalidateLibraryStats();
+        await refreshLibraryStatsView(ctx.db);
+        await invalidateLibraryReadModels();
 
         if (isDevelopment === false) {
             console.log("[trpc] Refreshed user library stats materialized view");
@@ -36,5 +37,5 @@ export const viewRouter = createTRPCRouter({
 
         return { success: true };
     }),
-    getStats: publicProcedure.query(async () => await getCachedLibraryStats()),
+    getStats: publicProcedure.query(async () => await getLibraryStats()),
 });

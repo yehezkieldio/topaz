@@ -1,222 +1,63 @@
-import { TRPCError } from "@trpc/server";
-import { eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
+import { publicIdSchema } from "#/server/api/schemas/common";
 import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
-import { invalidateHotTags, invalidateTagSearch } from "#/server/cache/actions";
-import { getCachedHotTags, getCachedTagSearch } from "#/server/cache/tags";
-import { tagCreateSchema, tags, tagUpdateSchema } from "#/server/db/schema/tag";
-
-// Tag router configuration constants
-const TAG_LIMIT_MIN = 1;
-const TAG_LIMIT_MAX = 50;
-const TAG_LIMIT_DEFAULT = 10;
-const TAG_HOT_LIMIT_MIN = 1;
-const TAG_HOT_LIMIT_MAX = 20;
-const TAG_HOT_LIMIT_DEFAULT = 8;
-const TAG_NAME_MIN_LENGTH = 1;
-const TAG_NAME_MAX_LENGTH = 255;
+import { invalidateTagReadModels } from "#/server/backend/cache/tags";
+import {
+    createTag,
+    createTagForMultiselect,
+    deleteTag,
+    getTagMultiselect,
+    HOT_LIMIT_DEFAULT,
+    HOT_LIMIT_MAX,
+    HOT_LIMIT_MIN,
+    MULTISELECT_LIMIT_DEFAULT,
+    MULTISELECT_LIMIT_MAX,
+    MULTISELECT_LIMIT_MIN,
+    TAXONOMY_NAME_MAX,
+    TAXONOMY_NAME_MIN,
+    updateTag,
+} from "#/server/db/repositories/taxonomy-repository";
+import { tagCreateSchema, tagUpdateSchema } from "#/server/db/schema/tag";
 
 export const tagRouter = createTRPCRouter({
-    delete: protectedProcedure
-        .input(
-            z.object({
-                publicId: z.string(),
-            })
-        )
-        .mutation(async ({ ctx, input }) => {
-            const [deletedTag] = await ctx.db.delete(tags).where(eq(tags.publicId, input.publicId)).returning({
-                id: tags.id,
-                publicId: tags.publicId,
-            });
-
-            if (!deletedTag) {
-                throw new TRPCError({
-                    code: "NOT_FOUND",
-                    message: "Tag not found",
-                });
-            }
-
-            await invalidateHotTags();
-            await invalidateTagSearch();
-
-            return deletedTag;
-        }),
-    update: protectedProcedure.input(tagUpdateSchema).mutation(async ({ ctx, input }) => {
-        const { publicId, ...updateData } = input;
-
-        return await ctx.db.transaction(async (tx) => {
-            if (updateData.name) {
-                const [existingTag] = await tx
-                    .select({
-                        id: tags.id,
-                        hasConflict: sql<boolean>`EXISTS(
-                                SELECT 1 FROM ${tags} t2
-                                WHERE t2.name = ${updateData.name}
-                                AND t2.public_id != ${publicId}
-                            )`.as("hasConflict"),
-                    })
-                    .from(tags)
-                    .where(eq(tags.publicId, publicId))
-                    .limit(1);
-
-                if (!existingTag) {
-                    throw new TRPCError({
-                        code: "NOT_FOUND",
-                        message: "Tag not found",
-                    });
-                }
-
-                if (existingTag.hasConflict) {
-                    throw new TRPCError({
-                        code: "CONFLICT",
-                        message: "Tag with this name already exists",
-                    });
-                }
-            }
-
-            const [updatedTag] = await tx.update(tags).set(updateData).where(eq(tags.publicId, publicId)).returning({
-                id: tags.id,
-                publicId: tags.publicId,
-            });
-
-            if (!updatedTag) {
-                throw new TRPCError({
-                    code: "NOT_FOUND",
-                    message: "Tag not found",
-                });
-            }
-
-            await invalidateHotTags();
-            await invalidateTagSearch();
-
-            return updatedTag;
-        });
+    delete: protectedProcedure.input(z.object({ publicId: publicIdSchema })).mutation(async ({ ctx, input }) => {
+        const deletedTag = await deleteTag(ctx.db, input.publicId);
+        await invalidateTagReadModels();
+        return deletedTag;
     }),
-    create: protectedProcedure.input(tagCreateSchema).mutation(
-        async ({ ctx, input }) =>
-            await ctx.db.transaction(async (tx) => {
-                const existingTag = await tx
-                    .select({ id: tags.id })
-                    .from(tags)
-                    .where(eq(tags.name, input.name))
-                    .limit(1);
-
-                if (existingTag.length > 0) {
-                    throw new TRPCError({
-                        code: "CONFLICT",
-                        message: "Tag with this name already exists",
-                    });
-                }
-
-                const [newTag] = await tx.insert(tags).values(input).returning({
-                    id: tags.id,
-                    publicId: tags.publicId,
-                });
-
-                if (!newTag) {
-                    throw new TRPCError({
-                        code: "INTERNAL_SERVER_ERROR",
-                        message: "Failed to create tag",
-                    });
-                }
-
-                await invalidateHotTags();
-                await invalidateTagSearch();
-
-                return newTag;
-            })
-    ),
+    update: protectedProcedure.input(tagUpdateSchema).mutation(async ({ ctx, input }) => {
+        const updatedTag = await updateTag(ctx.db, input);
+        await invalidateTagReadModels();
+        return updatedTag;
+    }),
+    create: protectedProcedure.input(tagCreateSchema).mutation(async ({ ctx, input }) => {
+        const newTag = await createTag(ctx.db, input.name);
+        await invalidateTagReadModels();
+        return newTag;
+    }),
     forMultiselect: protectedProcedure
         .input(
             z.object({
                 search: z.string().optional(),
-                limit: z.number().min(TAG_LIMIT_MIN).max(TAG_LIMIT_MAX).default(TAG_LIMIT_DEFAULT),
+                limit: z
+                    .number()
+                    .min(MULTISELECT_LIMIT_MIN)
+                    .max(MULTISELECT_LIMIT_MAX)
+                    .default(MULTISELECT_LIMIT_DEFAULT),
                 includeHot: z.boolean().default(true),
-                hotLimit: z.number().min(TAG_HOT_LIMIT_MIN).max(TAG_HOT_LIMIT_MAX).default(TAG_HOT_LIMIT_DEFAULT),
+                hotLimit: z.number().min(HOT_LIMIT_MIN).max(HOT_LIMIT_MAX).default(HOT_LIMIT_DEFAULT),
             })
         )
-        .query(async ({ ctx, input }) => {
-            const { search, limit, includeHot, hotLimit } = input;
-
-            let result: {
-                tags: { publicId: string; name: string }[];
-                canCreate: boolean;
-                searchTerm: string | null;
-            };
-
-            if ((!search || search.trim().length === 0) && includeHot) {
-                const cachedTags = await getCachedHotTags(hotLimit);
-
-                result = {
-                    tags: cachedTags,
-                    canCreate: false,
-                    searchTerm: null,
-                };
-            } else if (!search || search.trim().length === 0) {
-                result = {
-                    tags: [],
-                    canCreate: false,
-                    searchTerm: null,
-                };
-            } else {
-                const term = search.trim();
-
-                const searchResults = await getCachedTagSearch(term, limit);
-
-                const exactMatch = await ctx.db
-                    .select({ id: tags.id })
-                    .from(tags)
-                    .where(sql`LOWER(${tags.name}) = LOWER(${term})`)
-                    .limit(1);
-
-                const canCreate = exactMatch.length === 0;
-
-                result = {
-                    tags: searchResults,
-                    canCreate,
-                    searchTerm: term,
-                };
-            }
-
-            return result;
-        }),
+        .query(async ({ input }) => await getTagMultiselect(input)),
     createForMultiselect: protectedProcedure
         .input(
             z.object({
-                name: z.string().min(TAG_NAME_MIN_LENGTH).max(TAG_NAME_MAX_LENGTH),
+                name: z.string().min(TAXONOMY_NAME_MIN).max(TAXONOMY_NAME_MAX),
             })
         )
         .mutation(async ({ ctx, input }) => {
-            const { name } = input;
-
-            const existingTag = await ctx.db
-                .select({
-                    publicId: tags.publicId,
-                    name: tags.name,
-                })
-                .from(tags)
-                .where(sql`LOWER(${tags.name}) = LOWER(${name})`)
-                .limit(1);
-
-            if (existingTag.length > 0) {
-                return existingTag[0];
-            }
-
-            const [newTag] = await ctx.db.insert(tags).values({ name: name.trim() }).returning({
-                publicId: tags.publicId,
-                name: tags.name,
-            });
-
-            if (!newTag) {
-                throw new TRPCError({
-                    code: "INTERNAL_SERVER_ERROR",
-                    message: "Failed to create tag",
-                });
-            }
-
-            await invalidateHotTags();
-            await invalidateTagSearch();
-
-            return newTag;
+            const tag = await createTagForMultiselect(ctx.db, input.name);
+            await invalidateTagReadModels();
+            return tag;
         }),
 });

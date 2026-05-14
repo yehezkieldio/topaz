@@ -3,11 +3,11 @@ import { cache } from "react";
 import superjson from "superjson";
 import { ZodError } from "zod";
 import { isDevelopment } from "#/env";
-import { auth } from "#/server/auth";
+import { getCurrentSession } from "#/server/auth/session";
 import { db } from "#/server/db";
 
 export const createTRPCContext = cache(async () => {
-    const session = await auth();
+    const session = await getCurrentSession();
 
     return {
         db,

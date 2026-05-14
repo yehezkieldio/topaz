@@ -44,7 +44,6 @@ export function useStoryCreate({ onClose }: { onClose: () => void }) {
     });
 
     const createStoryWithProgress = useMutation(trpc.story.createWithProgress.mutationOptions());
-    const refreshViews = useMutation(trpc.view.refreshAll.mutationOptions());
 
     const onSubmit = async (data: CreateStoryFormData) => {
         try {
@@ -68,7 +67,6 @@ export function useStoryCreate({ onClose }: { onClose: () => void }) {
 
             onClose();
 
-            await refreshViews.mutateAsync();
             form.reset();
 
             refetchLibrary();
@@ -85,6 +83,6 @@ export function useStoryCreate({ onClose }: { onClose: () => void }) {
     return {
         form,
         onSubmit,
-        isLoading: createStoryWithProgress.isPending || refreshViews.isPending,
+        isLoading: createStoryWithProgress.isPending,
     };
 }

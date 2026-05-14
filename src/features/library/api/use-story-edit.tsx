@@ -67,7 +67,6 @@ export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
     });
 
     const updateStoryWithRelations = useMutation(trpc.story.updateWithRelations.mutationOptions());
-    const refreshViews = useMutation(trpc.view.refreshAll.mutationOptions());
 
     const onSubmit = async (data: EditStoryFormData) => {
         try {
@@ -95,7 +94,6 @@ export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
 
             onCloseAction();
 
-            await refreshViews.mutateAsync();
             form.reset();
 
             refetchLibrary();
@@ -112,6 +110,6 @@ export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
     return {
         form,
         onSubmit,
-        isLoading: updateStoryWithRelations.isPending || refreshViews.isPending,
+        isLoading: updateStoryWithRelations.isPending,
     };
 }

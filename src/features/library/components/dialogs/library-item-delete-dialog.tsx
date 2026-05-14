@@ -29,23 +29,15 @@ function LibraryItemDeleteDialogComponent({ item, isOpen, onClose, onDelete }: L
     const trpc = useTRPC();
     const refetchLibrary = useLibraryRefetch();
 
-    const refreshViews = useMutation(trpc.view.refreshAll.mutationOptions());
     const deleteStory = useMutation(trpc.story.delete.mutationOptions());
-    const deleteProgress = useMutation(trpc.progress.delete.mutationOptions());
-
-    const isPending = deleteStory.isPending || deleteProgress.isPending;
+    const isPending = deleteStory.isPending;
 
     const handleDelete = useCallback(async () => {
         try {
-            await deleteProgress.mutateAsync({
-                publicId: item.progressPublicId,
-            });
-
             await deleteStory.mutateAsync({
                 publicId: item.storyPublicId,
             });
 
-            await refreshViews.mutateAsync();
             toast.success("Story deleted from library!");
 
             refetchLibrary();
@@ -56,7 +48,7 @@ function LibraryItemDeleteDialogComponent({ item, isOpen, onClose, onDelete }: L
             console.error("Error deleting story/progress:", error);
             toast.error("Failed to delete story.");
         }
-    }, [deleteProgress, deleteStory, refreshViews, item, refetchLibrary, onDelete, onClose]);
+    }, [deleteStory, item, refetchLibrary, onDelete, onClose]);
 
     const contextValue = useMemo(
         () => ({
