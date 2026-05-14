@@ -13,7 +13,7 @@ type LibraryListItemProps = {
     isLoaderRow: boolean;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
-    fetchNextPage: () => void;
+    fetchNextPage: () => Promise<unknown>;
     isAdministratorUser: boolean;
     handleView: (item: LibraryItemType) => void;
     handleEdit: (item: LibraryItemType) => void;

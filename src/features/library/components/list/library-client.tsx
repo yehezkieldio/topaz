@@ -1,31 +1,23 @@
 "use client";
 
-import { memo, Suspense, useMemo } from "react";
+import { memo, Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { LibraryDataProvider } from "#/features/library/api/use-library-data";
 import { LibraryList } from "#/features/library/components/list/library-list";
 import { LibraryControlsSkeleton } from "#/features/library/components/skeletons/library-controls-skeleton";
 import { ErrorState } from "#/features/library/components/states/error-state";
 import { LibraryControls } from "#/features/library/components/ui/library-controls";
-import { useLibraryFilter } from "#/features/library/hooks/use-library-filter";
-import { useSearchQuery } from "#/features/library/hooks/use-search-query";
+import type { LibrarySearchParams } from "#/features/library/search-params";
 
-export function LibraryClientProvider({ isAdministratorUser }: { isAdministratorUser: boolean }) {
-    const [search] = useSearchQuery();
-    const { status, sortBy, sortOrder } = useLibraryFilter();
-
-    const providerProps = useMemo(
-        () => ({
-            search,
-            sortBy,
-            sortOrder,
-            status,
-        }),
-        [search, sortBy, sortOrder, status]
-    );
-
+export function LibraryClientProvider({
+    initialFilters,
+    isAdministratorUser,
+}: {
+    initialFilters: LibrarySearchParams;
+    isAdministratorUser: boolean;
+}) {
     return (
-        <div className="relative min-h-dvh overflow-hidden bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.08),transparent_60%),radial-gradient(circle_at_70%_80%,hsl(var(--muted-foreground)/0.08),transparent_55%)]">
+        <div className="relative min-h-dvh overflow-hidden bg-background">
             <div
                 className="pointer-events-none absolute inset-0"
                 style={{
@@ -36,7 +28,7 @@ export function LibraryClientProvider({ isAdministratorUser }: { isAdministrator
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-size-[40px_40px] opacity-[0.15]" />
             </div>
             <div className="relative z-10">
-                <LibraryDataProvider {...providerProps}>
+                <LibraryDataProvider initialFilters={initialFilters}>
                     <div className="flex min-h-screen flex-col">
                         <DesktopLibraryControls isAdministratorUser={isAdministratorUser} />
 

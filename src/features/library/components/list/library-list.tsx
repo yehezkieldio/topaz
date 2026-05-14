@@ -2,7 +2,7 @@
 
 import { useVirtualizer } from "@tanstack/react-virtual";
 import dynamic from "next/dynamic";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import { useLibraryDataContext } from "#/features/library/api/use-library-data";
 import { LibraryListItem } from "#/features/library/components/list/library-list-item";
 import { ListItemSkeleton } from "#/features/library/components/skeletons/library-list-skeleton";
@@ -52,24 +52,6 @@ export type LibraryListProps = {
 };
 
 export const LibraryList = memo(function LibraryList({ isAdministratorUser }: LibraryListProps) {
-    const [hydrated, setHydrated] = useState(false);
-
-    useEffect(() => {
-        setHydrated(true);
-    }, []);
-
-    if (!hydrated) {
-        return <ListItemSkeleton count={6} />;
-    }
-
-    return <LibraryListInner isAdministratorUser={isAdministratorUser} />;
-});
-
-type LibraryListInnerProps = {
-    isAdministratorUser: boolean;
-};
-
-function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
     const [search] = useSearchQuery();
     const parentRef = useRef<HTMLDivElement>(null);
     const isMobile = useIsMobile();
@@ -111,10 +93,6 @@ function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
         setSelectedItem(item);
         setIsDeleteDialogOpen(true);
     }, []);
-
-    const _fetchNextPage = useCallback(() => {
-        fetchNextPage();
-    }, [fetchNextPage]);
 
     const onLoaderInView = useCallback(async () => {
         if (!hasNextPage || isFetchingNextPage || isLoadingNextPageRef.current) return;
@@ -179,7 +157,7 @@ function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
 
                     return (
                         <LibraryListItem
-                            fetchNextPage={_fetchNextPage}
+                            fetchNextPage={fetchNextPage}
                             handleDelete={handleDelete}
                             handleEdit={handleEdit}
                             handleView={handleView}
@@ -229,7 +207,6 @@ function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
                                     setSelectedItem(null);
                                     // parentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
                                 }}
-                                onDelete={handleDelete}
                             />
                         </>
                     )}
@@ -237,4 +214,4 @@ function LibraryListInner({ isAdministratorUser }: LibraryListInnerProps) {
             )}
         </div>
     );
-}
+});

@@ -1,11 +1,3 @@
 "use client";
 
-import { parseAsString, useQueryState } from "nuqs";
-
-const parseAsDebouncedString = parseAsString.withDefault("").withOptions({
-    limitUrlUpdates: { method: "debounce", timeMs: 400 },
-});
-
-export function useSearchQuery() {
-    return useQueryState("q", parseAsDebouncedString);
-}
+export { useSearchQuery } from "#/features/library/hooks/use-library-query-state";
