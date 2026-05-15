@@ -171,7 +171,7 @@ export function LibraryStoryDetailsForm<T extends StoryDetails>({
                 control={control}
                 name={"is_nsfw" as Path<T>}
                 render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormItem className="flex flex-row items-start gap-x-3 gap-y-0 rounded-md border p-4">
                         <FormControl>
                             <Checkbox
                                 checked={typeof field.value === "boolean" ? field.value : false}

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { use } from "react";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
 
 type LibraryItemContextValue = {
@@ -11,7 +12,7 @@ type LibraryItemContextValue = {
 const LibraryItemContext = React.createContext<LibraryItemContextValue | null>(null);
 
 export function useLibraryItemContext() {
-    const context = React.useContext(LibraryItemContext);
+    const context = use(LibraryItemContext);
     if (!context) {
         throw new Error("useLibraryItemContext must be used within a LibraryItemProvider");
     }

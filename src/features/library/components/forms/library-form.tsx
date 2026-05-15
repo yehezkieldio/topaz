@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { use } from "react";
 import type { Control, FieldValues } from "react-hook-form";
 
 type LibraryFormContextValue = {
@@ -11,7 +12,7 @@ type LibraryFormContextValue = {
 const LibraryFormContext = React.createContext<LibraryFormContextValue | null>(null);
 
 export function useLibraryFormContext<T extends FieldValues = FieldValues>() {
-    const context = React.useContext(LibraryFormContext);
+    const context = use(LibraryFormContext);
     return context as (LibraryFormContextValue & { control: Control<T> }) | null;
 }
 

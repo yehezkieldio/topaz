@@ -69,8 +69,14 @@ async function reorderSqlMigration(inputFilePath: string, outputFilePath: string
         return;
     }
 
-    const normalizedOtherStatements = otherStatements.map((s) => s.trim()).filter(Boolean);
-    const normalizedConcurrentIndexes = concurrentIndexes.map((s) => s.trim()).filter(Boolean);
+    const normalizedOtherStatements = otherStatements.flatMap((statement) => {
+        const trimmed = statement.trim();
+        return trimmed ? [trimmed] : [];
+    });
+    const normalizedConcurrentIndexes = concurrentIndexes.flatMap((statement) => {
+        const trimmed = statement.trim();
+        return trimmed ? [trimmed] : [];
+    });
 
     let modifiedContent = normalizedOtherStatements.join("\n").trim();
 

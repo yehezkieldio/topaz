@@ -362,7 +362,7 @@ function randomChoice<T>(array: T[]): T {
 }
 
 function randomChoices<T>(array: T[], count: number): T[] {
-    const shuffled = [...array].sort(() => SHUFFLE_RANDOM_OFFSET - Math.random());
+    const shuffled = array.toSorted(() => SHUFFLE_RANDOM_OFFSET - Math.random());
     return shuffled.slice(0, count);
 }
 

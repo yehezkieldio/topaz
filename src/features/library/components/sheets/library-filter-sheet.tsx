@@ -1,7 +1,7 @@
 "use client";
 
 import { FilterIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Button } from "#/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "#/components/ui/sheet";
 import { Skeleton } from "#/components/ui/skeleton";
@@ -9,14 +9,14 @@ import { LibraryFilterContent, STATUS_OPTIONS } from "#/features/library/compone
 import { useLibraryFilter } from "#/features/library/hooks/use-library-filter";
 import { useIsMobile } from "#/hooks/use-mobile";
 
+const subscribeHydration = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 export function LibraryFilterSheet() {
     const isMobile = useIsMobile();
     const { status } = useLibraryFilter();
-    const [isHydrated, setIsHydrated] = useState(false);
-
-    useEffect(() => {
-        setIsHydrated(true);
-    }, []);
+    const isHydrated = useSyncExternalStore(subscribeHydration, getClientSnapshot, getServerSnapshot);
 
     const currentStatusLabel = STATUS_OPTIONS.find((option) => option.value === status)?.label || "All";
 

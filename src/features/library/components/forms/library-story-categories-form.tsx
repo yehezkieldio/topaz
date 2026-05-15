@@ -23,10 +23,12 @@ type LibraryStoryCategoriesFormProps<T extends Categories & FieldValues> = {
     initialTaxonomyTerms?: InitialTaxonomyTerm[];
 };
 
+const EMPTY_INITIAL_TAXONOMY_TERMS: InitialTaxonomyTerm[] = [];
+
 export function LibraryStoryCategoriesForm<T extends Categories & FieldValues>({
     control: propControl,
     taxonomyTermsField = "taxonomyTermIds" as Path<T>,
-    initialTaxonomyTerms = [],
+    initialTaxonomyTerms = EMPTY_INITIAL_TAXONOMY_TERMS,
 }: LibraryStoryCategoriesFormProps<T>) {
     const context = useLibraryFormContext<T>();
     const isInCompoundContext = context !== null;

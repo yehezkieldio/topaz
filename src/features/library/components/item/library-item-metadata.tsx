@@ -21,14 +21,14 @@ function LibraryItemMetadataComponent() {
                     : sourceLabels[source] || source || "Unknown"}
             </span>
 
-            {hasWordCount && (
+            {hasWordCount === true && (
                 <>
                     <span className="text-muted-foreground/40">•</span>
                     <span>{wordCount} words</span>
                 </>
             )}
 
-            {(totalChapters > 0 || (hasCurrentChapterOnly && isMobile)) && (
+            {(totalChapters > 0 || (hasCurrentChapterOnly === true && isMobile)) && (
                 <>
                     <span className="text-muted-foreground/40">•</span>
                     <span>

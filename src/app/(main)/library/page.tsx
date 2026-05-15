@@ -5,6 +5,11 @@ import { createLibraryQueryInput, type LibrarySearchParams } from "#/features/li
 import { librarySearchParamsCache } from "#/features/library/search-params.server";
 import { getQueryClient, HydrateClient, trpc } from "#/trpc/server";
 
+export const metadata = {
+    title: "Library | Topaz",
+    description: "Browse the Topaz story library.",
+};
+
 type LibraryPageProps = {
     searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
@@ -13,7 +18,7 @@ export default async function Library({ searchParams }: LibraryPageProps) {
     const filters = await librarySearchParamsCache.parse(searchParams);
 
     return (
-        <Suspense fallback={<div>Loading library...</div>}>
+        <Suspense fallback={<div>Loading library…</div>}>
             <LibraryServerData initialFilters={filters} />
         </Suspense>
     );

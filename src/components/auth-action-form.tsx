@@ -26,7 +26,7 @@ export function AuthActionForm({ isAdministratorUser }: AuthActionFormProps) {
             }}
         >
             <Button className="w-full" type="submit">
-                <Icons.discord className="h-4 w-4 text-background" />
+                <Icons.discord className="size-4 text-background" />
                 Continue with Discord
             </Button>
         </form>

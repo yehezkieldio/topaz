@@ -94,11 +94,9 @@ function LibraryItemViewSheetComponent({ item, isOpen, onClose }: ViewSheetProps
                                                 const scrollHeight = textarea.scrollHeight;
 
                                                 if (scrollHeight <= 256) {
-                                                    textarea.style.height = `${scrollHeight}px`;
-                                                    textarea.style.overflow = "hidden";
+                                                    textarea.style.cssText += `height: ${scrollHeight}px; overflow: hidden;`;
                                                 } else {
-                                                    textarea.style.height = "16rem";
-                                                    textarea.style.overflow = "auto";
+                                                    textarea.style.cssText += "height: 16rem; overflow: auto;";
                                                 }
                                             }
                                         }}
@@ -124,7 +122,7 @@ function LibraryItemViewSheetComponent({ item, isOpen, onClose }: ViewSheetProps
                             <Button asChild type="button" variant="outline">
                                 <Link href={item.storyUrl ?? ""} rel="noopener noreferrer" target="_blank">
                                     Open Story
-                                    <ExternalLinkIcon className="ml-1 h-4 w-4" />
+                                    <ExternalLinkIcon className="ml-1 size-4" />
                                 </Link>
                             </Button>
                         ) : (

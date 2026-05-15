@@ -41,8 +41,7 @@ export const storyProcedures = {
             }
 
             await refreshLibraryReadModels(ctx.db);
-            await invalidateLibraryReadModels();
-            await invalidateTaxonomyReadModels();
+            await Promise.all([invalidateLibraryReadModels(), invalidateTaxonomyReadModels()]);
 
             return deletedStory;
         }),
@@ -254,8 +253,7 @@ export const storyProcedures = {
         });
 
         await refreshLibraryReadModels(ctx.db);
-        await invalidateLibraryReadModels();
-        await invalidateTaxonomyReadModels();
+        await Promise.all([invalidateLibraryReadModels(), invalidateTaxonomyReadModels()]);
 
         return result;
     }),
@@ -313,8 +311,7 @@ export const storyProcedures = {
         });
 
         await refreshLibraryReadModels(ctx.db);
-        await invalidateLibraryReadModels();
-        await invalidateTaxonomyReadModels();
+        await Promise.all([invalidateLibraryReadModels(), invalidateTaxonomyReadModels()]);
 
         return result;
     }),
@@ -406,8 +403,7 @@ export const storyProcedures = {
             });
 
             await refreshLibraryReadModels(ctx.db);
-            await invalidateLibraryReadModels();
-            await invalidateTaxonomyReadModels();
+            await Promise.all([invalidateLibraryReadModels(), invalidateTaxonomyReadModels()]);
 
             return result;
         }),

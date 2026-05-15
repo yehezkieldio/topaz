@@ -1,7 +1,7 @@
 "use client";
 
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { createContext, type ReactNode, useCallback, useContext, useMemo } from "react";
+import { createContext, type ReactNode, use, useCallback, useMemo } from "react";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
 import { useLibraryQueryState } from "#/features/library/hooks/use-library-query-state";
 import { createLibraryQueryInput, type LibrarySearchParams } from "#/features/library/search-params";
@@ -50,7 +50,7 @@ export function LibraryDataProvider({ children, initialFilters }: LibraryDataPro
 }
 
 export function useLibraryDataContext(): LibraryDataContextValue {
-    const context = useContext(LibraryDataContext);
+    const context = use(LibraryDataContext);
     if (!context) {
         throw new Error("useLibraryDataContext must be used within LibraryDataProvider");
     }
@@ -58,7 +58,7 @@ export function useLibraryDataContext(): LibraryDataContextValue {
 }
 
 export const useLibraryRefetch = () => {
-    const context = useContext(LibraryDataContext);
+    const context = use(LibraryDataContext);
     if (!context) {
         throw new Error("useLibraryRefetch must be used within LibraryDataProvider");
     }

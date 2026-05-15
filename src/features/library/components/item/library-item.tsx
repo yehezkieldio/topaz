@@ -159,7 +159,7 @@ function LibraryItemActionsComponent({ showAdminControls = false, children }: Li
             <div className="flex items-center gap-1">
                 <Button
                     aria-label="View details"
-                    className="h-8 w-8 p-0"
+                    className="size-8 p-0"
                     onClick={handleViewClick}
                     size="sm"
                     variant="ghost"

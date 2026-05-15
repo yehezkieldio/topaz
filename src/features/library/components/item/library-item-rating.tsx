@@ -50,7 +50,7 @@ export const LibraryItemRating = memo(function LibraryItemRating({
 
         if (isTooltipOpen) {
             document.addEventListener("mousedown", handleClickOutside);
-            document.addEventListener("touchstart", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside, { passive: true });
         }
 
         return () => {

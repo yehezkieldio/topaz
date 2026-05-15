@@ -35,7 +35,7 @@ export function MultiSelect({
     onSelectionChangeAction,
     onSearchAction,
     onCreateAction,
-    placeholder = "Select items...",
+    placeholder = "Select items…",
     emptyMessage = "No items found.",
     isLoading = false,
     canCreate = false,
@@ -138,7 +138,7 @@ export function MultiSelect({
                         variant="outline"
                     >
                         <span className="truncate">{displayText}</span>
-                        <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        <ChevronsUpDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -155,7 +155,7 @@ export function MultiSelect({
                     <Command shouldFilter={false}>
                         <CommandInput
                             onValueChange={handleInputChange}
-                            placeholder="Search..."
+                            placeholder="Search…"
                             ref={inputRef}
                             value={inputValue}
                         />
@@ -168,7 +168,7 @@ export function MultiSelect({
                             }}
                         >
                             {isLoading ? (
-                                <CommandEmpty>Loading...</CommandEmpty>
+                                <CommandEmpty>Loading…</CommandEmpty>
                             ) : (
                                 <>
                                     <CommandEmpty>
@@ -187,7 +187,7 @@ export function MultiSelect({
                                                 >
                                                     <CheckIcon
                                                         className={cn(
-                                                            "mr-2 h-4 w-4",
+                                                            "mr-2 size-4",
                                                             isSelected ? "opacity-100" : "opacity-0"
                                                         )}
                                                     />
@@ -197,7 +197,7 @@ export function MultiSelect({
                                         })}
                                         {shouldShowCreateOption && (
                                             <CommandItem onSelect={handleCreate}>
-                                                <div className="mr-2 h-4 w-4" />
+                                                <div className="mr-2 size-4" />
                                                 Create "{inputValue}"
                                             </CommandItem>
                                         )}
@@ -216,12 +216,12 @@ export function MultiSelect({
                             {option.label}
                             <Button
                                 aria-label={`Remove ${option.label}`}
-                                className="h-4 w-4 p-0 hover:bg-transparent"
+                                className="size-4 p-0 hover:bg-transparent"
                                 onClick={() => removeOption(option)}
                                 size="sm"
                                 variant="ghost"
                             >
-                                <XIcon className="h-3 w-3" />
+                                <XIcon className="size-3" />
                             </Button>
                         </Badge>
                     ))}
