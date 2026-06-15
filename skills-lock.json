@@ -61,6 +61,18 @@
       "skillPath": "plugins/tanstack-virtual/skills/tanstack-virtual/SKILL.md",
       "computedHash": "987d0fcffeac700cea1303a13a9cecd8a4583985dd675f97ebbca27bfa592b47"
     },
+    "trpc": {
+      "source": "bobmatnyc/claude-mpm-skills",
+      "sourceType": "github",
+      "skillPath": "toolchains/typescript/api/trpc/SKILL.md",
+      "computedHash": "ebde0490a1cb88362f0ea27a091a4e3128c9d63a8882ff58943b0d6db27874d9"
+    },
+    "trpc-tanstack-nextjs": {
+      "source": "diegojohnsonl/trpc-tanstack-nextjs",
+      "sourceType": "github",
+      "skillPath": "trpc-tanstack-nextjs/SKILL.md",
+      "computedHash": "765637486337d2dde5c23aa319d77c2f08bd06842e3dbc909421e5a53724f9ce"
+    },
     "typescript-advanced-types": {
       "source": "wshobson/agents",
       "sourceType": "github",
