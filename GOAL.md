@@ -292,7 +292,7 @@ Stop and report clearly if:
 
 ## Ledger
 
-Status: Completed source-reviewable V2 route/query/UI cleanup slices for library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, create/edit form boundary fixes, compact-row label polish, library item DTO typing, library filter/presentation boundary hardening, and a final React-only taxonomy search state pass. Source gates pass, including the full lint gate. Runtime/profile proof is explicitly out of scope for the latest user continuation and remains blocked on a running app and PostgreSQL database.
+Status: Completed source-reviewable V2 route/query/UI cleanup slices for library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, create/edit form boundary fixes, compact-row label polish, library item DTO typing, library filter/presentation boundary hardening, and React-only search/taxonomy state passes. Source gates pass, including the full lint gate. Runtime/profile proof is explicitly out of scope for the latest user continuation and remains blocked on a running app and PostgreSQL database.
 
 Findings:
 
@@ -328,6 +328,7 @@ Findings:
 - P2 V2 verification scripts parse tRPC response JSON with unchecked type assertions. Trigger: public/admin verification against a running app. Cost: verifier failures can be hidden behind trusted casts instead of reporting response-shape drift. Evidence: source inspection of verify-v2-public-library and verify-v2-admin-flow response parsing.
 - P2 repo-wide Biome lint gate is blocked by deprecated `rules.recommended` config and by linting `.agents` skill asset JSON files that intentionally contain comments. Trigger: `bun run lint`. Cost: the canonical lint gate cannot run even when app source is clean. Evidence: live `bun run lint` output and Biome v2 docs for `rules.preset` plus `files.includes` exclusions.
 - P2 useTaxonomySearch disables the query when debounced text has trailing whitespace and masks initial loading with `isLoading && !isFetching`. Trigger: taxonomy multiselect search/open. Cost: a query such as `foo ` can stop fetching until edited again, and the multiselect can show an empty state instead of loading while the first taxonomy query is in flight. Evidence: source inspection of normalizedDebounced, useDebounce, TanStack Query state flags, and LibraryTaxonomyMultiselect loading wiring.
+- P1 LibrarySearchInput writes every keystroke directly to URL query state. Trigger: typing in the library search box. Cost: each character changes search params, library query input, and provider state, causing avoidable library tree churn before the user pauses. Evidence: source inspection of LibrarySearchInput, useSearchQuery, LibraryDataProvider activeFilters, and existing debounced taxonomy search pattern.
 ```
 
 Completed:
@@ -368,6 +369,7 @@ Completed:
 - Added Zod parsing for public/admin verifier tRPC response envelopes and expected result payloads, removing unchecked verifier response casts.
 - Fixed repo-wide Biome config by replacing deprecated `rules.recommended` with `rules.preset` and excluding `.agents` skill assets from app lint scope.
 - Fixed taxonomy multiselect query state by letting debounced search text drive the query directly and reporting initial taxonomy loading when no response is available yet.
+- Debounced the library search input before committing to URL query state while keeping immediate local input updates and immediate clear behavior.
 - Validation passed after latest changes: bun run typecheck.
 - Validation passed after latest changes: bunx biome check src scripts.
 - Validation passed after latest changes: bun run lint.
