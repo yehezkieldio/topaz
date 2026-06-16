@@ -1,7 +1,7 @@
 import { z } from "zod/v4";
 import { publicIdSchema } from "#/server/api/schemas/common";
 import { adminProcedure, createTRPCRouter } from "#/server/api/trpc";
-import { invalidateTaxonomyReadModels } from "#/server/backend/cache/tags";
+import { invalidateLibraryReadModels, invalidateTaxonomyReadModels } from "#/server/backend/cache/tags";
 import {
     createTaxonomyRelation,
     createTaxonomyTerm,
@@ -25,6 +25,7 @@ import { taxonomyKindEnum, taxonomyRelationTypeEnum } from "#/server/db/schema/t
 export const taxonomyRouter = createTRPCRouter({
     delete: adminProcedure.input(z.object({ publicId: publicIdSchema })).mutation(async ({ ctx, input }) => {
         const deletedTerm = await deleteTaxonomyTerm(ctx.db, input.publicId);
+        await invalidateLibraryReadModels();
         await invalidateTaxonomyReadModels();
         return deletedTerm;
     }),
@@ -97,11 +98,13 @@ export const taxonomyRouter = createTRPCRouter({
         )
         .mutation(async ({ ctx, input }) => {
             const relation = await createTaxonomyRelation(ctx.db, input);
+            await invalidateLibraryReadModels();
             await invalidateTaxonomyReadModels();
             return relation;
         }),
     deleteRelation: adminProcedure.input(z.object({ publicId: publicIdSchema })).mutation(async ({ ctx, input }) => {
         const relation = await deleteTaxonomyRelation(ctx.db, input.publicId);
+        await invalidateLibraryReadModels();
         await invalidateTaxonomyReadModels();
         return relation;
     }),

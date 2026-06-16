@@ -32,14 +32,22 @@ export function LibraryEditForm({ item, onCloseAction }: LibraryEditFormProps) {
         const current = currentChapter;
         const max = totalChapters || Number.POSITIVE_INFINITY;
         if (current < max) {
-            form.setValue("current_chapter", current + 1);
+            form.setValue("current_chapter", current + 1, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+            });
         }
     };
 
     const handleChapterDecrement = () => {
         const current = currentChapter;
         if (current > 0) {
-            form.setValue("current_chapter", current - 1);
+            form.setValue("current_chapter", current - 1, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+            });
         }
     };
 
@@ -83,7 +91,7 @@ export function LibraryEditForm({ item, onCloseAction }: LibraryEditFormProps) {
                             <LibraryWorkDetailsFieldsForm />
                         </LibraryForm.Details>
                         <LibraryForm.Categories>
-                            <LibraryWorkTaxonomyForm initialTaxonomyTerms={item.taxonomyTerms || []} />
+                            <LibraryWorkTaxonomyForm initialTaxonomyTerms={item.directTaxonomyTerms || []} />
                         </LibraryForm.Categories>
                         <LibraryForm.Progress>
                             <LibraryReadingStateForm />

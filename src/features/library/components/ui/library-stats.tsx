@@ -1,4 +1,3 @@
-import z from "zod";
 import { estimateWordCount } from "#/lib/utils";
 
 export interface LibraryStats {
@@ -20,10 +19,7 @@ interface LibraryStatsProps {
 export function LibraryStats({ stats }: LibraryStatsProps) {
     const { totalChaptersRead = 0, taxonomyTermCount = 0, workCount = 0 } = stats;
 
-    // The type says number, but the runtime value is actually a string - so we need to coerce it
-    const totalWordsRead = z.coerce.number().parse(stats.totalWordsRead ?? 0);
-
-    const wordCount = estimateWordCount(totalWordsRead);
+    const wordCount = estimateWordCount(Number(stats.totalWordsRead ?? 0));
     const totalChapters = totalChaptersRead.toLocaleString();
 
     return (

@@ -48,6 +48,10 @@ const MOBILE_ITEM_HEIGHT = 184;
 const LOADER_ROW_HEIGHT = 96;
 const OVERSCAN = 8;
 
+type ActiveOverlay = { item: LibraryItemType; type: "delete" | "edit" | "view" } | { item: null; type: null };
+
+const CLOSED_OVERLAY: ActiveOverlay = { item: null, type: null };
+
 export type LibraryListProps = {
     isAdministratorUser: boolean;
 };
@@ -56,10 +60,7 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
     const [search] = useSearchQuery();
     const parentRef = useRef<HTMLDivElement>(null);
     const isMobile = useIsMobile();
-    const [selectedItem, setSelectedItem] = useState<LibraryItemType | null>(null);
-    const [isViewSheetOpen, setIsViewSheetOpen] = useState(false);
-    const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [activeOverlay, setActiveOverlay] = useState<ActiveOverlay>(CLOSED_OVERLAY);
     const isLoadingNextPageRef = useRef(false);
 
     const itemHeight = isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_ITEM_HEIGHT;
@@ -87,18 +88,19 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
     const items = virtualizer.getVirtualItems();
 
     const handleView = useCallback((item: LibraryItemType) => {
-        setSelectedItem(item);
-        setIsViewSheetOpen(true);
+        setActiveOverlay({ item, type: "view" });
     }, []);
 
     const handleEdit = useCallback((item: LibraryItemType) => {
-        setSelectedItem(item);
-        setIsEditSheetOpen(true);
+        setActiveOverlay({ item, type: "edit" });
     }, []);
 
     const handleDelete = useCallback((item: LibraryItemType) => {
-        setSelectedItem(item);
-        setIsDeleteDialogOpen(true);
+        setActiveOverlay({ item, type: "delete" });
+    }, []);
+
+    const closeOverlay = useCallback(() => {
+        setActiveOverlay(CLOSED_OVERLAY);
     }, []);
 
     const onLoaderInView = useCallback(async () => {
@@ -177,37 +179,16 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
                 <LoadingSpinner message="Updating library..." />
             )}
 
-            {selectedItem && (
+            {activeOverlay.item && (
                 <>
-                    <LibraryItemViewSheet
-                        isOpen={isViewSheetOpen}
-                        item={selectedItem}
-                        onClose={() => {
-                            setIsViewSheetOpen(false);
-                            setSelectedItem(null);
-                        }}
-                    />
-                    {isAdministratorUser && (
-                        <>
-                            <LibraryEditSheet
-                                isOpen={isEditSheetOpen}
-                                item={selectedItem}
-                                onCloseAction={() => {
-                                    setIsEditSheetOpen(false);
-                                    setSelectedItem(null);
-                                    // parentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-                                }}
-                            />
-                            <LibraryItemDeleteDialog
-                                isOpen={isDeleteDialogOpen}
-                                item={selectedItem}
-                                onClose={() => {
-                                    setIsDeleteDialogOpen(false);
-                                    setSelectedItem(null);
-                                    // parentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-                                }}
-                            />
-                        </>
+                    {activeOverlay.type === "view" && (
+                        <LibraryItemViewSheet isOpen item={activeOverlay.item} onClose={closeOverlay} />
+                    )}
+                    {isAdministratorUser && activeOverlay.type === "edit" && (
+                        <LibraryEditSheet isOpen item={activeOverlay.item} onCloseAction={closeOverlay} />
+                    )}
+                    {isAdministratorUser && activeOverlay.type === "delete" && (
+                        <LibraryItemDeleteDialog isOpen item={activeOverlay.item} onClose={closeOverlay} />
                     )}
                 </>
             )}

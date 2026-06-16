@@ -6,15 +6,18 @@ import { cacheLife, cacheTag } from "next/cache";
 import { backendCacheTags } from "#/server/backend/cache/tags";
 import { db } from "#/server/db";
 import {
+    type LibraryEntryStatus,
     type LibrarySortBy,
     libraryEntries,
-    type libraryEntryStatusEnum,
+    libraryEntryStatusEnum,
     librarySortByEnum,
     type ReadingEventType,
     readingEvents,
     readingStates,
 } from "#/server/db/schema/library-entry";
 import {
+    type TaxonomyEffectiveReason,
+    taxonomyEffectiveReasonEnum,
     taxonomyKindSeeds,
     taxonomyKinds,
     taxonomyLabels,
@@ -28,8 +31,10 @@ import {
     type Source,
     sourcePlatformSeeds,
     sourcePlatforms,
+    type WorkStatus,
     workContributors,
     workSources,
+    workStatusEnum,
     works,
 } from "#/server/db/schema/work";
 
@@ -56,15 +61,15 @@ export type LibraryQueryResult = {
         workPublicId: string;
         workTitle: string;
         sourceAuthor: string;
-        libraryEntryStatus: string;
+        libraryEntryStatus: LibraryEntryStatus;
         currentChapter: number;
         rating: number;
-        workStatus: string;
+        workStatus: WorkStatus;
         contributorNames: string[];
         updatedAt: Date;
         directTaxonomyTerms: { kind: string; publicId: string; name: string }[];
         taxonomyTerms: { kind: string; publicId: string; name: string }[];
-        source?: string;
+        source: Source;
         sourceUrl?: string;
         sourceChapterCount?: number;
         sourceWordCount?: number;
@@ -597,7 +602,7 @@ export async function rebuildEffectiveTaxonomyForWork(database: DatabaseOrTransa
 
     type EffectiveRow = {
         depth: number;
-        reason: "direct" | "broader" | "implies" | "equivalent_to";
+        reason: TaxonomyEffectiveReason;
         sourceTermId: string | null;
         termId: string;
         workId: string;
@@ -638,7 +643,7 @@ export async function rebuildEffectiveTaxonomyForWork(database: DatabaseOrTransa
                 workId,
                 termId: relation.toTermId,
                 sourceTermId: row.termId,
-                reason: relation.relationType as "broader" | "implies" | "equivalent_to",
+                reason: taxonomyEffectiveReasonEnum.parse(relation.relationType),
                 depth: row.depth + 1,
             });
         }
@@ -689,10 +694,11 @@ export async function assignTaxonomyTermsToWork(
 
 export async function createOrLinkContributor(
     database: DatabaseOrTransaction,
-    input: { name: string; role?: string; workId: string }
+    input: { name: string; replaceExistingRole?: boolean; role?: string; workId: string }
 ) {
     const name = input.name.trim() || "Unknown";
     const normalizedName = normalizeText(name);
+    const role = input.role ?? "author";
     const [existingContributor] = await database
         .select({ id: contributors.id, publicId: contributors.publicId })
         .from(contributors)
@@ -712,12 +718,18 @@ export async function createOrLinkContributor(
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create contributor" });
     }
 
+    if (input.replaceExistingRole) {
+        await database
+            .delete(workContributors)
+            .where(and(eq(workContributors.workId, input.workId), eq(workContributors.role, role)));
+    }
+
     await database
         .insert(workContributors)
         .values({
             workId: input.workId,
             contributorId: contributor.id,
-            role: input.role ?? "author",
+            role,
             display_order: 0,
         })
         .onConflictDoNothing();
@@ -902,7 +914,7 @@ export async function updateLibraryItem(database: Database, input: UpdateLibrary
             })
             .where(and(eq(workSources.workId, existing.workId), eq(workSources.is_primary, true)));
 
-        await createOrLinkContributor(tx, { workId: existing.workId, name: input.author });
+        await createOrLinkContributor(tx, { workId: existing.workId, name: input.author, replaceExistingRole: true });
 
         await tx
             .update(libraryEntries)
@@ -979,19 +991,6 @@ export async function deleteWork(database: Database, publicId: string) {
     }
 
     return deletedWork;
-}
-
-export async function deleteLibraryEntry(database: Database, publicId: string) {
-    const [deletedLibraryEntry] = await database
-        .delete(libraryEntries)
-        .where(eq(libraryEntries.publicId, publicId))
-        .returning({ id: libraryEntries.id, publicId: libraryEntries.publicId });
-
-    if (!deletedLibraryEntry) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Library entry not found" });
-    }
-
-    return deletedLibraryEntry;
 }
 
 export async function listLibraryEntries(database: Database, input: LibraryQueryInput): Promise<LibraryQueryResult> {
@@ -1138,10 +1137,10 @@ export async function listLibraryEntries(database: Database, input: LibraryQuery
             workTitle: item.workTitle,
             sourceAuthor: item.sourceAuthor ?? item.contributorNames.at(0) ?? "Unknown",
             contributorNames: item.contributorNames,
-            libraryEntryStatus: item.libraryEntryStatus,
+            libraryEntryStatus: libraryEntryStatusEnum.parse(item.libraryEntryStatus),
             currentChapter: item.currentChapter ?? 0,
             rating: item.rating ?? 0,
-            workStatus: item.workStatus,
+            workStatus: workStatusEnum.parse(item.workStatus),
             updatedAt: item.updatedAt ?? new Date(0),
             directTaxonomyTerms: directTaxonomyByWork.get(item.workPublicId) ?? [],
             taxonomyTerms: taxonomyByWork.get(item.workPublicId) ?? [],
@@ -1177,21 +1176,31 @@ export async function getLibraryStats() {
     cacheTag(backendCacheTags.libraryStats);
     cacheLife("hours");
 
-    const [stats] = await db
-        .select({
-            workCount: sql<number>`COUNT(DISTINCT ${works.id})`,
-            completed: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Completed' THEN 1 END)`,
-            paused: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Paused' THEN 1 END)`,
-            dropped: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Dropped' THEN 1 END)`,
-            reading: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Reading' THEN 1 END)`,
-            averageRating: sql<number>`COALESCE(AVG(${readingStates.rating}), 0)`,
-            totalChaptersRead: sql<number>`COALESCE(SUM(${readingStates.current_chapter}), 0)`,
-            taxonomyTermCount: sql<number>`COUNT(DISTINCT ${workTaxonomyEffective.termId})`,
-        })
-        .from(libraryEntries)
-        .innerJoin(works, eq(works.id, libraryEntries.workId))
-        .leftJoin(readingStates, eq(readingStates.libraryEntryId, libraryEntries.id))
-        .leftJoin(workTaxonomyEffective, eq(workTaxonomyEffective.workId, works.id));
+    const [stats, taxonomyStats] = await Promise.all([
+        db
+            .select({
+                workCount: sql<number>`COUNT(DISTINCT ${works.id})`,
+                completed: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Completed' THEN 1 END)`,
+                paused: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Paused' THEN 1 END)`,
+                dropped: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Dropped' THEN 1 END)`,
+                reading: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Reading' THEN 1 END)`,
+                averageRating: sql<number>`COALESCE(AVG(${readingStates.rating}), 0)`,
+                totalChaptersRead: sql<number>`COALESCE(SUM(${readingStates.current_chapter}), 0)`,
+                totalWordsRead: sql<number>`COALESCE(SUM(${workSources.word_count}), 0)`,
+            })
+            .from(libraryEntries)
+            .innerJoin(works, eq(works.id, libraryEntries.workId))
+            .leftJoin(readingStates, eq(readingStates.libraryEntryId, libraryEntries.id))
+            .leftJoin(workSources, and(eq(workSources.workId, works.id), eq(workSources.is_primary, true))),
+        db
+            .select({
+                taxonomyTermCount: sql<number>`COUNT(DISTINCT ${workTaxonomyEffective.termId})`,
+            })
+            .from(workTaxonomyEffective),
+    ]);
 
-    return stats ?? {};
+    return {
+        ...(stats ?? {}),
+        taxonomyTermCount: taxonomyStats.at(0)?.taxonomyTermCount ?? 0,
+    };
 }

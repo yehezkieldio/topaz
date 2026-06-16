@@ -33,7 +33,7 @@ export function getLibraryItemValues(item: LibraryItem): LibraryItemValues {
     const progressPercentage = hasValidChapterData
         ? Math.round((currentChapter / totalChapters) * PROGRESS_PERCENTAGE_MAX)
         : 0;
-    const isComplete = item.workStatus?.toLowerCase() === "complete";
+    const isComplete = item.workStatus === "Completed";
     const hasWordCount = (item.sourceWordCount ?? 0) > 0;
     const wordCount = estimateWordCount(item.sourceWordCount);
     const hasValidUrl = Boolean(item.sourceUrl?.trim());

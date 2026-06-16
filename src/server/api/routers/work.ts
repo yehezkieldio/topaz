@@ -8,7 +8,7 @@ import {
     rebuildEffectiveTaxonomyForWork,
     updateLibraryItem,
 } from "#/server/db/repositories/library-repository";
-import { sourceEnum, workStatusEnum, workWithLibraryEntrySchema } from "#/server/db/schema/work";
+import { workWithLibraryEntrySchema } from "#/server/db/schema/work";
 
 export const workRouter = createTRPCRouter({
     createWithLibraryEntry: adminProcedure
@@ -88,6 +88,4 @@ export const workRouter = createTRPCRouter({
         await invalidateLibraryReadModels();
         return effectiveRows;
     }),
-    sourceOptions: adminProcedure.query(() => sourceEnum.options),
-    statusOptions: adminProcedure.query(() => workStatusEnum.options),
 });

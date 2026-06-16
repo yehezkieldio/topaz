@@ -6,15 +6,7 @@ import type z from "zod/v4";
 import { useLibraryRefetch } from "#/features/library/api/use-library-data";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
 import { useSearchQuery } from "#/features/library/hooks/use-search-query";
-import {
-    type LibraryEntryStatus,
-    libraryEntryStatusEnum,
-    type Source,
-    sourceEnum,
-    type WorkStatus,
-    workStatusEnum,
-    workWithLibraryEntrySchema,
-} from "#/server/db/schema";
+import { workWithLibraryEntrySchema } from "#/server/db/schema";
 import { useTRPC } from "#/trpc/react";
 
 export const editLibraryEntrySchema = workWithLibraryEntrySchema;
@@ -31,18 +23,6 @@ export function useLibraryEntryEdit({ item, onCloseAction }: UseLibraryEntryEdit
     const refetchLibrary = useLibraryRefetch();
     const [, setSearch] = useSearchQuery();
 
-    const sourceDefault = sourceEnum.options.includes(item.source as Source)
-        ? (item.source as Source)
-        : "ArchiveOfOurOwn";
-    const libraryEntryStatusDefault = libraryEntryStatusEnum.options.includes(
-        item.libraryEntryStatus as LibraryEntryStatus
-    )
-        ? (item.libraryEntryStatus as LibraryEntryStatus)
-        : "Reading";
-    const workStatusDefault = workStatusEnum.options.includes(item.workStatus as WorkStatus)
-        ? (item.workStatus as WorkStatus)
-        : "Ongoing";
-
     const form = useForm<EditLibraryEntryFormData>({
         resolver: zodResolver(editLibraryEntrySchema),
         defaultValues: {
@@ -53,15 +33,15 @@ export function useLibraryEntryEdit({ item, onCloseAction }: UseLibraryEntryEdit
             title: item.workTitle || "",
             author: item.sourceAuthor || "",
             url: item.sourceUrl || "",
-            source: sourceDefault,
+            source: item.source,
             description: item.workDescription || "",
             chapter_count: item.sourceChapterCount || 0,
             word_count: item.sourceWordCount || 0,
             is_nsfw: item.workIsNsfw ?? false,
-            status: workStatusDefault,
-            libraryEntryStatus: libraryEntryStatusDefault,
+            status: item.workStatus,
+            libraryEntryStatus: item.libraryEntryStatus,
             current_chapter: item.currentChapter || 0,
-            rating: item.rating?.toString(),
+            rating: item.rating?.toString() ?? "",
             notes: item.readingNotes || "",
             taxonomyTermIds: item.directTaxonomyTerms?.map((term) => term.publicId) || [],
         },
@@ -87,7 +67,7 @@ export function useLibraryEntryEdit({ item, onCloseAction }: UseLibraryEntryEdit
                 status: data.status,
                 libraryEntryStatus: data.libraryEntryStatus,
                 current_chapter: data.current_chapter,
-                rating: data.rating.toString(),
+                rating: data.rating,
                 notes: data.notes,
                 taxonomyTermIds: data.taxonomyTermIds,
             });

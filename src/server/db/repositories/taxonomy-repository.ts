@@ -17,6 +17,7 @@ import {
     taxonomyRelationTypeEnum,
     taxonomyTerms,
     workTaxonomyAssignments,
+    workTaxonomyEffective,
 } from "#/server/db/schema/taxonomy";
 
 type Database = typeof db;
@@ -98,6 +99,41 @@ function kindPredicate(kind?: TaxonomyKind) {
     return kind ? eq(taxonomyKinds.key, kind) : undefined;
 }
 
+function exactLabelMatchPredicate(input: { kind?: TaxonomyKind; normalizedText: string; excludePublicId?: string }) {
+    const conditions = [
+        eq(taxonomyLabels.normalized_label, input.normalizedText),
+        ...(input.kind ? [eq(taxonomyKinds.key, input.kind)] : []),
+        ...(input.excludePublicId ? [sql`${taxonomyTerms.publicId} != ${input.excludePublicId}`] : []),
+    ];
+
+    return and(...conditions);
+}
+
+async function findTaxonomyTermByExactLabel(
+    database: DatabaseOrTransaction,
+    input: { kind?: TaxonomyKind; normalizedText: string; excludePublicId?: string }
+) {
+    const [term] = await database
+        .select({
+            id: taxonomyTerms.id,
+            publicId: taxonomyTerms.publicId,
+            name: taxonomyTerms.name,
+            kind: taxonomyKinds.key,
+        })
+        .from(taxonomyTerms)
+        .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
+        .innerJoin(taxonomyLabels, eq(taxonomyLabels.termId, taxonomyTerms.id))
+        .where(exactLabelMatchPredicate(input))
+        .limit(1);
+
+    return term
+        ? {
+              ...term,
+              kind: taxonomyKindEnum.parse(term.kind),
+          }
+        : undefined;
+}
+
 export async function getHotTaxonomyTerms(
     input: { kind?: TaxonomyKind; limit?: number } = {}
 ): Promise<TaxonomyTermSummary[]> {
@@ -147,6 +183,7 @@ export async function searchTaxonomyTerms(
 
     const normalizedTerm = normalizeTaxonomyText(input.search ?? "");
     const similarityExpr = sql<number>`similarity(LOWER(${taxonomyLabels.label}), ${normalizedTerm})`;
+    const maxSimilarityExpr = sql<number>`MAX(${similarityExpr})`;
     const minSimilarity = normalizedTerm.length < 4 ? 0.1 : 0.2;
     const searchClause = sql`(
         ${taxonomyLabels.normalized_label} ILIKE ${`%${normalizedTerm}%`}
@@ -166,8 +203,14 @@ export async function searchTaxonomyTerms(
         .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
         .leftJoin(taxonomyLabels, eq(taxonomyLabels.termId, taxonomyTerms.id))
         .where(whereClause)
-        .groupBy(taxonomyTerms.id, taxonomyTerms.publicId, taxonomyTerms.name, taxonomyKinds.key, taxonomyLabels.label)
-        .orderBy(desc(similarityExpr), asc(taxonomyKinds.sort_order), asc(taxonomyTerms.name))
+        .groupBy(
+            taxonomyTerms.id,
+            taxonomyTerms.publicId,
+            taxonomyTerms.name,
+            taxonomyKinds.key,
+            taxonomyKinds.sort_order
+        )
+        .orderBy(desc(maxSimilarityExpr), asc(taxonomyKinds.sort_order), asc(taxonomyTerms.name))
         .limit(input.limit ?? MULTISELECT_LIMIT_DEFAULT);
 
     return rows.map((row) => ({
@@ -192,23 +235,14 @@ export async function getTaxonomyMultiselect(input: TaxonomyMultiselectInput): P
     }
 
     const normalizedTerm = normalizeTaxonomyText(term);
-    const exactMatchClause = input.kind
-        ? and(eq(taxonomyKinds.key, input.kind), eq(taxonomyTerms.normalized_name, normalizedTerm))
-        : eq(taxonomyTerms.normalized_name, normalizedTerm);
-
     const [searchResults, exactMatch] = await Promise.all([
         searchTaxonomyTerms({ kind: input.kind, search: term, limit: input.limit }),
-        db
-            .select({ id: taxonomyTerms.id })
-            .from(taxonomyTerms)
-            .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
-            .where(exactMatchClause)
-            .limit(1),
+        findTaxonomyTermByExactLabel(db, { kind: input.kind, normalizedText: normalizedTerm }),
     ]);
 
     return {
         terms: searchResults,
-        canCreate: exactMatch.length === 0,
+        canCreate: !exactMatch,
         searchTerm: term,
     };
 }
@@ -222,13 +256,12 @@ export async function createTaxonomyTerm(
     const slug = input.slug?.trim() || slugifyTaxonomyName(name);
     const kindId = await getKindId(database, input.kind);
 
-    const existingTerm = await database
-        .select({ id: taxonomyTerms.id })
-        .from(taxonomyTerms)
-        .where(and(eq(taxonomyTerms.kindId, kindId), eq(taxonomyTerms.normalized_name, normalizedName)))
-        .limit(1);
+    const existingTerm = await findTaxonomyTermByExactLabel(database, {
+        kind: input.kind,
+        normalizedText: normalizedName,
+    });
 
-    if (existingTerm.length > 0) {
+    if (existingTerm) {
         throw new TRPCError({ code: "CONFLICT", message: "Taxonomy term with this kind and name already exists" });
     }
 
@@ -293,24 +326,19 @@ export async function updateTaxonomyTerm(
             throw new TRPCError({ code: "NOT_FOUND", message: "Taxonomy term not found" });
         }
 
-        const nextKind = updateData.kind ?? existingTerm.kind;
+        const currentKind = taxonomyKindEnum.parse(existingTerm.kind);
+        const nextKind = updateData.kind ?? currentKind;
         const nextKindId = updateData.kind ? await getKindId(tx, updateData.kind) : existingTerm.kindId;
         const nextName = updateData.name?.trim();
         const nextNormalizedName = nextName ? normalizeTaxonomyText(nextName) : undefined;
         const nextSlug = updateData.slug?.trim() || (nextName ? slugifyTaxonomyName(nextName) : undefined);
 
         if (nextNormalizedName) {
-            const [conflictingTerm] = await tx
-                .select({ id: taxonomyTerms.id })
-                .from(taxonomyTerms)
-                .where(
-                    and(
-                        eq(taxonomyTerms.kindId, nextKindId),
-                        eq(taxonomyTerms.normalized_name, nextNormalizedName),
-                        sql`${taxonomyTerms.publicId} != ${publicId}`
-                    )
-                )
-                .limit(1);
+            const conflictingTerm = await findTaxonomyTermByExactLabel(tx, {
+                kind: nextKind,
+                normalizedText: nextNormalizedName,
+                excludePublicId: publicId,
+            });
 
             if (conflictingTerm) {
                 throw new TRPCError({
@@ -366,16 +394,10 @@ export async function createTaxonomyTermForMultiselect(
 ) {
     const name = input.name.trim();
     const normalizedName = normalizeTaxonomyText(name);
-    const [existingTerm] = await database
-        .select({
-            publicId: taxonomyTerms.publicId,
-            name: taxonomyTerms.name,
-            kind: taxonomyKinds.key,
-        })
-        .from(taxonomyTerms)
-        .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
-        .where(and(eq(taxonomyKinds.key, input.kind), eq(taxonomyTerms.normalized_name, normalizedName)))
-        .limit(1);
+    const existingTerm = await findTaxonomyTermByExactLabel(database, {
+        kind: input.kind,
+        normalizedText: normalizedName,
+    });
 
     if (existingTerm) {
         return existingTerm;
@@ -486,10 +508,10 @@ export async function createTaxonomyRelation(
             });
 
         const affectedWorks = await tx
-            .select({ workId: workTaxonomyAssignments.workId })
-            .from(workTaxonomyAssignments)
-            .where(eq(workTaxonomyAssignments.termId, fromTerm.id))
-            .groupBy(workTaxonomyAssignments.workId);
+            .select({ workId: workTaxonomyEffective.workId })
+            .from(workTaxonomyEffective)
+            .where(eq(workTaxonomyEffective.termId, fromTerm.id))
+            .groupBy(workTaxonomyEffective.workId);
 
         for (const affectedWork of affectedWorks) {
             await rebuildEffectiveTaxonomyForWork(tx, affectedWork.workId);
@@ -519,10 +541,10 @@ export async function deleteTaxonomyRelation(database: Database, publicId: strin
         }
 
         const affectedWorks = await tx
-            .select({ workId: workTaxonomyAssignments.workId })
-            .from(workTaxonomyAssignments)
-            .where(eq(workTaxonomyAssignments.termId, relation.fromTermId))
-            .groupBy(workTaxonomyAssignments.workId);
+            .select({ workId: workTaxonomyEffective.workId })
+            .from(workTaxonomyEffective)
+            .where(eq(workTaxonomyEffective.termId, relation.fromTermId))
+            .groupBy(workTaxonomyEffective.workId);
 
         for (const affectedWork of affectedWorks) {
             await rebuildEffectiveTaxonomyForWork(tx, affectedWork.workId);

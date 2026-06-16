@@ -292,7 +292,7 @@ Stop and report clearly if:
 
 ## Ledger
 
-Status: Completed first V2 route/query/UI cleanup slice. Stop criteria apply for this handoff because the remaining full-repo lint failure is unrelated to touched V2 source and comes from `.agents/skills` assets outside the active app scope.
+Status: Completed V2 route/query/UI cleanup slices for library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, edit-form boundary fixes, and library item DTO typing. Remaining work is broader V2 review, not a blocker for the completed slices.
 
 Findings:
 
@@ -300,6 +300,22 @@ Findings:
 - P1 listLibraryEntries cursor pagination does not model PostgreSQL null ordering for nullable sorts. Trigger: infinite library pagination sorted by author/rating/progress/wordCount/chapterCount. Cost: can stop early or skip rows when a page boundary contains NULL. Evidence: source inspection of createCursorCondition and nullable left-joined sort expressions.
 - P1 listLibraryEntries joins work_taxonomy_effective/taxonomy_term/taxonomy_label into the main list query only for search predicates, then fetches taxonomy DTO rows separately. Trigger: library search/list. Cost: unnecessary join fan-out before grouping and pagination. Evidence: source inspection of listLibraryEntries projection and follow-up taxonomy fetch.
 - P2 cursor parser validates only part of CursorData and casts sortBy/value after JSON parse. Trigger: client-supplied cursor. Cost: weak boundary for invalid cursor payloads. Evidence: source inspection of parseCursor.
+- P1 getLibraryStats joins work_taxonomy_effective into the same aggregate used for status counts, average rating, and total chapters read. Trigger: public stats query. Cost: counts and sums are multiplied by each work's effective taxonomy row count. Evidence: source inspection of getLibraryStats aggregate join.
+- P1 updateLibraryItem links a newly edited author without removing the previous author relation. Trigger: editing a work author. Cost: stale contributors remain attached to the work and leak into contributorNames/search. Evidence: source inspection of updateLibraryItem calling createOrLinkContributor after updating primary source author.
+- P2 library item DTO exposes source/status fields as loose strings, forcing UI casts and fallback defaults in item display/edit form code. Trigger: rendering/editing library items. Cost: weak form boundary and type assertions in React. Evidence: source inspection of LibraryQueryResult and downstream `as Source`/`as LibraryEntryStatus`/`as WorkStatus` casts.
+- P2 getLibraryItemValues checks work completion with `toLowerCase() === "complete"` while the V2 work status enum uses `Completed`. Trigger: rendering metadata/progress labels for completed works. Cost: completed works may not show the complete label. Evidence: source inspection of use-library-item.tsx and workStatusEnum.
+- P1 LibraryList uses one selectedItem plus three open booleans, so selecting view/edit/delete mounts all selected-item overlays even though only one is open. Trigger: opening any library item overlay. Cost: edit/view/delete sheet and dialog trees receive the selected item and can do unnecessary render work; stale commented scroll code remains in close handlers. Evidence: source inspection of LibraryList selectedItem render block.
+- P1 LibraryEditForm seeds the taxonomy multiselect display from effective taxonomy terms while the form field submits direct taxonomy IDs. Trigger: editing a work with inferred taxonomy. Cost: inferred terms can appear selected even though saving submits only direct assignments. Evidence: source inspection of useLibraryEntryEdit default taxonomyTermIds and LibraryEditForm initialTaxonomyTerms.
+- P1 taxonomy relation create/delete rebuilds effective taxonomy only for works directly assigned to the relation source term. Trigger: adding/removing a relation from an inferred term. Cost: works that reach the source term through another relation keep stale effective tags. Evidence: source inspection of createTaxonomyRelation/deleteTaxonomyRelation affected-work queries.
+- P1 homepage LibraryStats displays total words, but getLibraryStats does not return totalWordsRead. Trigger: homepage render. Cost: public stats copy reports ~0 words even when source word counts exist. Evidence: source inspection of LibraryStats fallback and getLibraryStats projection.
+- P2 root router exposes a duplicate view.getStats route that only mirrors library.getStats. Trigger: generated tRPC surface and route discovery. Cost: V1-style route boundary remains after stats moved under the library domain. Evidence: src-only search found no consumers outside root mount and the duplicate router file.
+- P2 library.delete exposes a second deletion semantic that removes only a library entry while the V2 UI and admin verification flow delete works through work.delete. Trigger: generated tRPC mutation surface. Cost: overlapping delete routes make ownership ambiguous and can leave a work behind when the UI copy says the work is deleted. Evidence: src/scripts usage search found only work.delete callers and no library.delete callers.
+- P2 tRPC responseMeta decides public-cache eligibility by checking whether procedure paths contain "public", but public read paths are library.all and library.getStats. Trigger: public tRPC query responses. Cost: intended cache-control header is never applied to the actual public library reads. Evidence: source inspection of responseMeta and publicProcedure callers.
+- P3 work.sourceOptions and work.statusOptions expose unused admin queries while forms read enum options locally. Trigger: generated tRPC surface. Cost: dead route surface and duplicated ownership for static enum data. Evidence: source/scripts usage search found no callers.
+- P1 taxonomy quick-create duplicate detection checks only taxonomy_terms.normalized_name, while taxonomy search and primary/alias ownership use taxonomy_labels.normalized_label. Trigger: multiselect quick-create using an existing alias or non-primary label. Cost: can create duplicate taxonomy concepts and search can show duplicate rows for one term when multiple labels match. Evidence: source inspection of getTaxonomyMultiselect, createTaxonomyTermForMultiselect, createTaxonomyTerm, updateTaxonomyTerm, and taxonomy_label indexes.
+- P1 edit form maps unrated items to `rating: undefined` while workWithLibraryEntrySchema requires a string rating and treats empty string as the valid unrated state. Trigger: opening and saving an existing unrated work. Cost: form starts invalid or submit mapping can fail even when the user is editing unrelated fields. Evidence: source inspection of useLibraryEntryEdit defaultValues and rating schema.
+- P1 taxonomy relation create/delete and term delete mutate work_taxonomy_effective or cascade taxonomy rows used by getLibraryStats.taxonomyTermCount, but invalidate only taxonomy read models. Trigger: adding/removing taxonomy relations or deleting taxonomy terms. Cost: public library stats can keep stale taxonomy term counts until the library stats cache expires. Evidence: source inspection of taxonomyRouter invalidation calls and getLibraryStats taxonomy aggregate.
+- P2 rebuildEffectiveTaxonomyForWork casts taxonomy relation text to the narrower effective-reason enum after filtering. Trigger: rebuilding inferred effective taxonomy rows. Cost: type assertion hides boundary drift if relation reason sets change. Evidence: source inspection of relationType cast and taxonomyEffectiveReasonEnum.
 ```
 
 Completed:
@@ -311,8 +327,26 @@ Completed:
 - Removed taxonomy effective/term/label joins from the main library list projection; taxonomy search now uses an EXISTS predicate and the DTO taxonomy fetch remains separate.
 - Removed multiselect open-focus timer and moved focus to PopoverContent onOpenAutoFocus.
 - Replaced taxonomy quick-create console-only failure handling with a user-visible toast error.
+- Fixed getLibraryStats row multiplication by separating library-entry stats from effective-taxonomy cardinality.
+- Fixed author edits so the current work author relation is replaced instead of accumulating stale author contributors.
+- Tightened library item DTO source/status fields to enum-shaped values at the repository boundary and removed downstream edit/display casts.
+- Fixed completed-work detection to use the V2 `Completed` work status enum value.
+- Replaced LibraryList's selected-item plus three-booleans overlay state with one active overlay state, mounting only the requested view/edit/delete overlay and removing stale commented scroll code.
+- Fixed edit-form taxonomy seeding so the multiselect displays direct assignments, not inferred effective terms.
+- Fixed taxonomy relation create/delete affected-work detection to rebuild works whose effective taxonomy includes the relation source term, including inferred dependents.
+- Fixed homepage total-word stats by returning totalWordsRead from primary source word counts and removing stale UI-side coercion commentary.
+- Removed the duplicate view.getStats router and kept public library stats under library.getStats.
+- Removed unused library.delete and its deleteLibraryEntry helper so V2 has one live library work deletion path through work.delete.
+- Replaced route-name substring cache detection with an explicit allowlist for cacheable public library queries.
+- Removed unused work.sourceOptions and work.statusOptions admin queries.
+- Fixed taxonomy exact-match checks to use normalized labels across multiselect canCreate, quick-create, create, and update paths; search now groups by term and orders by max label similarity so each term appears once.
+- Fixed edit-form rating defaults for unrated works and removed redundant rating string conversion on submit.
+- Marked mobile quick-progress form updates as dirty/touched/validated when the stepper changes current chapter.
+- Invalidated library read models after taxonomy term deletion and relation create/delete mutations that affect effective taxonomy stats.
+- Replaced effective taxonomy relation reason cast with taxonomyEffectiveReasonEnum parsing at the rebuild boundary.
 - Validation passed: bun run typecheck.
 - Validation passed: bunx biome check src scripts.
+- Validation passed: git diff --check.
 ```
 
 Deferred:

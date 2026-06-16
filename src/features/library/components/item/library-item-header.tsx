@@ -6,12 +6,11 @@ import { memo } from "react";
 import { Badge } from "#/components/ui/badge";
 import { useLibraryItemContext } from "#/features/library/components/item/library-item-context";
 import { useLibraryItemValues } from "#/features/library/hooks/use-library-item";
-import { type LibraryEntryStatus, libraryEntryStatusLabels } from "#/server/db/schema";
+import { libraryEntryStatusLabels } from "#/server/db/schema";
 
 function LibraryItemHeaderComponent() {
     const { item } = useLibraryItemContext();
     const { hasValidUrl, isNsfw } = useLibraryItemValues(item);
-    const libraryEntryStatus = item.libraryEntryStatus as LibraryEntryStatus;
 
     return (
         <div className="space-y-2">
@@ -50,7 +49,7 @@ function LibraryItemHeaderComponent() {
                     </Badge>
                 )}
                 <Badge className="shrink-0 rounded-md text-xs lg:text-sm" variant="secondary">
-                    {libraryEntryStatusLabels[libraryEntryStatus]}
+                    {libraryEntryStatusLabels[item.libraryEntryStatus]}
                 </Badge>
             </div>
         </div>
