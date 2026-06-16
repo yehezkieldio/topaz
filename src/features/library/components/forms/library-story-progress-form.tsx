@@ -57,7 +57,7 @@ export function LibraryStoryProgressForm<T extends ProgressFormFields>({
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent className="min-w-[12rem] max-w-[20rem] rounded-md">
-                                    {progressStatusEnum.enumValues.map((status) => (
+                                    {progressStatusEnum.options.map((status) => (
                                         <SelectItem className="truncate" key={status} value={status}>
                                             {progressStatusLabels[status]}
                                         </SelectItem>

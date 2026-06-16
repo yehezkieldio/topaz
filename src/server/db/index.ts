@@ -6,14 +6,12 @@ import * as progressSchema from "./schema/progress";
 import * as storySchema from "./schema/story";
 import * as taxonomySchema from "./schema/taxonomy";
 import * as userSchema from "./schema/user";
-import * as viewSchema from "./schema/view";
 
 const schema = {
     ...progressSchema,
     ...storySchema,
     ...taxonomySchema,
     ...userSchema,
-    ...viewSchema,
 };
 
 const globalForDb = globalThis as unknown as {

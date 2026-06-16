@@ -154,7 +154,7 @@ export function LibraryStoryDetailsForm<T extends StoryDetails>({
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent className="w-full rounded-md">
-                                    {storyStatusEnum.enumValues.map((status) => (
+                                    {storyStatusEnum.options.map((status) => (
                                         <SelectItem key={status} value={status}>
                                             {storyStatusLabels[status]}
                                         </SelectItem>

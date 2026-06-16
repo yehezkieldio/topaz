@@ -223,7 +223,7 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent className="w-[20rem] max-w-xs rounded-md sm:w-[16rem]">
-                                        {sourceEnum.enumValues.map((source) => (
+                                        {sourceEnum.options.map((source) => (
                                             <SelectItem
                                                 className="truncate"
                                                 key={source}

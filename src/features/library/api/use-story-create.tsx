@@ -42,7 +42,7 @@ export function useStoryCreate({ onClose }: { onClose: () => void }) {
         },
     });
 
-    const createStoryWithProgress = useMutation(trpc.story.createWithProgress.mutationOptions());
+    const createStoryWithProgress = useMutation(trpc.work.createWithLibraryEntry.mutationOptions());
 
     const onSubmit = async (data: CreateStoryFormData) => {
         try {
@@ -59,7 +59,7 @@ export function useStoryCreate({ onClose }: { onClose: () => void }) {
                 taxonomyTermIds: data.taxonomyTermIds,
                 progressStatus: data.progressStatus,
                 current_chapter: data.current_chapter,
-                rating: Number(data.rating),
+                rating: data.rating,
                 notes: data.notes,
             });
 

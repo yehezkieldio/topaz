@@ -126,3 +126,41 @@ Stop and report clearly if:
 - careful old-data migration
 ```
 
+## Ledger
+
+Status: Start Phase backend foundation implemented.
+
+Completed:
+
+```text
+- Replaced active Drizzle domain schema with the 14 V2 tables:
+  work, source_platform, work_source, contributor, work_contributor,
+  library_entry, reading_state, reading_event,
+  taxonomy_kind, taxonomy_term, taxonomy_label, taxonomy_relation,
+  work_taxonomy_assignment, work_taxonomy_effective.
+- Removed active materialized-view schema export/registration.
+- Removed old story/progress/story_taxonomy_term/taxonomy_alias table exports.
+- Kept source_platform and taxonomy_kind table-driven, not Postgres enums.
+- Added DB uniqueness for work_source (source_platform_id, normalized_url).
+- Added partial unique indexes for work_source external_id, active taxonomy term names, and primary taxonomy labels.
+- Added FK indexes and checks for V2 library/taxonomy/source tables.
+- Added seed constants/helpers for source platforms, taxonomy kinds, taxonomy relation types, and reading event types.
+- Added repository primitives for creating a library item, linking contributors, assigning taxonomy, and rebuilding effective taxonomy.
+- Replaced root tRPC surface with work, library, taxonomy, and view stats facade.
+- Rewired current library call sites from story/progress routers to work/library routers.
+```
+
+Validation:
+
+```text
+- bun run typecheck: passed
+- bunx biome check src scripts: passed
+- bun run lint: blocked by pre-existing .agents/skills JSON-with-comments files being included by Biome
+```
+
+Notes:
+
+```text
+- scripts/populate-database-for-testing.ts no longer seeds V1 story/progress data; it now exits with a V2 fixture-loader notice.
+- No migration reset/generation was performed in this pass.
+```

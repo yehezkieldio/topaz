@@ -29,7 +29,7 @@ function LibraryItemDeleteDialogComponent({ item, isOpen, onClose, onDelete }: L
     const trpc = useTRPC();
     const refetchLibrary = useLibraryRefetch();
 
-    const deleteStory = useMutation(trpc.story.delete.mutationOptions());
+    const deleteStory = useMutation(trpc.work.delete.mutationOptions());
     const isPending = deleteStory.isPending;
 
     const handleDelete = useCallback(async () => {

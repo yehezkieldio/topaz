@@ -1,7 +1,7 @@
 import { estimateWordCount, formatDate } from "#/lib/utils";
 import type { RouterOutputs } from "#/trpc/react";
 
-export type LibraryItem = RouterOutputs["progress"]["all"]["data"][number];
+export type LibraryItem = RouterOutputs["library"]["all"]["data"][number];
 
 export type LibraryItemValues = {
     totalChapters: number;

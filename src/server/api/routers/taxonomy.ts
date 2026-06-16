@@ -17,7 +17,7 @@ import {
     TAXONOMY_NAME_MIN,
     updateTaxonomyTerm,
 } from "#/server/db/repositories/taxonomy-repository";
-import { taxonomyKindEnum, taxonomyTermCreateSchema, taxonomyTermUpdateSchema } from "#/server/db/schema/taxonomy";
+import { taxonomyKindEnum } from "#/server/db/schema/taxonomy";
 
 export const taxonomyRouter = createTRPCRouter({
     delete: protectedProcedure.input(z.object({ publicId: publicIdSchema })).mutation(async ({ ctx, input }) => {
@@ -25,20 +25,39 @@ export const taxonomyRouter = createTRPCRouter({
         await invalidateTaxonomyReadModels();
         return deletedTerm;
     }),
-    update: protectedProcedure.input(taxonomyTermUpdateSchema).mutation(async ({ ctx, input }) => {
-        const updatedTerm = await updateTaxonomyTerm(ctx.db, input);
-        await invalidateTaxonomyReadModels();
-        return updatedTerm;
-    }),
-    create: protectedProcedure.input(taxonomyTermCreateSchema).mutation(async ({ ctx, input }) => {
-        const newTerm = await createTaxonomyTerm(ctx.db, input);
-        await invalidateTaxonomyReadModels();
-        return newTerm;
-    }),
+    update: protectedProcedure
+        .input(
+            z.object({
+                publicId: publicIdSchema,
+                kind: taxonomyKindEnum.optional(),
+                name: z.string().min(1).max(255).optional(),
+                slug: z.string().min(1).max(255).optional(),
+                description: z.string().nullable().optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const updatedTerm = await updateTaxonomyTerm(ctx.db, input);
+            await invalidateTaxonomyReadModels();
+            return updatedTerm;
+        }),
+    create: protectedProcedure
+        .input(
+            z.object({
+                kind: taxonomyKindEnum,
+                name: z.string().min(1).max(255),
+                slug: z.string().min(1).max(255).optional(),
+                description: z.string().nullable().optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const newTerm = await createTaxonomyTerm(ctx.db, input);
+            await invalidateTaxonomyReadModels();
+            return newTerm;
+        }),
     forMultiselect: protectedProcedure
         .input(
             z.object({
-                kind: z.enum(taxonomyKindEnum.enumValues).optional(),
+                kind: taxonomyKindEnum.optional(),
                 search: z.string().optional(),
                 limit: z
                     .number()
@@ -53,7 +72,7 @@ export const taxonomyRouter = createTRPCRouter({
     createForMultiselect: protectedProcedure
         .input(
             z.object({
-                kind: z.enum(taxonomyKindEnum.enumValues).default("Tag"),
+                kind: taxonomyKindEnum.default("trope"),
                 name: z.string().min(TAXONOMY_NAME_MIN).max(TAXONOMY_NAME_MAX),
             })
         )

@@ -57,7 +57,7 @@ export const useTaxonomySearch = (initialSearch = "", kind?: TaxonomyKind) => {
     const createTermMutation = useMutation({
         mutationFn: async (name: string) => {
             const trimmed = name.trim();
-            return await createTermForMultiselect.mutateAsync({ kind: kind ?? "Tag", name: trimmed });
+            return await createTermForMultiselect.mutateAsync({ kind: kind ?? "trope", name: trimmed });
         },
         onSuccess: () => {
             queryClient.invalidateQueries(trpc.taxonomy.forMultiselect.queryFilter());

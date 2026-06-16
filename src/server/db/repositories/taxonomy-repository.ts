@@ -5,10 +5,18 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { backendCacheTags } from "#/server/backend/cache/tags";
 import { db } from "#/server/db";
-import { storyTaxonomyTerms } from "#/server/db/schema/story";
-import { type TaxonomyKind, taxonomyTerms } from "#/server/db/schema/taxonomy";
+import {
+    type TaxonomyKind,
+    taxonomyKindEnum,
+    taxonomyKinds,
+    taxonomyLabels,
+    taxonomyTerms,
+    workTaxonomyAssignments,
+} from "#/server/db/schema/taxonomy";
 
 type Database = typeof db;
+type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
+type DatabaseOrTransaction = Database | Transaction;
 
 export const TAXONOMY_NAME_MIN = 1;
 export const TAXONOMY_NAME_MAX = 255;
@@ -42,6 +50,10 @@ type TaxonomyMultiselectInput = TaxonomySearchInput & {
     limit: number;
 };
 
+function normalizeTaxonomyText(name: string) {
+    return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 function slugifyTaxonomyName(name: string) {
     const slug = name
         .trim()
@@ -54,56 +66,93 @@ function slugifyTaxonomyName(name: string) {
     return slug || "term";
 }
 
-function kindPredicate(kind?: TaxonomyKind) {
-    return kind ? eq(taxonomyTerms.kind, kind) : undefined;
+async function getKindId(database: DatabaseOrTransaction, kind: TaxonomyKind) {
+    const [kindRow] = await database
+        .select({ id: taxonomyKinds.id })
+        .from(taxonomyKinds)
+        .where(eq(taxonomyKinds.key, kind))
+        .limit(1);
+    if (!kindRow) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Taxonomy kind seed is missing: ${kind}` });
+    }
+    return kindRow.id;
 }
 
-export async function getHotTaxonomyTerms(input: { kind?: TaxonomyKind; limit?: number } = {}) {
+function kindPredicate(kind?: TaxonomyKind) {
+    return kind ? eq(taxonomyKinds.key, kind) : undefined;
+}
+
+export async function getHotTaxonomyTerms(
+    input: { kind?: TaxonomyKind; limit?: number } = {}
+): Promise<TaxonomyTermSummary[]> {
     "use cache";
     cacheTag(backendCacheTags.hotTaxonomyTerms);
     cacheLife("hours");
 
     const whereClause = kindPredicate(input.kind);
 
-    return await db
+    const rows = await db
         .select({
             publicId: taxonomyTerms.publicId,
             name: taxonomyTerms.name,
-            kind: taxonomyTerms.kind,
+            kind: taxonomyKinds.key,
         })
         .from(taxonomyTerms)
-        .leftJoin(storyTaxonomyTerms, eq(taxonomyTerms.id, storyTaxonomyTerms.termId))
+        .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
+        .leftJoin(workTaxonomyAssignments, eq(taxonomyTerms.id, workTaxonomyAssignments.termId))
         .where(whereClause)
-        .groupBy(taxonomyTerms.id, taxonomyTerms.publicId, taxonomyTerms.name, taxonomyTerms.kind)
-        .orderBy(desc(sql`COUNT(${storyTaxonomyTerms.termId})`), asc(taxonomyTerms.kind), asc(taxonomyTerms.name))
+        .groupBy(taxonomyTerms.id, taxonomyTerms.publicId, taxonomyTerms.name, taxonomyKinds.key)
+        .orderBy(
+            desc(sql`COUNT(${workTaxonomyAssignments.termId})`),
+            asc(taxonomyKinds.sort_order),
+            asc(taxonomyTerms.name)
+        )
         .limit(input.limit ?? HOT_LIMIT_DEFAULT);
+
+    return rows.map((row) => ({
+        publicId: row.publicId,
+        name: row.name,
+        kind: taxonomyKindEnum.parse(row.kind),
+    }));
 }
 
-export async function searchTaxonomyTerms(input: TaxonomySearchInput & { limit?: number }) {
+export async function searchTaxonomyTerms(
+    input: TaxonomySearchInput & { limit?: number }
+): Promise<TaxonomyTermSummary[]> {
     "use cache";
     cacheTag(backendCacheTags.taxonomySearch);
     cacheLife("minutes");
 
-    const normalizedTerm = input.search?.trim().toLowerCase() ?? "";
-    const similarityExpr = sql<number>`similarity(LOWER(${taxonomyTerms.name}), ${normalizedTerm})`;
+    const normalizedTerm = normalizeTaxonomyText(input.search ?? "");
+    const similarityExpr = sql<number>`similarity(LOWER(${taxonomyLabels.label}), ${normalizedTerm})`;
     const minSimilarity = normalizedTerm.length < 4 ? 0.1 : 0.2;
     const searchClause = sql`(
-        LOWER(${taxonomyTerms.name}) ILIKE ${`%${normalizedTerm}%`}
-        OR LOWER(${taxonomyTerms.slug}) ILIKE ${`%${normalizedTerm}%`}
+        ${taxonomyLabels.normalized_label} ILIKE ${`%${normalizedTerm}%`}
+        OR ${taxonomyTerms.normalized_name} ILIKE ${`%${normalizedTerm}%`}
+        OR ${taxonomyTerms.slug} ILIKE ${`%${normalizedTerm}%`}
         OR ${similarityExpr} >= ${minSimilarity}
     )`;
-    const whereClause = input.kind ? and(eq(taxonomyTerms.kind, input.kind), searchClause) : searchClause;
+    const whereClause = input.kind ? and(eq(taxonomyKinds.key, input.kind), searchClause) : searchClause;
 
-    return await db
+    const rows = await db
         .select({
             publicId: taxonomyTerms.publicId,
             name: taxonomyTerms.name,
-            kind: taxonomyTerms.kind,
+            kind: taxonomyKinds.key,
         })
         .from(taxonomyTerms)
+        .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
+        .leftJoin(taxonomyLabels, eq(taxonomyLabels.termId, taxonomyTerms.id))
         .where(whereClause)
-        .orderBy(desc(similarityExpr), asc(taxonomyTerms.kind), asc(taxonomyTerms.name))
+        .groupBy(taxonomyTerms.id, taxonomyTerms.publicId, taxonomyTerms.name, taxonomyKinds.key, taxonomyLabels.label)
+        .orderBy(desc(similarityExpr), asc(taxonomyKinds.sort_order), asc(taxonomyTerms.name))
         .limit(input.limit ?? MULTISELECT_LIMIT_DEFAULT);
+
+    return rows.map((row) => ({
+        publicId: row.publicId,
+        name: row.name,
+        kind: taxonomyKindEnum.parse(row.kind),
+    }));
 }
 
 export async function getTaxonomyMultiselect(input: TaxonomyMultiselectInput): Promise<TaxonomyMultiselectResult> {
@@ -117,20 +166,22 @@ export async function getTaxonomyMultiselect(input: TaxonomyMultiselectInput): P
     }
 
     if (!term) {
-        return {
-            terms: [],
-            canCreate: false,
-            searchTerm: null,
-        };
+        return { terms: [], canCreate: false, searchTerm: null };
     }
 
+    const normalizedTerm = normalizeTaxonomyText(term);
     const exactMatchClause = input.kind
-        ? and(eq(taxonomyTerms.kind, input.kind), sql`LOWER(${taxonomyTerms.name}) = LOWER(${term})`)
-        : sql`LOWER(${taxonomyTerms.name}) = LOWER(${term})`;
+        ? and(eq(taxonomyKinds.key, input.kind), eq(taxonomyTerms.normalized_name, normalizedTerm))
+        : eq(taxonomyTerms.normalized_name, normalizedTerm);
 
     const [searchResults, exactMatch] = await Promise.all([
         searchTaxonomyTerms({ kind: input.kind, search: term, limit: input.limit }),
-        db.select({ id: taxonomyTerms.id }).from(taxonomyTerms).where(exactMatchClause).limit(1),
+        db
+            .select({ id: taxonomyTerms.id })
+            .from(taxonomyTerms)
+            .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
+            .where(exactMatchClause)
+            .limit(1),
     ]);
 
     return {
@@ -145,44 +196,57 @@ export async function createTaxonomyTerm(
     input: { description?: string | null; kind: TaxonomyKind; name: string; slug?: string }
 ) {
     const name = input.name.trim();
+    const normalizedName = normalizeTaxonomyText(name);
     const slug = input.slug?.trim() || slugifyTaxonomyName(name);
+    const kindId = await getKindId(database, input.kind);
 
     const existingTerm = await database
         .select({ id: taxonomyTerms.id })
         .from(taxonomyTerms)
-        .where(and(eq(taxonomyTerms.kind, input.kind), eq(taxonomyTerms.name, name)))
+        .where(and(eq(taxonomyTerms.kindId, kindId), eq(taxonomyTerms.normalized_name, normalizedName)))
         .limit(1);
 
     if (existingTerm.length > 0) {
-        throw new TRPCError({
-            code: "CONFLICT",
-            message: "Taxonomy term with this kind and name already exists",
-        });
+        throw new TRPCError({ code: "CONFLICT", message: "Taxonomy term with this kind and name already exists" });
     }
 
-    const [newTerm] = await database
-        .insert(taxonomyTerms)
-        .values({
+    return await database.transaction(async (tx) => {
+        const [newTerm] = await tx
+            .insert(taxonomyTerms)
+            .values({
+                kindId,
+                name,
+                normalized_name: normalizedName,
+                slug,
+                description: input.description ?? null,
+                status: "active",
+            })
+            .returning({
+                id: taxonomyTerms.id,
+                publicId: taxonomyTerms.publicId,
+                kindId: taxonomyTerms.kindId,
+                name: taxonomyTerms.name,
+            });
+
+        if (!newTerm) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create taxonomy term" });
+        }
+
+        await tx.insert(taxonomyLabels).values({
+            termId: newTerm.id,
+            label: name,
+            normalized_label: normalizedName,
+            label_type: "primary",
+            is_primary: true,
+        });
+
+        return {
+            id: newTerm.id,
+            publicId: newTerm.publicId,
             kind: input.kind,
-            name,
-            slug,
-            description: input.description ?? null,
-        })
-        .returning({
-            id: taxonomyTerms.id,
-            publicId: taxonomyTerms.publicId,
-            kind: taxonomyTerms.kind,
-            name: taxonomyTerms.name,
-        });
-
-    if (!newTerm) {
-        throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to create taxonomy term",
-        });
-    }
-
-    return newTerm;
+            name: newTerm.name,
+        };
+    });
 }
 
 export async function updateTaxonomyTerm(
@@ -195,31 +259,32 @@ export async function updateTaxonomyTerm(
         const [existingTerm] = await tx
             .select({
                 id: taxonomyTerms.id,
-                kind: taxonomyTerms.kind,
+                kindId: taxonomyTerms.kindId,
+                kind: taxonomyKinds.key,
             })
             .from(taxonomyTerms)
+            .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
             .where(eq(taxonomyTerms.publicId, publicId))
             .limit(1);
 
         if (!existingTerm) {
-            throw new TRPCError({
-                code: "NOT_FOUND",
-                message: "Taxonomy term not found",
-            });
+            throw new TRPCError({ code: "NOT_FOUND", message: "Taxonomy term not found" });
         }
 
         const nextKind = updateData.kind ?? existingTerm.kind;
+        const nextKindId = updateData.kind ? await getKindId(tx, updateData.kind) : existingTerm.kindId;
         const nextName = updateData.name?.trim();
+        const nextNormalizedName = nextName ? normalizeTaxonomyText(nextName) : undefined;
         const nextSlug = updateData.slug?.trim() || (nextName ? slugifyTaxonomyName(nextName) : undefined);
 
-        if (nextName) {
+        if (nextNormalizedName) {
             const [conflictingTerm] = await tx
                 .select({ id: taxonomyTerms.id })
                 .from(taxonomyTerms)
                 .where(
                     and(
-                        eq(taxonomyTerms.kind, nextKind),
-                        eq(taxonomyTerms.name, nextName),
+                        eq(taxonomyTerms.kindId, nextKindId),
+                        eq(taxonomyTerms.normalized_name, nextNormalizedName),
                         sql`${taxonomyTerms.publicId} != ${publicId}`
                     )
                 )
@@ -236,8 +301,10 @@ export async function updateTaxonomyTerm(
         const [updatedTerm] = await tx
             .update(taxonomyTerms)
             .set({
-                ...updateData,
+                description: updateData.description,
+                ...(updateData.kind && { kindId: nextKindId }),
                 ...(nextName && { name: nextName }),
+                ...(nextNormalizedName && { normalized_name: nextNormalizedName }),
                 ...(nextSlug && { slug: nextSlug }),
                 version: sql`${taxonomyTerms.version} + 1`,
             })
@@ -245,18 +312,29 @@ export async function updateTaxonomyTerm(
             .returning({
                 id: taxonomyTerms.id,
                 publicId: taxonomyTerms.publicId,
-                kind: taxonomyTerms.kind,
                 name: taxonomyTerms.name,
             });
 
         if (!updatedTerm) {
-            throw new TRPCError({
-                code: "NOT_FOUND",
-                message: "Taxonomy term not found",
-            });
+            throw new TRPCError({ code: "NOT_FOUND", message: "Taxonomy term not found" });
         }
 
-        return updatedTerm;
+        if (nextName && nextNormalizedName) {
+            await tx
+                .update(taxonomyLabels)
+                .set({
+                    label: nextName,
+                    normalized_label: nextNormalizedName,
+                })
+                .where(and(eq(taxonomyLabels.termId, existingTerm.id), eq(taxonomyLabels.is_primary, true)));
+        }
+
+        return {
+            id: updatedTerm.id,
+            publicId: updatedTerm.publicId,
+            kind: nextKind,
+            name: updatedTerm.name,
+        };
     });
 }
 
@@ -265,18 +343,20 @@ export async function createTaxonomyTermForMultiselect(
     input: { kind: TaxonomyKind; name: string }
 ) {
     const name = input.name.trim();
-    const existingTerm = await database
+    const normalizedName = normalizeTaxonomyText(name);
+    const [existingTerm] = await database
         .select({
             publicId: taxonomyTerms.publicId,
             name: taxonomyTerms.name,
-            kind: taxonomyTerms.kind,
+            kind: taxonomyKinds.key,
         })
         .from(taxonomyTerms)
-        .where(and(eq(taxonomyTerms.kind, input.kind), sql`LOWER(${taxonomyTerms.name}) = LOWER(${name})`))
+        .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
+        .where(and(eq(taxonomyKinds.key, input.kind), eq(taxonomyTerms.normalized_name, normalizedName)))
         .limit(1);
 
-    if (existingTerm.length > 0) {
-        return existingTerm[0];
+    if (existingTerm) {
+        return existingTerm;
     }
 
     return await createTaxonomyTerm(database, {
@@ -293,10 +373,7 @@ export async function deleteTaxonomyTerm(database: Database, publicId: string) {
     });
 
     if (!deletedTerm) {
-        throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Taxonomy term not found",
-        });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Taxonomy term not found" });
     }
 
     return deletedTerm;

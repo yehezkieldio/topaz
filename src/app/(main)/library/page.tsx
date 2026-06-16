@@ -27,7 +27,7 @@ export default async function Library({ searchParams }: LibraryPageProps) {
 async function LibraryServerData({ initialFilters }: { initialFilters: LibrarySearchParams }) {
     const queryClient = getQueryClient();
     await queryClient.prefetchInfiniteQuery(
-        trpc.progress.all.infiniteQueryOptions(createLibraryQueryInput(initialFilters), {
+        trpc.library.all.infiniteQueryOptions(createLibraryQueryInput(initialFilters), {
             getNextPageParam: (lastPage) => lastPage.meta.nextCursor,
             initialCursor: undefined,
         })

@@ -76,7 +76,7 @@ export function useLibraryData(filters: LibrarySearchParams) {
 
     const { data, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, isPending, refetch } =
         useInfiniteQuery(
-            trpc.progress.all.infiniteQueryOptions(queryInput, {
+            trpc.library.all.infiniteQueryOptions(queryInput, {
                 getNextPageParam: (lastPage) => lastPage.meta.nextCursor,
                 refetchOnWindowFocus: false,
                 refetchOnMount: false,
@@ -101,7 +101,7 @@ export function useLibraryData(filters: LibrarySearchParams) {
 
     const allItems = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data?.pages]);
     const invalidate = useCallback(async () => {
-        await queryClient.invalidateQueries(trpc.progress.all.queryFilter());
+        await queryClient.invalidateQueries(trpc.library.all.queryFilter());
         await refetch();
     }, [queryClient, refetch, trpc]);
 

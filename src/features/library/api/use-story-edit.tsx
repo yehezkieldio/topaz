@@ -31,13 +31,13 @@ export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
     const refetchLibrary = useLibraryRefetch();
     const [, setSearch] = useSearchQuery();
 
-    const storySourceDefault = sourceEnum.enumValues.includes(item.storySource as Source)
+    const storySourceDefault = sourceEnum.options.includes(item.storySource as Source)
         ? (item.storySource as Source)
         : "ArchiveOfOurOwn";
-    const progressStatusDefault = progressStatusEnum.enumValues.includes(item.progressStatus)
+    const progressStatusDefault = progressStatusEnum.options.includes(item.progressStatus as ProgressStatus)
         ? (item.progressStatus as ProgressStatus)
         : "Reading";
-    const storyStatusDefault = storyStatusEnum.enumValues.includes(item.storyStatus as StoryStatus)
+    const storyStatusDefault = storyStatusEnum.options.includes(item.storyStatus as StoryStatus)
         ? (item.storyStatus as StoryStatus)
         : "Ongoing";
 
@@ -65,7 +65,7 @@ export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
         },
     });
 
-    const updateStoryWithRelations = useMutation(trpc.story.updateWithRelations.mutationOptions());
+    const updateStoryWithRelations = useMutation(trpc.work.updateWithLibraryEntry.mutationOptions());
 
     const onSubmit = async (data: EditStoryFormData) => {
         try {

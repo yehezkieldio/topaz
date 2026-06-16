@@ -101,7 +101,7 @@ function LibraryItemViewSheetComponent({ item, isOpen, onClose }: ViewSheetProps
                                             }
                                         }}
                                         style={{ maxHeight: "16rem" }}
-                                        value={item.storyDescription}
+                                        value={item.storyDescription ?? ""}
                                     />
                                 </div>
                             )}
