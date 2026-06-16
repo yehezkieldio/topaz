@@ -235,9 +235,13 @@ Completed in this pass:
 - fixed keyset cursor payloads to include sort key/order/value and ignore stale cursors after sort changes
 - updated admin/public verification scripts for the renamed API contract
 - improved library virtualization with stable getItemKey and memoized estimateSize
+- replaced the virtualized library row hot path with compact fixed-height rows instead of full card/detail composition
+- added a typed library data context shape with status/meta/actions while preserving existing form/dialog consumers
+- changed library invalidation to use the active tRPC/TanStack query filter without a second forced refetch
 - replaced edit quick-update broad form.watch reads with useWatch for chapter fields
 - updated active UI copy from story/progress wording to work/library/reading wording
 - verified bun run typecheck passes after the rename and React changes
+- verified bunx biome check src scripts passes after the library React rework
 - verified bunx biome check src scripts passes
 ```
 

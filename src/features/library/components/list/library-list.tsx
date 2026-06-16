@@ -43,9 +43,10 @@ const LibraryItemViewSheet = dynamic(
     }
 );
 
-const DESKTOP_ITEM_HEIGHT = 380;
-const MOBILE_ITEM_HEIGHT = 420;
-const OVERSCAN = 5;
+const DESKTOP_ITEM_HEIGHT = 128;
+const MOBILE_ITEM_HEIGHT = 184;
+const LOADER_ROW_HEIGHT = 96;
+const OVERSCAN = 8;
 
 export type LibraryListProps = {
     isAdministratorUser: boolean;
@@ -63,10 +64,13 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
 
     const itemHeight = isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_ITEM_HEIGHT;
 
-    const { allItems, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading } =
-        useLibraryDataContext();
+    const { actions, allItems, error, hasNextPage, isFetching, isFetchingNextPage, meta } = useLibraryDataContext();
+    const { fetchNextPage } = actions;
 
-    const estimateSize = useCallback(() => itemHeight, [itemHeight]);
+    const estimateSize = useCallback(
+        (index: number) => (index >= allItems.length ? LOADER_ROW_HEIGHT : itemHeight),
+        [allItems.length, itemHeight]
+    );
     const getItemKey = useCallback(
         (index: number) => allItems[index]?.libraryEntryPublicId ?? `loader-${index}`,
         [allItems]
@@ -78,10 +82,6 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
         estimateSize,
         getItemKey,
         overscan: OVERSCAN,
-        measureElement:
-            typeof window === "undefined"
-                ? undefined
-                : (element) => element?.getBoundingClientRect()?.height ?? itemHeight,
     });
 
     const items = virtualizer.getVirtualItems();
@@ -112,18 +112,11 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    const measureElementStable = useCallback(
-        (element: Element | null) => {
-            virtualizer.measureElement(element);
-        },
-        [virtualizer]
-    );
-
-    if (isLoading) {
+    if (meta.status === "pending") {
         return <ListItemSkeleton count={6} />;
     }
 
-    if (error) {
+    if (meta.status === "error") {
         return (
             <ErrorState
                 message={error instanceof Error ? error.message : "Something went wrong"}
@@ -133,7 +126,7 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
         );
     }
 
-    if (allItems.length === 0) {
+    if (meta.status === "empty") {
         const message = search ? `No works match your search for "${search}"` : "No library works yet.";
 
         return <EmptyState message={message} title="No Works Found" />;
@@ -172,7 +165,6 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
                             isLoaderRow={isLoaderRow}
                             item={item}
                             key={virtualItem.key}
-                            measureElement={measureElementStable}
                             onInView={isLoaderRow ? onLoaderInView : undefined}
                             scrollContainerRef={parentRef}
                             virtualItem={virtualItem}
@@ -181,7 +173,9 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
                 })}
             </div>
 
-            {isFetching && !isFetchingNextPage && !isLoading && <LoadingSpinner message="Updating library..." />}
+            {isFetching && !isFetchingNextPage && meta.status === "ready" && (
+                <LoadingSpinner message="Updating library..." />
+            )}
 
             {selectedItem && (
                 <>

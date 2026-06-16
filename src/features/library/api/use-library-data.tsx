@@ -8,8 +8,14 @@ import { createLibraryQueryInput, type LibrarySearchParams } from "#/features/li
 import { FIVE_MINUTES, THIRTY_MINUTES } from "#/trpc/query-client";
 import { useTRPC } from "#/trpc/react";
 
+type LibraryDataStatus = "pending" | "error" | "empty" | "ready";
+
 type LibraryDataContextValue = {
     allItems: LibraryItem[];
+    actions: {
+        fetchNextPage: () => Promise<unknown>;
+        invalidate: () => Promise<void>;
+    };
     error: unknown;
     fetchNextPage: () => Promise<unknown>;
     hasNextPage: boolean;
@@ -17,6 +23,10 @@ type LibraryDataContextValue = {
     isFetchingNextPage: boolean;
     isLoading: boolean;
     invalidate: () => Promise<void>;
+    meta: {
+        itemCount: number;
+        status: LibraryDataStatus;
+    };
 };
 
 const LibraryDataContext = createContext<LibraryDataContextValue | null>(null);
@@ -31,10 +41,15 @@ export function LibraryDataProvider({ children, initialFilters }: LibraryDataPro
     const activeFilters = useMemo(() => ({ ...initialFilters, ...filters }), [filters, initialFilters]);
     const { allItems, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, invalidate } =
         useLibraryData(activeFilters);
+    const status = getLibraryDataStatus({ error, isLoading, itemCount: allItems.length });
 
     const contextValue = useMemo(
         () => ({
             allItems,
+            actions: {
+                fetchNextPage,
+                invalidate,
+            },
             error,
             fetchNextPage,
             hasNextPage,
@@ -42,8 +57,12 @@ export function LibraryDataProvider({ children, initialFilters }: LibraryDataPro
             isFetchingNextPage,
             isLoading,
             invalidate,
+            meta: {
+                itemCount: allItems.length,
+                status,
+            },
         }),
-        [allItems, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, invalidate]
+        [allItems, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, invalidate, status]
     );
 
     return <LibraryDataContext.Provider value={contextValue}>{children}</LibraryDataContext.Provider>;
@@ -65,6 +84,21 @@ export const useLibraryRefetch = () => {
     return context.invalidate;
 };
 
+function getLibraryDataStatus({
+    error,
+    isLoading,
+    itemCount,
+}: {
+    error: unknown;
+    isLoading: boolean;
+    itemCount: number;
+}): LibraryDataStatus {
+    if (isLoading) return "pending";
+    if (error) return "error";
+    if (itemCount === 0) return "empty";
+    return "ready";
+}
+
 const RETRY_DELAY_BASE_MS = 1000;
 const RETRY_DELAY_MAX_MS = 30_000;
 
@@ -74,7 +108,7 @@ export function useLibraryData(filters: LibrarySearchParams) {
 
     const queryInput = useMemo(() => createLibraryQueryInput(filters), [filters]);
 
-    const { data, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, isPending, refetch } =
+    const { data, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, isPending } =
         useInfiniteQuery(
             trpc.library.all.infiniteQueryOptions(queryInput, {
                 getNextPageParam: (lastPage) => lastPage.meta.nextCursor,
@@ -101,9 +135,10 @@ export function useLibraryData(filters: LibrarySearchParams) {
 
     const allItems = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data?.pages]);
     const invalidate = useCallback(async () => {
-        await queryClient.invalidateQueries(trpc.library.all.queryFilter());
-        await refetch();
-    }, [queryClient, refetch, trpc]);
+        await queryClient.invalidateQueries(trpc.library.all.queryFilter(), {
+            cancelRefetch: false,
+        });
+    }, [queryClient, trpc]);
 
     return {
         allItems,
