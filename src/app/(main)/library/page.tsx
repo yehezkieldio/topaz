@@ -14,17 +14,20 @@ type LibraryPageProps = {
     searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function Library({ searchParams }: LibraryPageProps) {
-    const filters = await librarySearchParamsCache.parse(searchParams);
-
+export default function Library({ searchParams }: LibraryPageProps) {
     return (
         <Suspense fallback={<div>Loading library…</div>}>
-            <LibraryServerData initialFilters={filters} />
+            <LibraryServerData searchParams={searchParams} />
         </Suspense>
     );
 }
 
-async function LibraryServerData({ initialFilters }: { initialFilters: LibrarySearchParams }) {
+async function LibraryServerData({
+    searchParams,
+}: {
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+    const initialFilters: LibrarySearchParams = await librarySearchParamsCache.parse(searchParams);
     const queryClient = getQueryClient();
     await queryClient.prefetchInfiniteQuery(
         trpc.library.all.infiniteQueryOptions(createLibraryQueryInput(initialFilters), {

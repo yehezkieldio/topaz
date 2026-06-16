@@ -11,6 +11,7 @@ import { cn } from "#/lib/utils";
 type MultiSelectOption = {
     value: string;
     label: string;
+    description?: string;
 };
 
 type MultiSelectProps = {
@@ -194,7 +195,14 @@ export function MultiSelect({
                                                             isSelected ? "opacity-100" : "opacity-0"
                                                         )}
                                                     />
-                                                    {option.label}
+                                                    <span className="flex min-w-0 flex-col">
+                                                        <span className="truncate">{option.label}</span>
+                                                        {option.description ? (
+                                                            <span className="truncate text-muted-foreground text-xs">
+                                                                {option.description}
+                                                            </span>
+                                                        ) : null}
+                                                    </span>
                                                 </CommandItem>
                                             );
                                         })}
@@ -216,7 +224,10 @@ export function MultiSelect({
                 <div className="mt-2 flex flex-wrap gap-1">
                     {selectedValues.map((option) => (
                         <Badge className="gap-1 pr-1" key={option.value} variant="secondary">
-                            {option.label}
+                            <span className="min-w-0 truncate">{option.label}</span>
+                            {option.description ? (
+                                <span className="text-muted-foreground text-xs">{option.description}</span>
+                            ) : null}
                             <Button
                                 aria-label={`Remove ${option.label}`}
                                 className="size-4 p-0 hover:bg-transparent"

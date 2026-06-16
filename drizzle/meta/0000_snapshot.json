@@ -1015,7 +1015,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'unknown'"
+          "default": "'Unknown'"
         },
         "first_published_at": {
           "name": "first_published_at",
@@ -1266,7 +1266,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'unknown'"
+          "default": "'Unknown'"
         },
         "content_rating": {
           "name": "content_rating",

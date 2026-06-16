@@ -3,16 +3,21 @@
 import * as React from "react";
 import type { Control, FieldValues, Path } from "react-hook-form";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "#/components/ui/form";
-import { type SelectedTaxonomyItem, useTaxonomySearch } from "#/features/library/api/use-taxonomy-search";
+import {
+    getTaxonomyKindDescription,
+    type SelectedTaxonomyItem,
+    useTaxonomySearch,
+} from "#/features/library/api/use-taxonomy-search";
 import { useLibraryFormContext } from "#/features/library/components/forms/library-form";
 import { LibraryTaxonomyMultiselect } from "#/features/library/components/ui/library-taxonomy-multiselect";
+import type { TaxonomyKind } from "#/server/db/schema";
 
 type Categories = {
     taxonomyTermIds?: string[];
 };
 
 type InitialTaxonomyTerm = {
-    kind?: string;
+    kind?: TaxonomyKind;
     publicId: string;
     name: string;
 };
@@ -53,6 +58,7 @@ export function LibraryWorkTaxonomyForm<T extends Categories & FieldValues>({
                 value: term.publicId,
                 label: term.name,
                 kind: term.kind,
+                description: getTaxonomyKindDescription(term.kind),
             });
         }
 
@@ -62,6 +68,7 @@ export function LibraryWorkTaxonomyForm<T extends Categories & FieldValues>({
                     value: term.publicId,
                     label: term.name,
                     kind: term.kind,
+                    description: getTaxonomyKindDescription(term.kind),
                 });
             }
         }
@@ -100,9 +107,9 @@ export function LibraryWorkTaxonomyForm<T extends Categories & FieldValues>({
                                 field.onChange(terms.map((term) => term.value));
                             }}
                             placeholder="Select fandoms, tags, genres..."
-                            selectedTerms={getSelectedTermIds(field.value).map((termId) => {
+                            selectedTerms={getSelectedTermIds(field.value).flatMap((termId) => {
                                 const term = termIdToItem.get(termId);
-                                return term ?? { value: termId, label: termId };
+                                return term ? [term] : [];
                             })}
                         />
                     </FormControl>

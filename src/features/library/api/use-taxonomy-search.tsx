@@ -4,15 +4,30 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { useDebounce } from "#/hooks/use-debounce";
 import { DEBOUNCE_DELAY_MS } from "#/lib/utils";
-import type { TaxonomyKind } from "#/server/db/schema";
+import { type TaxonomyKind, taxonomyKindEnum, taxonomyKindLabels } from "#/server/db/schema";
 import { FIVE_MINUTES, THIRTY_MINUTES } from "#/trpc/query-client";
 import { useTRPC } from "#/trpc/react";
 
 export type SelectedTaxonomyItem = {
-    kind?: string;
+    kind?: TaxonomyKind;
     value: string;
     label: string;
+    description?: string;
 };
+
+export function getTaxonomyKindDescription(kind?: TaxonomyKind) {
+    const parsedKind = taxonomyKindEnum.safeParse(kind);
+    return parsedKind.success ? taxonomyKindLabels[parsedKind.data] : undefined;
+}
+
+function toSelectedTaxonomyItem(term: { kind?: TaxonomyKind; name: string; publicId: string }): SelectedTaxonomyItem {
+    return {
+        value: term.publicId,
+        label: term.name,
+        kind: term.kind,
+        description: getTaxonomyKindDescription(term.kind),
+    };
+}
 
 export const useTaxonomySearch = (initialSearch = "", kind?: TaxonomyKind) => {
     const trpc = useTRPC();
@@ -65,49 +80,17 @@ export const useTaxonomySearch = (initialSearch = "", kind?: TaxonomyKind) => {
         },
     });
 
-    const [lastFetchedTerms, setLastFetchedTerms] = React.useState<SelectedTaxonomyItem[]>([]);
-
-    React.useEffect(() => {
-        if (taxonomyResponse?.terms) {
-            setLastFetchedTerms(
-                taxonomyResponse.terms.map((term) => ({
-                    value: term.publicId,
-                    label: term.name,
-                    kind: term.kind,
-                }))
-            );
-        }
-    }, [taxonomyResponse?.terms]);
-
-    const localFilteredOptions = React.useMemo(() => {
-        if (!normalizedDebounced) return lastFetchedTerms;
-        const query = normalizedDebounced.toLowerCase();
-        return lastFetchedTerms.filter((term) => term.label.toLowerCase().includes(query));
-    }, [lastFetchedTerms, normalizedDebounced]);
-
-    const taxonomyOptions = React.useMemo<SelectedTaxonomyItem[]>(() => {
-        if (localFilteredOptions.length > 0) {
-            return localFilteredOptions;
-        }
-
-        const list = taxonomyResponse?.terms ?? [];
-        return list.map((term) => ({
-            value: term.publicId,
-            label: term.name,
-            kind: term.kind,
-        }));
-    }, [taxonomyResponse?.terms, localFilteredOptions]);
+    const taxonomyOptions = React.useMemo<SelectedTaxonomyItem[]>(
+        () => (taxonomyResponse?.terms ?? []).map(toSelectedTaxonomyItem),
+        [taxonomyResponse?.terms]
+    );
 
     const canCreateTaxonomyTerm = taxonomyResponse?.canCreate ?? false;
 
     const handleCreateTerm = React.useCallback(
         async (name: string): Promise<SelectedTaxonomyItem> => {
             const newTerm = await createTermMutation.mutateAsync(name);
-            return {
-                value: newTerm.publicId,
-                label: newTerm.name,
-                kind: newTerm.kind,
-            };
+            return toSelectedTaxonomyItem(newTerm);
         },
         [createTermMutation]
     );

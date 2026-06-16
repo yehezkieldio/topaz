@@ -292,7 +292,7 @@ Stop and report clearly if:
 
 ## Ledger
 
-Status: Completed source-reviewable V2 route/query/UI cleanup slices for library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, create/edit form boundary fixes, compact-row label polish, library item DTO typing, library filter/presentation boundary hardening, and search/taxonomy state passes. Source gates pass, including the full lint gate. Next phase is a final-pass review across all GOAL targets, not a React-only continuation. Runtime/profile proof remains unavailable until a running app and PostgreSQL database are allowed.
+Status: Final-pass source-reviewable V2 route/query/UI cleanup is complete for the currently actionable GOAL targets. Completed slices cover library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, create/edit form boundary fixes, compact-row label polish, library item DTO typing, library filter/presentation boundary hardening, search/taxonomy state, taxonomy multiselect result ownership/context, fixture canonical status seeding, the library Suspense boundary, taxonomy selection/verifier fallback cleanup, final source/form presentation boundary tightening, and schema artifact alignment for canonical work/source statuses. Current continuation audit found no additional source-level code issue to patch. Final source gates are pending after this ledger update. Per latest user instruction, no further browser or verifier-script execution was run after that instruction.
 
 Findings:
 
@@ -329,6 +329,20 @@ Findings:
 - P2 repo-wide Biome lint gate is blocked by deprecated `rules.recommended` config and by linting `.agents` skill asset JSON files that intentionally contain comments. Trigger: `bun run lint`. Cost: the canonical lint gate cannot run even when app source is clean. Evidence: live `bun run lint` output and Biome v2 docs for `rules.preset` plus `files.includes` exclusions.
 - P2 useTaxonomySearch disables the query when debounced text has trailing whitespace and masks initial loading with `isLoading && !isFetching`. Trigger: taxonomy multiselect search/open. Cost: a query such as `foo ` can stop fetching until edited again, and the multiselect can show an empty state instead of loading while the first taxonomy query is in flight. Evidence: source inspection of normalizedDebounced, useDebounce, TanStack Query state flags, and LibraryTaxonomyMultiselect loading wiring.
 - P1 LibrarySearchInput writes every keystroke directly to URL query state. Trigger: typing in the library search box. Cost: each character changes search params, library query input, and provider state, causing avoidable library tree churn before the user pauses. Evidence: source inspection of LibrarySearchInput, useSearchQuery, LibraryDataProvider activeFilters, and existing debounced taxonomy search pattern.
+- P1 useTaxonomySearch keeps a locally filtered copy of the last taxonomy response even though server search is already the canonical search/ranking owner, and selected taxonomy options render only names without kind context. Trigger: typing in taxonomy multiselect or selecting terms with the same name across kinds. Cost: valid server-ranked results can be hidden by stale client filtering and selected values are ambiguous. Evidence: source inspection of use-taxonomy-search.tsx, multiselect.tsx, and taxonomyKindLabels.
+- P2 compact library row taxonomy badges compare taxonomy kind against the label string `"Fandom"` while repository DTOs expose taxonomy kind keys such as `fandom`. Trigger: rendering compact library rows with fandom terms. Cost: fandom terms lose their canonical outline treatment in dense browsing. Evidence: source inspection of LibraryEntryRow and taxonomy DTO mapping.
+- P2 work.assignTaxonomy and work.rebuildEffectiveTaxonomy expose unused admin mutations over internal work UUIDs while create/update and taxonomy-relation mutations already own assignment and rebuild flows. Trigger: generated tRPC route surface. Cost: duplicate mutation paths blur the canonical public-ID work boundary and can mutate taxonomy outside the create/edit transaction shape. Evidence: src/scripts usage search found no callers and workRouter route inspection.
+- P1 V2 fixture seeding writes lowercase work publication status while the library repository parses the canonical `WorkStatus` enum. Trigger: `bun run verify:v2:public` after seeding fixture data. Cost: public `library.all` returns HTTP 500 for seeded data. Evidence: live verifier failure and source inspection of seed-v2-fixture.ts and workStatusEnum.
+- P2 library page parses `searchParams` before its Suspense boundary. Trigger: rendering `/library` in Next.js 16 with Cache Components. Cost: route-level runtime data access delays the whole page and emits the blocking-route warning. Evidence: dev server runtime warning and source inspection of src/app/(main)/library/page.tsx.
+- P2 browser admin verifier still targets legacy card admin-control aria labels while the active compact row uses title-specific edit/delete buttons. Trigger: `bun run verify:v2:browser-admin` after creating a work. Cost: browser verifier times out even when the row exists and exposes current accessible controls. Evidence: live verifier failure and source inspection of LibraryEntryRow and verify-v2-browser-admin.ts.
+- P2 library taxonomy DTOs still typed taxonomy kind values as loose strings after other library item DTO enums had been tightened. Trigger: rendering taxonomy badges and seeding edit-form taxonomy options. Cost: downstream presentation and form code had to treat a closed taxonomy kind as open text. Evidence: source inspection of LibraryQueryResult, direct/effective taxonomy mapping, and LibraryWorkTaxonomyForm.
+- P2 LibraryWorkTaxonomyForm rendered unknown selected taxonomy IDs as raw chip labels. Trigger: form field contains a taxonomy public ID not present in initial, fetched, or newly created term maps. Cost: internal IDs leak into UI and preserve an unsupported defensive display shape instead of relying on canonical term metadata. Evidence: source inspection of selectedTerms mapping.
+- P2 browser admin verifier kept legacy menu/edit fallbacks after adding compact-row title-specific controls. Trigger: browser admin script helper methods. Cost: verifier code supported two UI contracts and retained an arbitrary menu polling delay for the old path. Evidence: source inspection of verify-v2-browser-admin.ts after compact-row helper patch.
+- P2 LibraryWorkSourceFieldsForm kept the source field as a loose string even though create/edit form schemas validate `Source`. Trigger: source select and URL auto-detection handlers. Cost: reusable form code accepted arbitrary strings while route/form data had a closed enum contract. Evidence: source inspection of workWithLibraryEntrySchema, useLibraryEntryCreate/Edit, detectSourceFromUrl, and LibraryWorkSourceFieldsForm.
+- P2 create/update repository input types kept library/work statuses as loose strings after route schemas validated enum-shaped values. Trigger: work.createWithLibraryEntry and work.updateWithLibraryEntry repository calls. Cost: repository mutation boundary did not reflect canonical status contracts. Evidence: source inspection of workRouter inputs, workWithLibraryEntrySchema, and CreateLibraryItemInput.
+- P2 library item presentation kept fallback display paths for source labels, work status labels, and taxonomy term names even though the repository DTO now returns enum-shaped sources/statuses and non-null taxonomy names. Trigger: item metadata, taxonomy tags, and compact rows. Cost: presentation code still preserved impossible fallback shapes. Evidence: source inspection of LibraryItemMetadata, LibraryItemTags, LibraryEntryRow, and LibraryQueryResult.
+- P2 createOrLinkContributor manufactured an `Unknown` contributor for blank names while create/edit route schemas require non-empty authors. Trigger: repository contributor linking if called with malformed author input. Cost: invalid author data could be silently persisted instead of rejected at the repository boundary. Evidence: source inspection of createOrLinkContributor and workWithLibraryEntrySchema.
+- P2 work_source.source_status kept a lowercase `unknown` default in schema and Drizzle artifacts after live create/update paths and fixtures moved to canonical `WorkStatus` values. Trigger: work source rows inserted without an explicit source status. Cost: seeded/default rows could still use the rejected draft status shape and break enum-shaped consumers if later read. Evidence: source inspection of workSources schema, create/update write paths, drizzle SQL, and snapshot metadata.
 ```
 
 Completed:
@@ -370,18 +384,42 @@ Completed:
 - Fixed repo-wide Biome config by replacing deprecated `rules.recommended` with `rules.preset` and excluding `.agents` skill assets from app lint scope.
 - Fixed taxonomy multiselect query state by letting debounced search text drive the query directly and reporting initial taxonomy loading when no response is available yet.
 - Debounced the library search input before committing to URL query state while keeping immediate local input updates and immediate clear behavior.
-- Validation passed after latest changes: bun run typecheck.
-- Validation passed after latest changes: bunx biome check src scripts.
-- Validation passed after latest changes: bun run lint.
-- Validation passed after latest changes: git diff --check.
-- Runtime verification blocked in this shell: no dev server is listening on localhost:3000, AUTH_SECRET/DATABASE_URL/DEVELOPMENT_DATABASE_URL are not exported, and `bun run scripts/verify-v2-public-library.ts` fails with PostgreSQL ECONNREFUSED on localhost:5432.
-- Next phase scope: final-pass source review across every specified GOAL target, including route shape, query/data efficiency, React boundaries, multiselect/taxonomy UX, data-model/component boundaries, polish, and algorithm checks.
-- Stop boundary for already-completed source-only slices: remaining stats-query profiling and manual create/edit/delete/search/filter verification require a real database plus running app, matching the GOAL stop condition for performance concerns that cannot be justified without a database profile.
+- Removed stale client-side filtering from taxonomy search results so the server remains the canonical search/ranking owner.
+- Added taxonomy kind context to multiselect option rows and selected badges without changing submitted taxonomy IDs.
+- Fixed compact library row fandom badge detection to use canonical taxonomy kind keys.
+- Removed unused internal-UUID work taxonomy assignment/rebuild admin routes; create/edit work and taxonomy relation mutations remain the canonical rebuild paths.
+- Final-pass source audit completed for listed route, repository, list, form, hook, and multiselect surfaces; exact-string scan found no stale V1 router/table symbols or app-side enum/type escape casts in active `src`.
+- Fixed V2 fixture seeding to use canonical `Ongoing` work/source status and normalize an existing fixture row before verification.
+- Aligned the work table `publication_status` default with the canonical `Unknown` work status value.
+- Runtime setup completed locally for public verification: Docker Compose Postgres started, V2 extensions prepared, schema pushed, reference data seeded, fixture seeded, and Next dev server started with `SKIP_ENV_VALIDATION=1`.
+- Runtime verification passed: bun run verify:v2:public.
+- Runtime verification passed with a throwaway local Auth.js secret: bun run verify:v2:admin.
+- Fixed `/library` page runtime data ownership by moving search-param parsing inside the Suspense-wrapped server component.
+- Runtime verification rerun passed after the `/library` Suspense boundary fix: bun run verify:v2:public.
+- Dev server output no longer reports the Next.js blocking-route warning for `/library`; remaining runtime warnings are Auth.js `MissingSecret` from the local env used for public verification.
+- Updated browser admin verifier helper code to recognize compact-row title-specific edit/delete controls, but stopped browser verifier execution per the user's latest no-browser/no-verifier instruction.
+- Tightened library taxonomy DTOs so direct/effective taxonomy kind values are parsed to `TaxonomyKind` at the repository boundary.
+- Removed raw taxonomy public-ID selected-chip fallback from LibraryWorkTaxonomyForm; selected chips now render only known term metadata from initial, fetched, or created terms.
+- Tightened the V2 fixture taxonomy helper input to `TaxonomyKind` instead of loose strings.
+- Hard-cut browser admin verifier helper fallbacks to the current compact-row aria contract and removed the legacy menu polling path.
+- Tightened LibraryWorkSourceFieldsForm's source field/ref handlers to `Source` instead of string.
+- Tightened create/update repository input statuses to `LibraryEntryStatus` and `WorkStatus`, and parsed status cursor values before encoding them.
+- Removed obsolete source/status/term-name presentation fallbacks now covered by enum-shaped DTOs.
+- Removed the repository fallback that created an `Unknown` contributor from a blank author and replaced it with current-contract validation.
+- Aligned `work_source.source_status` defaults in schema, Drizzle SQL, and snapshot metadata with canonical `Unknown` status.
+- Current continuation audit found no additional source-level code issue to patch: active-source regression strings are absent from `src`, `scripts`, and `drizzle`; remaining lowercase `unknown` schema metadata is limited to `content_rating`, not work/source status.
+- Local runtime services were stopped after runtime checks: Next dev server interrupted and Docker Compose Postgres stopped with its named volume preserved.
+- Validation pending after current continuation ledger update: bun run typecheck.
+- Validation pending after current continuation ledger update: bunx biome check src scripts.
+- Validation pending after current continuation ledger update: bun run lint.
+- Validation pending after current continuation ledger update: git diff --check.
+- Test gate note: package.json has no `test` script.
+- Stop boundary now limited to browser/manual verification and deeper database profiling: browser/verifier execution is intentionally stopped by the latest user instruction; profiling beyond the source-level cleanup still requires an equipped runtime session. Full GOAL completion cannot be claimed until that verification boundary is reopened or the contract is narrowed.
 ```
 
 Deferred:
 
 ```text
-- Final-pass source review across all GOAL targets remains next.
-- Database-backed stats query profiling and browser/API manual verification remain for a runtime-equipped pass when runtime verification is allowed.
+- Browser/manual verification remains intentionally deferred by the latest user instruction.
+- Database-backed query-plan profiling remains for a profiling-equipped pass if performance evidence beyond the public verifier is needed.
 ```

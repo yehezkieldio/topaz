@@ -17,7 +17,9 @@ import {
 } from "#/server/db/schema/library-entry";
 import {
     type TaxonomyEffectiveReason,
+    type TaxonomyKind,
     taxonomyEffectiveReasonEnum,
+    taxonomyKindEnum,
     taxonomyKindSeeds,
     taxonomyKinds,
     taxonomyLabels,
@@ -54,6 +56,7 @@ export const PUBLIC_ID_MAX = 50;
 type Database = typeof db;
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type DatabaseOrTransaction = Database | Transaction;
+type LibraryTaxonomyTerm = { kind: TaxonomyKind; publicId: string; name: string };
 
 export type LibraryQueryResult = {
     data: {
@@ -67,8 +70,8 @@ export type LibraryQueryResult = {
         workStatus: WorkStatus;
         contributorNames: string[];
         updatedAt: Date;
-        directTaxonomyTerms: { kind: string; publicId: string; name: string }[];
-        taxonomyTerms: { kind: string; publicId: string; name: string }[];
+        directTaxonomyTerms: LibraryTaxonomyTerm[];
+        taxonomyTerms: LibraryTaxonomyTerm[];
         source: Source;
         sourceUrl?: string;
         sourceChapterCount?: number;
@@ -121,14 +124,14 @@ export type CreateLibraryItemInput = {
     notes?: string | null;
     rating?: number | null;
     source: Source;
-    status: string;
+    status: LibraryEntryStatus;
     summary?: string | null;
     taxonomyTermPublicIds?: string[];
     title: string;
     url: string;
     userId: string;
     wordCount?: number | null;
-    workStatus: string;
+    workStatus: WorkStatus;
 };
 
 export type UpdateLibraryItemInput = Omit<CreateLibraryItemInput, "userId"> & {
@@ -354,7 +357,7 @@ function cursorValueForItem(
         case "author":
             return item.sourceAuthor;
         case "status":
-            return item.libraryEntryStatus;
+            return libraryEntryStatusEnum.parse(item.libraryEntryStatus);
         case "rating":
             return item.rating;
         case "progress":
@@ -696,7 +699,11 @@ export async function createOrLinkContributor(
     database: DatabaseOrTransaction,
     input: { name: string; replaceExistingRole?: boolean; role?: string; workId: string }
 ) {
-    const name = input.name.trim() || "Unknown";
+    const name = input.name.trim();
+    if (!name) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Contributor name is required" });
+    }
+
     const normalizedName = normalizeText(name);
     const role = input.role ?? "author";
     const [existingContributor] = await database
@@ -1090,11 +1097,11 @@ export async function listLibraryEntries(database: Database, input: LibraryQuery
                   .where(inArray(works.publicId, workPublicIds))
             : [];
 
-    const taxonomyByWork = new Map<string, { kind: string; name: string; publicId: string }[]>();
+    const taxonomyByWork = new Map<string, LibraryTaxonomyTerm[]>();
     for (const taxonomyRow of taxonomyRows) {
         const terms = taxonomyByWork.get(taxonomyRow.workPublicId) ?? [];
         terms.push({
-            kind: taxonomyRow.kind,
+            kind: taxonomyKindEnum.parse(taxonomyRow.kind),
             name: taxonomyRow.name,
             publicId: taxonomyRow.publicId,
         });
@@ -1117,11 +1124,11 @@ export async function listLibraryEntries(database: Database, input: LibraryQuery
                   .where(inArray(works.publicId, workPublicIds))
             : [];
 
-    const directTaxonomyByWork = new Map<string, { kind: string; name: string; publicId: string }[]>();
+    const directTaxonomyByWork = new Map<string, LibraryTaxonomyTerm[]>();
     for (const taxonomyRow of directTaxonomyRows) {
         const terms = directTaxonomyByWork.get(taxonomyRow.workPublicId) ?? [];
         terms.push({
-            kind: taxonomyRow.kind,
+            kind: taxonomyKindEnum.parse(taxonomyRow.kind),
             name: taxonomyRow.name,
             publicId: taxonomyRow.publicId,
         });

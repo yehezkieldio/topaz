@@ -11,13 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#
 import { Textarea } from "#/components/ui/textarea";
 import { useLibraryFormContext } from "#/features/library/components/forms/library-form";
 import { detectSourceFromUrl, isValidUrl } from "#/lib/utils";
-import { sourceEnum, sourceLabels } from "#/server/db/schema";
+import { type Source, sourceEnum, sourceLabels } from "#/server/db/schema";
 
 type WorkSourceFields = {
     title: string;
     author: string;
     url: string;
-    source: string;
+    source: Source;
     description?: string;
 };
 
@@ -38,7 +38,7 @@ function cleanSingleLinePaste(text: string) {
     return text.replace(/\s+/g, " ").trim();
 }
 
-function useWorkSourceHandlers(sourceOnChangeRef: React.MutableRefObject<((value: string) => void) | null>) {
+function useWorkSourceHandlers(sourceOnChangeRef: React.MutableRefObject<((value: Source) => void) | null>) {
     const autoDetectSource = React.useCallback(
         (url: string) => {
             if (!isValidUrl(url)) return;
@@ -98,7 +98,7 @@ export function LibraryWorkSourceFieldsForm<T extends WorkSourceFields>({
     const isInCompoundContext = context !== null;
 
     const control = context?.control ?? propControl;
-    const sourceOnChangeRef = React.useRef<((value: string) => void) | null>(null);
+    const sourceOnChangeRef = React.useRef<((value: Source) => void) | null>(null);
 
     if (!control) {
         throw new Error("LibraryWorkSourceFieldsForm requires either control prop or compound component context");

@@ -4,7 +4,7 @@ import { memo } from "react";
 import { useLibraryItemContext } from "#/features/library/components/item/library-item-context";
 import { useLibraryItemValues } from "#/features/library/hooks/use-library-item";
 import { useIsMobile } from "#/hooks/use-mobile";
-import { sourceLabels, sourceShortLabels } from "#/server/db/schema";
+import { sourceLabels, sourceShortLabels, workStatusLabels } from "#/server/db/schema";
 
 function LibraryItemMetadataComponent() {
     const { item } = useLibraryItemContext();
@@ -14,11 +14,7 @@ function LibraryItemMetadataComponent() {
 
     return (
         <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs lg:text-sm">
-            <span>
-                {isMobile
-                    ? sourceShortLabels[item.source] || item.source || "Unknown"
-                    : sourceLabels[item.source] || item.source || "Unknown"}
-            </span>
+            <span>{isMobile ? sourceShortLabels[item.source] : sourceLabels[item.source]}</span>
 
             {hasWordCount === true && (
                 <>
@@ -55,7 +51,7 @@ function LibraryItemMetadataComponent() {
             )}
 
             <span className="text-muted-foreground/40">•</span>
-            <span>{item.workStatus}</span>
+            <span>{workStatusLabels[item.workStatus]}</span>
         </div>
     );
 }

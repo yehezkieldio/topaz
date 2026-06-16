@@ -69,7 +69,7 @@ function createChapterLabel(values: LibraryItemValues) {
 }
 
 function getTermVariant(kind?: string) {
-    return kind === "Fandom" ? "outline" : "secondary";
+    return kind === "fandom" ? "outline" : "secondary";
 }
 
 export const LibraryEntryRow = memo(function LibraryEntryRow({
@@ -116,10 +116,10 @@ export const LibraryEntryRow = memo(function LibraryEntryRow({
                         <Badge
                             className="max-w-32 truncate rounded-sm px-1.5 text-[10px]"
                             key={term.publicId}
-                            title={term.name || "Unknown term"}
+                            title={term.name}
                             variant={getTermVariant(term.kind)}
                         >
-                            {term.name || "Unknown term"}
+                            {term.name}
                         </Badge>
                     ))}
                     {view.remainingTermCount > 0 ? (

@@ -53,33 +53,25 @@ const browserHelpers = String.raw`
         hasCardButton(title, label) {
             const article = [...document.querySelectorAll("article")]
                 .find((candidate) => textOf(candidate).includes(title));
-            return Boolean(article?.querySelector('button[aria-label="' + label + '"]'));
+            if (!article) return false;
+            return [...article.querySelectorAll("button")].some((button) => {
+                const ariaLabel = button.getAttribute("aria-label") || "";
+                return ariaLabel === label + " " + title;
+            });
         },
-        async clickDeleteForTitle(title) {
+        clickDeleteForTitle(title) {
             const article = [...document.querySelectorAll("article")]
                 .find((candidate) => textOf(candidate).includes(title));
             if (!article) throw new Error("Article not found for delete: " + title);
-            const menuButton = article.querySelector('button[aria-label="More entry actions"]');
-            if (!menuButton) throw new Error("Delete menu button not found for: " + title);
-            menuButton.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0 }));
-            menuButton.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 }));
-            menuButton.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, button: 0 }));
-            menuButton.click();
-            let deleteItem = null;
-            for (let attempt = 0; attempt < 20; attempt += 1) {
-                await new Promise((resolve) => setTimeout(resolve, 100));
-                deleteItem = [...document.querySelectorAll("[role='menuitem'], button")]
-                    .find((candidate) => textOf(candidate) === "Delete" || textOf(candidate).includes("Delete"));
-                if (deleteItem) break;
-            }
-            if (!deleteItem) throw new Error("Delete menu item not found for: " + title);
-            deleteItem.click();
+            const deleteButton = article.querySelector('button[aria-label="Delete ' + title + '"]');
+            if (!deleteButton) throw new Error("Delete button not found for: " + title);
+            deleteButton.click();
         },
         clickEditForTitle(title) {
             const article = [...document.querySelectorAll("article")]
                 .find((candidate) => textOf(candidate).includes(title));
             if (!article) throw new Error("Article not found for edit: " + title);
-            const editButton = article.querySelector('button[aria-label="Edit entry"]');
+            const editButton = article.querySelector('button[aria-label="Edit ' + title + '"]');
             if (!editButton) throw new Error("Edit button not found for: " + title);
             editButton.click();
         },
@@ -192,10 +184,7 @@ try {
     `);
     await evaluatePage(`window.__topazVerify.clickByText("Add to Library")`);
     await waitForPageCondition(`document.body.innerText.includes(${JSON.stringify(createTitle)})`, 30_000);
-    await waitForPageCondition(
-        `window.__topazVerify.hasCardButton(${JSON.stringify(createTitle)}, "Edit entry")`,
-        30_000
-    );
+    await waitForPageCondition(`window.__topazVerify.hasCardButton(${JSON.stringify(createTitle)}, "Edit")`, 30_000);
 
     const [createdWork] = await sql`
         SELECT w.id AS work_id,
@@ -224,10 +213,7 @@ try {
     `);
     await evaluatePage(`window.__topazVerify.clickByText("Update Entry")`);
     await waitForPageCondition(`document.body.innerText.includes(${JSON.stringify(updatedTitle)})`, 30_000);
-    await waitForPageCondition(
-        `window.__topazVerify.hasCardButton(${JSON.stringify(updatedTitle)}, "More entry actions")`,
-        30_000
-    );
+    await waitForPageCondition(`window.__topazVerify.hasCardButton(${JSON.stringify(updatedTitle)}, "Delete")`, 30_000);
 
     const [eventCount] = await sql`
         SELECT count(*)::int AS count

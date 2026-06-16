@@ -67,7 +67,7 @@ function LibraryItemTagsComponent({ showAllFandoms = false, showAllTags = false 
                     title={getTermTitle(term.kind)}
                     variant={getTermVariant(term.kind)}
                 >
-                    {term.name || "Unknown Term"}
+                    {term.name}
                 </Badge>
             ))}
             {!effectiveShowAllTerms && taxonomyTerms.length > MAX_TERMS_TO_SHOW && (

@@ -1,6 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { libraryEntries, readingEvents, readingStates } from "#/server/db/schema/library-entry";
 import {
+    type TaxonomyKind,
     taxonomyKinds,
     taxonomyLabels,
     taxonomyRelations,
@@ -62,6 +63,8 @@ const [existingSource] = await scriptDb
 
 const workId = existingSource?.workId ?? (await createFixtureWork(user.id));
 
+await normalizeFixtureWork(workId);
+
 await scriptDb
     .insert(workTaxonomyAssignments)
     .values({ workId, termId: directTerm.id })
@@ -92,7 +95,7 @@ async function createFixtureWork(userId: string): Promise<string> {
                     "A compact V2 fixture work for validating library browsing, taxonomy inference, and reading state.",
                 summary:
                     "A compact V2 fixture work for validating library browsing, taxonomy inference, and reading state.",
-                publication_status: "ongoing",
+                publication_status: "Ongoing",
                 content_rating: "general",
                 is_nsfw: false,
             })
@@ -128,7 +131,7 @@ async function createFixtureWork(userId: string): Promise<string> {
             author_on_source: "Ianthe Vale",
             chapter_count: 12,
             word_count: 48_700,
-            source_status: "ongoing",
+            source_status: "Ongoing",
             is_primary: true,
         });
 
@@ -165,7 +168,7 @@ async function createFixtureWork(userId: string): Promise<string> {
     });
 }
 
-async function upsertTaxonomyTerm(input: { kind: string; name: string }) {
+async function upsertTaxonomyTerm(input: { kind: TaxonomyKind; name: string }) {
     const normalizedName = normalizeText(input.name);
     const [kind] = await scriptDb
         .select({ id: taxonomyKinds.id })
@@ -269,6 +272,24 @@ async function rebuildFixtureEffectiveTaxonomy(workId: string) {
             }))
         )
         .onConflictDoNothing({ target: [workTaxonomyEffective.workId, workTaxonomyEffective.termId] });
+}
+
+async function normalizeFixtureWork(workId: string) {
+    await scriptDb
+        .update(works)
+        .set({
+            publication_status: "Ongoing",
+            content_rating: "general",
+            is_nsfw: false,
+        })
+        .where(eq(works.id, workId));
+
+    await scriptDb
+        .update(workSources)
+        .set({
+            source_status: "Ongoing",
+        })
+        .where(eq(workSources.workId, workId));
 }
 
 function normalizeText(value: string) {

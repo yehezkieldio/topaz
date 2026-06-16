@@ -1,13 +1,7 @@
 import { z } from "zod/v4";
 import { adminProcedure, createTRPCRouter } from "#/server/api/trpc";
 import { invalidateLibraryReadModels, invalidateTaxonomyReadModels } from "#/server/backend/cache/tags";
-import {
-    assignTaxonomyTermsToWork,
-    createLibraryItem,
-    deleteWork,
-    rebuildEffectiveTaxonomyForWork,
-    updateLibraryItem,
-} from "#/server/db/repositories/library-repository";
+import { createLibraryItem, deleteWork, updateLibraryItem } from "#/server/db/repositories/library-repository";
 import { workWithLibraryEntrySchema } from "#/server/db/schema/work";
 
 export const workRouter = createTRPCRouter({
@@ -74,18 +68,5 @@ export const workRouter = createTRPCRouter({
         await invalidateLibraryReadModels();
         await invalidateTaxonomyReadModels();
         return deleted;
-    }),
-    assignTaxonomy: adminProcedure
-        .input(z.object({ workId: z.uuid(), termPublicIds: z.array(z.string()).default([]) }))
-        .mutation(async ({ ctx, input }) => {
-            const assigned = await assignTaxonomyTermsToWork(ctx.db, input);
-            await invalidateLibraryReadModels();
-            await invalidateTaxonomyReadModels();
-            return assigned;
-        }),
-    rebuildEffectiveTaxonomy: adminProcedure.input(z.object({ workId: z.uuid() })).mutation(async ({ ctx, input }) => {
-        const effectiveRows = await rebuildEffectiveTaxonomyForWork(ctx.db, input.workId);
-        await invalidateLibraryReadModels();
-        return effectiveRows;
     }),
 });
