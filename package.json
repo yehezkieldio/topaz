@@ -14,6 +14,7 @@
     "db:seed:v2": "SKIP_ENV_VALIDATION=1 bun run scripts/seed-v2-reference-data.ts",
     "db:studio": "drizzle-kit studio",
     "verify:v2:admin": "bun run scripts/verify-v2-admin-flow.ts",
+    "verify:v2:browser-admin": "bun run scripts/verify-v2-browser-admin.ts",
     "verify:v2:public": "bun run scripts/verify-v2-public-library.ts",
     "lint": "biome check .",
     "check": "ultracite check .",

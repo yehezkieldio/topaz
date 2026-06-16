@@ -19,12 +19,12 @@ type AdminControlsProps = {
 function AdminControlsComponent({ onEdit, onDelete }: AdminControlsProps) {
     return (
         <>
-            <Button className="size-8 p-0" onClick={onEdit} size="sm" variant="ghost">
+            <Button aria-label="Edit entry" className="size-8 p-0" onClick={onEdit} size="sm" variant="ghost">
                 <EditIcon className="size-3" />
             </Button>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button className="size-8 p-0" size="sm" variant="ghost">
+                    <Button aria-label="More entry actions" className="size-8 p-0" size="sm" variant="ghost">
                         <MoreHorizontalIcon className="size-3" />
                     </Button>
                 </DropdownMenuTrigger>

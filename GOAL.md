@@ -261,7 +261,7 @@ Stop and report clearly if:
 
 ## Current Ledger
 
-Status: V2 usable vertical slice is wired and verified through public render checks plus authenticated admin tRPC HTTP flow.
+Status: V2 usable vertical slice is wired and verified through public render checks, authenticated admin tRPC HTTP flow, and Chrome-driven browser admin create/edit/delete UI flow.
 
 Completed in this pass:
 
@@ -295,6 +295,9 @@ Completed in this pass:
 - Fixed direct/effective taxonomy filter SQL to use parameterized IN predicates instead of ANY over scalar postgres-js params.
 - Added verify:v2:admin to exercise authenticated HTTP tRPC create/update/taxonomy relation/inferred filter/reading event/delete flow against a running dev server.
 - Added verify:v2:public to exercise public home/library render plus browse/search/filter cases against the seeded V2 fixture.
+- Added verify:v2:browser-admin to exercise authenticated Chrome UI create/edit/delete flow against a running dev server.
+- Added accessible labels to admin icon controls so the browser UI and assistive technology can target edit/more actions reliably.
+- Fixed taxonomy.forMultiselect hot-term SQL by grouping taxonomy_kind.sort_order; browser logs now show taxonomy.forMultiselect returning HTTP 200 instead of the previous grouped-query SQL error.
 - Verified home page and public library page return HTTP 200 under the local V2 database.
 - Verified bun run verify:v2:public passed:
   homePage=true
@@ -309,11 +312,17 @@ Completed in this pass:
 - Verified authenticated /api/auth/session returns HTTP 200 with a generated local Auth.js JWT for the fixture user.
 - Verified authenticated /library render passes isAdministratorUser=true to the client provider.
 - Verified bun run verify:v2:admin passed:
-  createdWork=g7hzhps7jwy6ptznpwienz8v
+  createdWork=chbym31jnrvjfmi16pl6vdma
   relation=implies
   filteredByInferred=true
   readingEventsBeforeDelete=2
   deleted=true
+- Verified bun run verify:v2:browser-admin passed:
+  browserCreated=true
+  browserEdited=true
+  browserDeleted=true
+  createdWork=b25xhrine5vx09eccr68210a
+  readingEventsBeforeDelete=2
 - Verified verify:v2:admin cleanup leaves:
   http_terms=0
   http_works=0
@@ -328,8 +337,9 @@ Validation:
 - bun run lint: still blocked by repository-wide Biome scope over .agents/skills JSON-with-comments files, plus deprecated biome.json recommended field
 ```
 
-Remaining verification:
+Known follow-up warnings:
 
 ```text
-- Full browser click-through of modal fields was not run; the authenticated admin HTTP route used by the UI was verified end-to-end.
+- Next dev server warns that /library accesses searchParams outside Suspense under Cache Components. The route still returns HTTP 200 and verifiers pass; this is a performance/framework warning, not a V2 slice correctness failure.
+- React dev hydration warning appears for ReactQueryDevtools aria-hidden attributes. This is unrelated to the V2 data/admin slice and did not block browser verification.
 ```

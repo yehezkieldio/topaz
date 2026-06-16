@@ -46,6 +46,7 @@ Required local variables:
 - `bun run db:seed:v2:fixture` - seed reference data plus one fixture library item for local UI verification
 - `bun run db:studio` - open Drizzle Studio
 - `bun run verify:v2:admin` - verify authenticated V2 admin tRPC create/update/taxonomy/filter/delete flow against a running dev server
+- `bun run verify:v2:browser-admin` - verify Chrome-driven authenticated admin create/edit/delete UI flow against a running dev server
 - `bun run verify:v2:public` - verify public V2 home/library render plus library search and filters against a running dev server
 
 ## V2 Local Reset

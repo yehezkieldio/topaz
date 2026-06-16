@@ -117,7 +117,13 @@ export async function getHotTaxonomyTerms(
         .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
         .leftJoin(workTaxonomyAssignments, eq(taxonomyTerms.id, workTaxonomyAssignments.termId))
         .where(whereClause)
-        .groupBy(taxonomyTerms.id, taxonomyTerms.publicId, taxonomyTerms.name, taxonomyKinds.key)
+        .groupBy(
+            taxonomyTerms.id,
+            taxonomyTerms.publicId,
+            taxonomyTerms.name,
+            taxonomyKinds.key,
+            taxonomyKinds.sort_order
+        )
         .orderBy(
             desc(sql`COUNT(${workTaxonomyAssignments.termId})`),
             asc(taxonomyKinds.sort_order),
