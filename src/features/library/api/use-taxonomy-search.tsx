@@ -49,7 +49,6 @@ export const useTaxonomySearch = (initialSearch = "", kind?: TaxonomyKind) => {
             includeHot: normalizedDebounced.length === 0,
             hotLimit: 20,
         }),
-        enabled: normalizedDebounced === debouncedTaxonomySearch,
         staleTime: FIVE_MINUTES,
         gcTime: THIRTY_MINUTES,
     });
@@ -122,7 +121,7 @@ export const useTaxonomySearch = (initialSearch = "", kind?: TaxonomyKind) => {
         taxonomySearch,
         debouncedTaxonomySearch: normalizedDebounced,
         taxonomyOptions,
-        isLoadingTaxonomy: isLoadingTaxonomy && !isFetching,
+        isLoadingTaxonomy: isLoadingTaxonomy || (isFetching && !taxonomyResponse),
         canCreateTaxonomyTerm,
         isCreatingTaxonomyTerm: createTermMutation.isPending,
         setTaxonomySearch: setTaxonomySearchNormalized,

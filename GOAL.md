@@ -292,7 +292,7 @@ Stop and report clearly if:
 
 ## Ledger
 
-Status: Completed V2 route/query/UI cleanup slices for library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, create/edit form boundary fixes, compact-row label polish, library item DTO typing, and library filter/presentation boundary hardening. Remaining work is broader V2 review, not a blocker for the completed slices.
+Status: Completed source-reviewable V2 route/query/UI cleanup slices for library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, create/edit form boundary fixes, compact-row label polish, library item DTO typing, library filter/presentation boundary hardening, and a final React-only taxonomy search state pass. Source gates pass, including the full lint gate. Runtime/profile proof is explicitly out of scope for the latest user continuation and remains blocked on a running app and PostgreSQL database.
 
 Findings:
 
@@ -326,6 +326,8 @@ Findings:
 - P2 LibraryWorkSourceFieldsForm repeats paste insertion logic across title/author/url/description and asserts event targets to input/textarea elements. Trigger: pasting text into create/edit source fields. Cost: duplicated normalization and selection handling makes paste behavior drift-prone and bypasses React's typed currentTarget boundary. Evidence: source inspection of onPaste handlers.
 - P2 source auto-detection callback depends on `sourceOnChangeRef.current` instead of the stable ref object. Trigger: URL paste and clipboard paste source detection. Cost: effect dependencies track a mutable field rather than the lifecycle owner. Evidence: source inspection of useWorkSourceHandlers.
 - P2 V2 verification scripts parse tRPC response JSON with unchecked type assertions. Trigger: public/admin verification against a running app. Cost: verifier failures can be hidden behind trusted casts instead of reporting response-shape drift. Evidence: source inspection of verify-v2-public-library and verify-v2-admin-flow response parsing.
+- P2 repo-wide Biome lint gate is blocked by deprecated `rules.recommended` config and by linting `.agents` skill asset JSON files that intentionally contain comments. Trigger: `bun run lint`. Cost: the canonical lint gate cannot run even when app source is clean. Evidence: live `bun run lint` output and Biome v2 docs for `rules.preset` plus `files.includes` exclusions.
+- P2 useTaxonomySearch disables the query when debounced text has trailing whitespace and masks initial loading with `isLoading && !isFetching`. Trigger: taxonomy multiselect search/open. Cost: a query such as `foo ` can stop fetching until edited again, and the multiselect can show an empty state instead of loading while the first taxonomy query is in flight. Evidence: source inspection of normalizedDebounced, useDebounce, TanStack Query state flags, and LibraryTaxonomyMultiselect loading wiring.
 ```
 
 Completed:
@@ -364,15 +366,19 @@ Completed:
 - Centralized source-form paste insertion through currentTarget and shared normalization helpers, removing repeated input/textarea target assertions.
 - Corrected source auto-detection callback dependencies to track the stable source-on-change ref object.
 - Added Zod parsing for public/admin verifier tRPC response envelopes and expected result payloads, removing unchecked verifier response casts.
+- Fixed repo-wide Biome config by replacing deprecated `rules.recommended` with `rules.preset` and excluding `.agents` skill assets from app lint scope.
+- Fixed taxonomy multiselect query state by letting debounced search text drive the query directly and reporting initial taxonomy loading when no response is available yet.
 - Validation passed after latest changes: bun run typecheck.
 - Validation passed after latest changes: bunx biome check src scripts.
+- Validation passed after latest changes: bun run lint.
 - Validation passed after latest changes: git diff --check.
 - Runtime verification blocked in this shell: no dev server is listening on localhost:3000, AUTH_SECRET/DATABASE_URL/DEVELOPMENT_DATABASE_URL are not exported, and `bun run scripts/verify-v2-public-library.ts` fails with PostgreSQL ECONNREFUSED on localhost:5432.
+- Latest user scope: focus on React work only and do not verify through database/runtime paths.
+- Stop boundary reached for source-only work: remaining stats-query profiling and manual create/edit/delete/search/filter verification require a real database plus running app, matching the GOAL stop condition for performance concerns that cannot be justified without a database profile and the latest no-DB/no-runtime verification boundary.
 ```
 
 Deferred:
 
 ```text
-- Full bun run lint is blocked by pre-existing repository-scope issues outside touched app files: biome.json deprecated linter.recommended config and parse errors in .agents/skills/typescript-best-practices/assets/tsconfig-presets/strict.json. Scoped src/scripts Biome gate passes.
-- Broader V2 review targets remain for future slices: mutation transaction shape, stats query profiling, form DTO boundaries, and visual polish.
+- Database-backed stats query profiling and browser/API manual verification remain for a runtime-equipped pass.
 ```

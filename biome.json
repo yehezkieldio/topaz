@@ -18,7 +18,8 @@
       "!dist",
       "!build",
       "!bun.lock",
-      "!drizzle"
+      "!drizzle",
+      "!.agents"
     ]
   },
   "formatter": {
@@ -30,7 +31,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "security": {
         "noDangerouslySetInnerHtml": "off"
       },
