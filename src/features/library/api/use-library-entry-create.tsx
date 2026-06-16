@@ -36,7 +36,7 @@ export function useLibraryEntryCreate({ onClose }: { onClose: () => void }) {
             status: "Ongoing",
             libraryEntryStatus: "Reading",
             current_chapter: 0,
-            rating: "0",
+            rating: "",
             notes: "",
             taxonomyTermIds: [],
         },

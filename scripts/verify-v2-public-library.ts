@@ -1,4 +1,5 @@
 import postgres from "postgres";
+import { z } from "zod/v4";
 
 const baseUrl = process.env.TOPAZ_VERIFY_BASE_URL ?? "http://localhost:3000";
 const databaseUrl = process.env.DEVELOPMENT_DATABASE_URL ?? process.env.DATABASE_URL;
@@ -9,6 +10,22 @@ if (!databaseUrl) {
 }
 
 const sql = postgres(databaseUrl);
+const libraryAllResponseSchema = z.object({
+    error: z.unknown().optional(),
+    result: z
+        .object({
+            data: z
+                .object({
+                    json: z
+                        .object({
+                            data: z.array(z.object({ workPublicId: z.string() })).optional(),
+                        })
+                        .optional(),
+                })
+                .optional(),
+        })
+        .optional(),
+});
 
 const [fixture] = await sql`
     SELECT w.public_id AS work_public_id,
@@ -43,10 +60,7 @@ async function libraryAll(input: Record<string, unknown>) {
     const url = new URL(`${baseUrl}/api/trpc/library.all`);
     url.searchParams.set("input", JSON.stringify({ json: input }));
     const response = await fetch(url, { method: "GET" });
-    const body = (await response.json()) as {
-        error?: unknown;
-        result?: { data?: { json?: { data?: Array<{ workPublicId: string }> } } };
-    };
+    const body = libraryAllResponseSchema.parse(await response.json());
 
     if (!response.ok || body.error) {
         throw new Error(`library.all failed with HTTP ${response.status}: ${JSON.stringify(body)}`);

@@ -21,19 +21,21 @@ export const useTaxonomySearch = (initialSearch = "", kind?: TaxonomyKind) => {
     const [taxonomySearch, setTaxonomySearch] = React.useState<string>(initialSearch);
     const debouncedTaxonomySearch = useDebounce(taxonomySearch, DEBOUNCE_DELAY_MS);
     const normalizedDebounced = React.useMemo(() => debouncedTaxonomySearch.trim(), [debouncedTaxonomySearch]);
-
-    // biome-ignore lint/correctness/useExhaustiveDependencies: This is a dependency for the query.
-    React.useEffect(() => {
-        queryClient.prefetchQuery(
+    const hotTaxonomyQueryOptions = React.useMemo(
+        () =>
             trpc.taxonomy.forMultiselect.queryOptions({
                 kind,
                 search: undefined,
                 limit: 25,
                 includeHot: true,
                 hotLimit: 20,
-            })
-        );
-    }, [kind]);
+            }),
+        [kind, trpc]
+    );
+
+    React.useEffect(() => {
+        queryClient.prefetchQuery(hotTaxonomyQueryOptions);
+    }, [hotTaxonomyQueryOptions, queryClient]);
 
     const {
         data: taxonomyResponse,

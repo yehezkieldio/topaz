@@ -25,6 +25,10 @@ type LibraryWorkTaxonomyFormProps<T extends Categories & FieldValues> = {
 
 const EMPTY_INITIAL_TAXONOMY_TERMS: InitialTaxonomyTerm[] = [];
 
+function getSelectedTermIds(value: unknown) {
+    return Array.isArray(value) ? value.filter((termId): termId is string => typeof termId === "string") : [];
+}
+
 export function LibraryWorkTaxonomyForm<T extends Categories & FieldValues>({
     control: propControl,
     taxonomyTermsField = "taxonomyTermIds" as Path<T>,
@@ -96,14 +100,10 @@ export function LibraryWorkTaxonomyForm<T extends Categories & FieldValues>({
                                 field.onChange(terms.map((term) => term.value));
                             }}
                             placeholder="Select fandoms, tags, genres..."
-                            selectedTerms={
-                                Array.isArray(field.value)
-                                    ? (field.value as string[]).map((termId: string) => {
-                                          const term = termIdToItem.get(termId);
-                                          return term ?? { value: termId, label: termId };
-                                      })
-                                    : []
-                            }
+                            selectedTerms={getSelectedTermIds(field.value).map((termId) => {
+                                const term = termIdToItem.get(termId);
+                                return term ?? { value: termId, label: termId };
+                            })}
                         />
                     </FormControl>
                     <FormMessage />

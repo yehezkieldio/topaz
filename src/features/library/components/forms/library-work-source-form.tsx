@@ -25,6 +25,19 @@ type LibraryWorkSourceFieldsFormProps<T extends WorkSourceFields> = {
     control?: Control<T>;
 };
 
+function insertTextAtSelection(
+    field: HTMLInputElement | HTMLTextAreaElement,
+    text: string,
+    onChange: (value: string) => void
+) {
+    const { selectionStart, selectionEnd, value } = field;
+    onChange(value.slice(0, selectionStart ?? 0) + text + value.slice(selectionEnd ?? value.length));
+}
+
+function cleanSingleLinePaste(text: string) {
+    return text.replace(/\s+/g, " ").trim();
+}
+
 function useWorkSourceHandlers(sourceOnChangeRef: React.MutableRefObject<((value: string) => void) | null>) {
     const autoDetectSource = React.useCallback(
         (url: string) => {
@@ -43,7 +56,7 @@ function useWorkSourceHandlers(sourceOnChangeRef: React.MutableRefObject<((value
                 }
             }
         },
-        [sourceOnChangeRef.current]
+        [sourceOnChangeRef]
     );
 
     const handlePasteFromClipboard = React.useCallback(
@@ -111,14 +124,11 @@ export function LibraryWorkSourceFieldsForm<T extends WorkSourceFields>({
                                     {...field}
                                     onPaste={(e) => {
                                         e.preventDefault();
-                                        const pasteText = e.clipboardData.getData("text").replace(/\s+/g, " ").trim();
-                                        const target = e.target as HTMLInputElement;
-                                        const { selectionStart, selectionEnd, value } = target;
-                                        const newValue =
-                                            value.slice(0, selectionStart ?? 0) +
-                                            pasteText +
-                                            value.slice(selectionEnd ?? value.length);
-                                        field.onChange(newValue);
+                                        insertTextAtSelection(
+                                            e.currentTarget,
+                                            cleanSingleLinePaste(e.clipboardData.getData("text")),
+                                            field.onChange
+                                        );
                                     }}
                                 />
                             </FormControl>
@@ -142,14 +152,11 @@ export function LibraryWorkSourceFieldsForm<T extends WorkSourceFields>({
                                     {...field}
                                     onPaste={(e) => {
                                         e.preventDefault();
-                                        const pasteText = e.clipboardData.getData("text").replace(/\s+/g, " ").trim();
-                                        const target = e.target as HTMLInputElement;
-                                        const { selectionStart, selectionEnd, value } = target;
-                                        const newValue =
-                                            value.slice(0, selectionStart ?? 0) +
-                                            pasteText +
-                                            value.slice(selectionEnd ?? value.length);
-                                        field.onChange(newValue);
+                                        insertTextAtSelection(
+                                            e.currentTarget,
+                                            cleanSingleLinePaste(e.clipboardData.getData("text")),
+                                            field.onChange
+                                        );
                                     }}
                                 />
                             </FormControl>
@@ -176,20 +183,11 @@ export function LibraryWorkSourceFieldsForm<T extends WorkSourceFields>({
                                         {...field}
                                         onPaste={(e) => {
                                             e.preventDefault();
-                                            const pasteText = e.clipboardData
-                                                .getData("text")
-                                                .replace(/\s+/g, " ")
-                                                .trim();
+                                            const pasteText = cleanSingleLinePaste(e.clipboardData.getData("text"));
 
                                             autoDetectSource(pasteText);
 
-                                            const target = e.target as HTMLInputElement;
-                                            const { selectionStart, selectionEnd, value } = target;
-                                            const newValue =
-                                                value.slice(0, selectionStart ?? 0) +
-                                                pasteText +
-                                                value.slice(selectionEnd ?? value.length);
-                                            field.onChange(newValue);
+                                            insertTextAtSelection(e.currentTarget, pasteText, field.onChange);
                                         }}
                                     />
                                     <Button
@@ -263,13 +261,7 @@ export function LibraryWorkSourceFieldsForm<T extends WorkSourceFields>({
                                         .getData("text")
                                         .trim()
                                         .replace(/(\r?\n){3,}/g, "\n\n");
-                                    const target = e.target as HTMLTextAreaElement;
-                                    const { selectionStart, selectionEnd, value } = target;
-                                    const newValue =
-                                        value.slice(0, selectionStart ?? 0) +
-                                        pasteText +
-                                        value.slice(selectionEnd ?? value.length);
-                                    field.onChange(newValue);
+                                    insertTextAtSelection(e.currentTarget, pasteText, field.onChange);
                                 }}
                             />
                         </FormControl>

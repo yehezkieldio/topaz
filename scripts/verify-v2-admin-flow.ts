@@ -1,5 +1,6 @@
 import { encode } from "@auth/core/jwt";
 import postgres from "postgres";
+import { z } from "zod/v4";
 
 const baseUrl = process.env.TOPAZ_VERIFY_BASE_URL ?? "http://localhost:3000";
 const authSecret = process.env.AUTH_SECRET;
@@ -15,6 +16,40 @@ if (!databaseUrl) {
 }
 
 const sql = postgres(databaseUrl);
+
+const trpcResponseSchema = z.object({
+    error: z.unknown().optional(),
+    result: z
+        .object({
+            data: z
+                .object({
+                    json: z.unknown().optional(),
+                })
+                .optional(),
+        })
+        .optional(),
+});
+const taxonomyTermResultSchema = z.object({
+    kind: z.string(),
+    name: z.string(),
+    publicId: z.string(),
+});
+const taxonomyRelationResultSchema = z.object({
+    relationType: z.string(),
+});
+const createWorkResultSchema = z.object({
+    libraryEntry: z.object({
+        id: z.string(),
+        publicId: z.string(),
+    }),
+    work: z.object({
+        id: z.string(),
+        publicId: z.string(),
+    }),
+});
+const libraryListResultSchema = z.object({
+    data: z.array(z.object({ workPublicId: z.string() })).optional(),
+});
 
 const [user] = await sql`
     SELECT id, email, name
@@ -48,10 +83,7 @@ async function trpcMutation(path: string, input: Record<string, unknown>) {
         body: JSON.stringify({ json: input }),
     });
     const text = await response.text();
-    const body = JSON.parse(text) as {
-        error?: unknown;
-        result?: { data?: { json?: unknown } };
-    };
+    const body = trpcResponseSchema.parse(JSON.parse(text));
 
     if (!response.ok || body.error) {
         throw new Error(`${path} failed with HTTP ${response.status}: ${JSON.stringify(body)}`);
@@ -70,10 +102,7 @@ async function trpcQuery(path: string, input: Record<string, unknown>) {
         },
     });
     const text = await response.text();
-    const body = JSON.parse(text) as {
-        error?: unknown;
-        result?: { data?: { json?: unknown } };
-    };
+    const body = trpcResponseSchema.parse(JSON.parse(text));
 
     if (!response.ok || body.error) {
         throw new Error(`${path} failed with HTTP ${response.status}: ${JSON.stringify(body)}`);
@@ -82,69 +111,52 @@ async function trpcQuery(path: string, input: Record<string, unknown>) {
     return body.result?.data?.json;
 }
 
-type TaxonomyTermResult = {
-    kind: string;
-    name: string;
-    publicId: string;
-};
-
-type TaxonomyRelationResult = {
-    relationType: string;
-};
-
-type CreateWorkResult = {
-    libraryEntry: {
-        id: string;
-        publicId: string;
-    };
-    work: {
-        id: string;
-        publicId: string;
-    };
-};
-
-type LibraryListResult = {
-    data?: Array<{ workPublicId: string }>;
-};
-
 let createdWorkPublicId: string | null = null;
 let directTermPublicId: string | null = null;
 let inferredTermPublicId: string | null = null;
 
 try {
     const suffix = Date.now();
-    const direct = (await trpcMutation("taxonomy.createForMultiselect", {
-        kind: "trope",
-        name: `HTTP Direct ${suffix}`,
-    })) as TaxonomyTermResult;
+    const direct = taxonomyTermResultSchema.parse(
+        await trpcMutation("taxonomy.createForMultiselect", {
+            kind: "trope",
+            name: `HTTP Direct ${suffix}`,
+        })
+    );
     directTermPublicId = direct.publicId;
-    const inferred = (await trpcMutation("taxonomy.createForMultiselect", {
-        kind: "genre",
-        name: `HTTP Inferred ${suffix}`,
-    })) as TaxonomyTermResult;
+    const inferred = taxonomyTermResultSchema.parse(
+        await trpcMutation("taxonomy.createForMultiselect", {
+            kind: "genre",
+            name: `HTTP Inferred ${suffix}`,
+        })
+    );
     inferredTermPublicId = inferred.publicId;
-    const relation = (await trpcMutation("taxonomy.createRelation", {
-        fromTermPublicId: direct.publicId,
-        relationType: "implies",
-        toTermPublicId: inferred.publicId,
-    })) as TaxonomyRelationResult;
+    const relation = taxonomyRelationResultSchema.parse(
+        await trpcMutation("taxonomy.createRelation", {
+            fromTermPublicId: direct.publicId,
+            relationType: "implies",
+            toTermPublicId: inferred.publicId,
+        })
+    );
 
-    const created = (await trpcMutation("work.createWithLibraryEntry", {
-        title: `V2 HTTP Admin Flow ${suffix}`,
-        author: "Mara Solenne",
-        url: `https://example.com/topaz-v2-admin-flow-${suffix}`,
-        source: "Other",
-        description: "Authenticated tRPC admin flow verification item.",
-        chapter_count: 8,
-        word_count: 24_680,
-        is_nsfw: false,
-        status: "Ongoing",
-        libraryEntryStatus: "Reading",
-        current_chapter: 2,
-        rating: "3.5",
-        notes: "Created through authenticated tRPC verification.",
-        taxonomyTermIds: [direct.publicId],
-    })) as CreateWorkResult;
+    const created = createWorkResultSchema.parse(
+        await trpcMutation("work.createWithLibraryEntry", {
+            title: `V2 HTTP Admin Flow ${suffix}`,
+            author: "Mara Solenne",
+            url: `https://example.com/topaz-v2-admin-flow-${suffix}`,
+            source: "Other",
+            description: "Authenticated tRPC admin flow verification item.",
+            chapter_count: 8,
+            word_count: 24_680,
+            is_nsfw: false,
+            status: "Ongoing",
+            libraryEntryStatus: "Reading",
+            current_chapter: 2,
+            rating: "3.5",
+            notes: "Created through authenticated tRPC verification.",
+            taxonomyTermIds: [direct.publicId],
+        })
+    );
     createdWorkPublicId = created.work.publicId;
 
     const [versions] = await sql`
@@ -179,13 +191,15 @@ try {
         taxonomyTermIds: [direct.publicId],
     });
 
-    const filtered = (await trpcQuery("library.all", {
-        limit: 10,
-        search: "",
-        sortBy: "updatedAt",
-        sortOrder: "desc",
-        effectiveTaxonomyTermIds: [inferred.publicId],
-    })) as LibraryListResult;
+    const filtered = libraryListResultSchema.parse(
+        await trpcQuery("library.all", {
+            limit: 10,
+            search: "",
+            sortBy: "updatedAt",
+            sortOrder: "desc",
+            effectiveTaxonomyTermIds: [inferred.publicId],
+        })
+    );
     const filteredByInferred = Boolean(filtered.data?.some((item) => item.workPublicId === created.work.publicId));
     if (!filteredByInferred) {
         throw new Error("Effective taxonomy filter did not find the updated work");

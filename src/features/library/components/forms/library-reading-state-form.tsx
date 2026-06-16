@@ -131,7 +131,6 @@ export function LibraryReadingStateForm<T extends ReadingStateFields>({
                                     type="number"
                                     {...field}
                                     onBlur={(e) => {
-                                        // Allow empty string, otherwise keep as string
                                         if (e.target.value === "" || Number.isNaN(Number(e.target.value))) {
                                             field.onChange("");
                                         } else {
@@ -139,7 +138,6 @@ export function LibraryReadingStateForm<T extends ReadingStateFields>({
                                         }
                                     }}
                                     onChange={(e) => {
-                                        // Always store as string
                                         field.onChange(e.target.value);
                                     }}
                                     onClick={(e) => {

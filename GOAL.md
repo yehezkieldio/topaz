@@ -292,7 +292,7 @@ Stop and report clearly if:
 
 ## Ledger
 
-Status: Completed V2 route/query/UI cleanup slices for library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, edit-form boundary fixes, compact-row label polish, library item DTO typing, and library filter/presentation boundary hardening. Remaining work is broader V2 review, not a blocker for the completed slices.
+Status: Completed V2 route/query/UI cleanup slices for library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, create/edit form boundary fixes, compact-row label polish, library item DTO typing, and library filter/presentation boundary hardening. Remaining work is broader V2 review, not a blocker for the completed slices.
 
 Findings:
 
@@ -320,6 +320,12 @@ Findings:
 - P2 LibraryFilterContent accepts Radix dropdown string values by casting them into enum-backed query-state setters. Trigger: changing source/status/sort/favorite/NSFW/notes filters. Cost: invalid UI event values can cross the query-state boundary and the casts hide parser drift. Evidence: source inspection of dropdown onValueChange handlers and search param enums.
 - P2 LibraryCreateSheet resets its keyboard shortcut guard with a fixed timeout after opening the sheet. Trigger: pressing the `t` shortcut. Cost: lifecycle timing depends on an arbitrary delay instead of the browser key repeat signal and sheet open state. Evidence: source inspection of setTimeout guard around keydown handling.
 - P2 library item presentation still used assertions for source links and taxonomy-kind labels after DTO typing was tightened. Trigger: rendering linked item titles and taxonomy tag badges. Cost: display code bypasses available URL/kind narrowing and schema labels. Evidence: source inspection of LibraryItemHeader and LibraryItemTags.
+- P1 create form defaults new entries to `rating: "0"` even though the schema and edit flow use an empty string as the canonical unrated value. Trigger: creating a work without touching the rating field. Cost: unrated works are persisted as zero-rated works, changing user data semantics. Evidence: source inspection of useLibraryEntryCreate defaults and workWithLibraryEntrySchema route mapping of `""` to null.
+- P2 useTaxonomySearch suppresses exhaustive-deps for the hot taxonomy prefetch effect. Trigger: taxonomy multiselect mount/kind changes. Cost: query lifecycle dependencies are hidden from React and future query-client/trpc changes. Evidence: source inspection of the inline Biome suppression.
+- P2 LibraryWorkTaxonomyForm casts the field value to string[] before rendering selected terms. Trigger: rendering selected taxonomy terms in generic create/edit form context. Cost: invalid field values can cross into presentation instead of being rejected by a local guard. Evidence: source inspection of selectedTerms mapping.
+- P2 LibraryWorkSourceFieldsForm repeats paste insertion logic across title/author/url/description and asserts event targets to input/textarea elements. Trigger: pasting text into create/edit source fields. Cost: duplicated normalization and selection handling makes paste behavior drift-prone and bypasses React's typed currentTarget boundary. Evidence: source inspection of onPaste handlers.
+- P2 source auto-detection callback depends on `sourceOnChangeRef.current` instead of the stable ref object. Trigger: URL paste and clipboard paste source detection. Cost: effect dependencies track a mutable field rather than the lifecycle owner. Evidence: source inspection of useWorkSourceHandlers.
+- P2 V2 verification scripts parse tRPC response JSON with unchecked type assertions. Trigger: public/admin verification against a running app. Cost: verifier failures can be hidden behind trusted casts instead of reporting response-shape drift. Evidence: source inspection of verify-v2-public-library and verify-v2-admin-flow response parsing.
 ```
 
 Completed:
@@ -352,9 +358,15 @@ Completed:
 - Replaced library filter dropdown casts with option-table parsing before query-state setters receive values.
 - Removed the create-sheet shortcut timeout and used `KeyboardEvent.repeat` plus sheet open state for duplicate-keydown suppression.
 - Removed remaining library item presentation assertions by narrowing source URLs locally and parsing taxonomy kinds through taxonomyKindEnum before label lookup.
-- Validation passed: bun run typecheck.
-- Validation passed: bunx biome check src scripts.
-- Validation passed: git diff --check.
+- Fixed create-form rating defaults so new works start unrated with the same empty-string boundary used by edit and the route.
+- Removed the taxonomy search exhaustive-deps suppression by memoizing hot taxonomy query options and listing the real effect dependencies.
+- Replaced taxonomy selected-term casts with a string-array guard before mapping field values.
+- Centralized source-form paste insertion through currentTarget and shared normalization helpers, removing repeated input/textarea target assertions.
+- Corrected source auto-detection callback dependencies to track the stable source-on-change ref object.
+- Added Zod parsing for public/admin verifier tRPC response envelopes and expected result payloads, removing unchecked verifier response casts.
+- Validation passed after latest changes: bun run typecheck.
+- Validation passed after latest changes: bunx biome check src scripts.
+- Validation passed after latest changes: git diff --check.
 - Runtime verification blocked in this shell: no dev server is listening on localhost:3000, AUTH_SECRET/DATABASE_URL/DEVELOPMENT_DATABASE_URL are not exported, and `bun run scripts/verify-v2-public-library.ts` fails with PostgreSQL ECONNREFUSED on localhost:5432.
 ```
 
