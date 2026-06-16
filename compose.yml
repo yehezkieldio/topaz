@@ -1,7 +1,7 @@
 name: topaz-dev
 services:
   topaz-dev-db:
-    image: postgres:latest
+    image: postgres:17
     container_name: topaz-dev-db
     ports:
       - "5432:5432"

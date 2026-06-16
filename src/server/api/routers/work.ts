@@ -1,5 +1,5 @@
 import { z } from "zod/v4";
-import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
+import { adminProcedure, createTRPCRouter } from "#/server/api/trpc";
 import { invalidateLibraryReadModels, invalidateTaxonomyReadModels } from "#/server/backend/cache/tags";
 import {
     assignTaxonomyTermsToWork,
@@ -11,7 +11,7 @@ import {
 import { sourceEnum, storyCreateWithProgressSchema, storyStatusEnum } from "#/server/db/schema/story";
 
 export const workRouter = createTRPCRouter({
-    createWithLibraryEntry: protectedProcedure
+    createWithLibraryEntry: adminProcedure
         .input(
             storyCreateWithProgressSchema.omit({
                 storyPublicId: true,
@@ -43,7 +43,7 @@ export const workRouter = createTRPCRouter({
             await invalidateTaxonomyReadModels();
             return created;
         }),
-    updateWithLibraryEntry: protectedProcedure.input(storyCreateWithProgressSchema).mutation(async ({ ctx, input }) => {
+    updateWithLibraryEntry: adminProcedure.input(storyCreateWithProgressSchema).mutation(async ({ ctx, input }) => {
         const updated = await updateLibraryItem(ctx.db, {
             workPublicId: input.storyPublicId,
             libraryEntryPublicId: input.progressPublicId,
@@ -69,13 +69,13 @@ export const workRouter = createTRPCRouter({
         await invalidateTaxonomyReadModels();
         return updated;
     }),
-    delete: protectedProcedure.input(z.object({ publicId: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+    delete: adminProcedure.input(z.object({ publicId: z.string().min(1) })).mutation(async ({ ctx, input }) => {
         const deleted = await deleteWork(ctx.db, input.publicId);
         await invalidateLibraryReadModels();
         await invalidateTaxonomyReadModels();
         return deleted;
     }),
-    assignTaxonomy: protectedProcedure
+    assignTaxonomy: adminProcedure
         .input(z.object({ workId: z.uuid(), termPublicIds: z.array(z.string()).default([]) }))
         .mutation(async ({ ctx, input }) => {
             const assigned = await assignTaxonomyTermsToWork(ctx.db, input);
@@ -83,13 +83,11 @@ export const workRouter = createTRPCRouter({
             await invalidateTaxonomyReadModels();
             return assigned;
         }),
-    rebuildEffectiveTaxonomy: protectedProcedure
-        .input(z.object({ workId: z.uuid() }))
-        .mutation(async ({ ctx, input }) => {
-            const effectiveRows = await rebuildEffectiveTaxonomyForWork(ctx.db, input.workId);
-            await invalidateLibraryReadModels();
-            return effectiveRows;
-        }),
-    sourceOptions: protectedProcedure.query(() => sourceEnum.options),
-    statusOptions: protectedProcedure.query(() => storyStatusEnum.options),
+    rebuildEffectiveTaxonomy: adminProcedure.input(z.object({ workId: z.uuid() })).mutation(async ({ ctx, input }) => {
+        const effectiveRows = await rebuildEffectiveTaxonomyForWork(ctx.db, input.workId);
+        await invalidateLibraryReadModels();
+        return effectiveRows;
+    }),
+    sourceOptions: adminProcedure.query(() => sourceEnum.options),
+    statusOptions: adminProcedure.query(() => storyStatusEnum.options),
 });

@@ -16,12 +16,14 @@ import {
 import {
     contributors,
     type Source,
+    sourcePlatformSeeds,
     sourcePlatforms,
     workContributors,
     workSources,
     works,
 } from "#/server/db/schema/story";
 import {
+    taxonomyKindSeeds,
     taxonomyKinds,
     taxonomyLabels,
     taxonomyRelations,
@@ -57,7 +59,9 @@ export type ProgressQueryResult = {
         progressCurrentChapter: number;
         progressRating: number;
         storyStatus: string;
+        storyContributorNames: string[];
         updatedAt: Date;
+        directTaxonomyTerms: { kind: string; publicId: string; name: string }[];
         taxonomyTerms: { kind: string; publicId: string; name: string }[];
         storySource?: string;
         storyUrl?: string;
@@ -91,6 +95,13 @@ export type LibraryQueryInput = {
     hasNotes?: boolean;
     completedOnly?: boolean;
     inProgressOnly?: boolean;
+    directTaxonomyTermIds?: string[];
+    effectiveTaxonomyTermIds?: string[];
+    favorite?: boolean;
+    minWordCount?: number;
+    maxWordCount?: number;
+    minChapterCount?: number;
+    maxChapterCount?: number;
 };
 
 export type CreateLibraryItemInput = {
@@ -246,9 +257,17 @@ function buildWhereConditions(input: Omit<LibraryQueryInput, "limit" | "cursor" 
 
         whereConditions.push(sql`(
             ${works.title} ILIKE ${`%${sanitizedSearch}%`}
+            OR ${works.description} ILIKE ${`%${sanitizedSearch}%`}
+            OR ${works.summary} ILIKE ${`%${sanitizedSearch}%`}
+            OR ${workSources.title_on_source} ILIKE ${`%${sanitizedSearch}%`}
             OR ${workSources.author_on_source} ILIKE ${`%${sanitizedSearch}%`}
+            OR ${contributors.name} ILIKE ${`%${sanitizedSearch}%`}
             OR ${readingStates.notes} ILIKE ${`%${sanitizedSearch}%`}
             OR ${taxonomyLabels.label} ILIKE ${`%${sanitizedSearch}%`}
+            OR similarity(lower(${works.title}), lower(${sanitizedSearch})) > 0.2
+            OR similarity(lower(${workSources.title_on_source}), lower(${sanitizedSearch})) > 0.2
+            OR similarity(lower(${contributors.name}), lower(${sanitizedSearch})) > 0.2
+            OR similarity(lower(${taxonomyLabels.label}), lower(${sanitizedSearch})) > 0.2
         )`);
     }
 
@@ -269,6 +288,10 @@ function buildWhereConditions(input: Omit<LibraryQueryInput, "limit" | "cursor" 
         whereConditions.push(eq(works.is_nsfw, input.isNsfw));
     }
 
+    if (input.favorite !== undefined) {
+        whereConditions.push(eq(libraryEntries.favorite, input.favorite));
+    }
+
     if (input.minRating !== undefined) {
         const minRating = Math.max(MIN_RATING, Math.min(MAX_RATING, Number(input.minRating)));
         whereConditions.push(sql`${readingStates.rating} >= ${minRating}`);
@@ -287,6 +310,42 @@ function buildWhereConditions(input: Omit<LibraryQueryInput, "limit" | "cursor" 
         );
     }
 
+    if (input.minWordCount !== undefined) {
+        whereConditions.push(sql`${workSources.word_count} >= ${Math.max(0, Number(input.minWordCount))}`);
+    }
+
+    if (input.maxWordCount !== undefined) {
+        whereConditions.push(sql`${workSources.word_count} <= ${Math.max(0, Number(input.maxWordCount))}`);
+    }
+
+    if (input.minChapterCount !== undefined) {
+        whereConditions.push(sql`${workSources.chapter_count} >= ${Math.max(0, Number(input.minChapterCount))}`);
+    }
+
+    if (input.maxChapterCount !== undefined) {
+        whereConditions.push(sql`${workSources.chapter_count} <= ${Math.max(0, Number(input.maxChapterCount))}`);
+    }
+
+    if (input.directTaxonomyTermIds && input.directTaxonomyTermIds.length > 0) {
+        whereConditions.push(sql`EXISTS (
+            SELECT 1
+            FROM ${workTaxonomyAssignments}
+            INNER JOIN ${taxonomyTerms} ON ${taxonomyTerms.id} = ${workTaxonomyAssignments.termId}
+            WHERE ${workTaxonomyAssignments.workId} = ${works.id}
+            AND ${inArray(taxonomyTerms.publicId, input.directTaxonomyTermIds)}
+        )`);
+    }
+
+    if (input.effectiveTaxonomyTermIds && input.effectiveTaxonomyTermIds.length > 0) {
+        whereConditions.push(sql`EXISTS (
+            SELECT 1
+            FROM ${workTaxonomyEffective}
+            INNER JOIN ${taxonomyTerms} ON ${taxonomyTerms.id} = ${workTaxonomyEffective.termId}
+            WHERE ${workTaxonomyEffective.workId} = ${works.id}
+            AND ${inArray(taxonomyTerms.publicId, input.effectiveTaxonomyTermIds)}
+        )`);
+    }
+
     if (input.completedOnly) {
         whereConditions.push(eq(libraryEntries.status, "Completed"));
     }
@@ -296,6 +355,50 @@ function buildWhereConditions(input: Omit<LibraryQueryInput, "limit" | "cursor" 
     }
 
     return whereConditions;
+}
+
+export async function seedV2ReferenceData(database: Database) {
+    await database
+        .insert(sourcePlatforms)
+        .values(
+            sourcePlatformSeeds.map((seed) => ({
+                key: seed.key,
+                name: seed.name,
+                base_url: seed.baseUrl,
+                is_active: true,
+            }))
+        )
+        .onConflictDoUpdate({
+            target: sourcePlatforms.key,
+            set: {
+                name: sql`excluded.name`,
+                base_url: sql`excluded.base_url`,
+                is_active: sql`excluded.is_active`,
+            },
+        });
+
+    await database
+        .insert(taxonomyKinds)
+        .values(
+            taxonomyKindSeeds.map((seed) => ({
+                key: seed.key,
+                name: seed.name,
+                sort_order: seed.sortOrder,
+                is_assignable: true,
+                allows_relations: true,
+            }))
+        )
+        .onConflictDoUpdate({
+            target: taxonomyKinds.key,
+            set: {
+                name: sql`excluded.name`,
+                sort_order: sql`excluded.sort_order`,
+                is_assignable: sql`excluded.is_assignable`,
+                allows_relations: sql`excluded.allows_relations`,
+            },
+        });
+
+    return { sourcePlatforms: sourcePlatformSeeds.length, taxonomyKinds: taxonomyKindSeeds.length };
 }
 
 async function getSourcePlatformId(database: DatabaseOrTransaction, source: Source) {
@@ -713,8 +816,6 @@ export async function deleteLibraryEntry(database: Database, publicId: string) {
     return deletedLibraryEntry;
 }
 
-export const deleteProgress = deleteLibraryEntry;
-
 export async function listLibraryProgress(database: Database, input: LibraryQueryInput): Promise<ProgressQueryResult> {
     const { limit, cursor, search, sortBy, sortOrder: inputSortOrder, ...filterInput } = input;
     const sortOrder = inputSortOrder ?? "asc";
@@ -745,6 +846,9 @@ export async function listLibraryProgress(database: Database, input: LibraryQuer
             storyPublicId: works.publicId,
             storyTitle: works.title,
             storyAuthor: workSources.author_on_source,
+            storyContributorNames: sql<
+                string[]
+            >`COALESCE(array_remove(array_agg(DISTINCT ${contributors.name}), NULL), ARRAY[]::text[])`,
             progressStatus: libraryEntries.status,
             progressCurrentChapter: readingStates.current_chapter,
             progressRating: readingStates.rating,
@@ -766,6 +870,8 @@ export async function listLibraryProgress(database: Database, input: LibraryQuer
         .leftJoin(readingStates, eq(readingStates.libraryEntryId, libraryEntries.id))
         .leftJoin(workSources, and(eq(workSources.workId, works.id), eq(workSources.is_primary, true)))
         .leftJoin(sourcePlatforms, eq(sourcePlatforms.id, workSources.sourcePlatformId))
+        .leftJoin(workContributors, eq(workContributors.workId, works.id))
+        .leftJoin(contributors, eq(contributors.id, workContributors.contributorId))
         .leftJoin(workTaxonomyEffective, eq(workTaxonomyEffective.workId, works.id))
         .leftJoin(taxonomyTerms, eq(taxonomyTerms.id, workTaxonomyEffective.termId))
         .leftJoin(taxonomyLabels, eq(taxonomyLabels.termId, taxonomyTerms.id))
@@ -824,17 +930,46 @@ export async function listLibraryProgress(database: Database, input: LibraryQuer
         taxonomyByWork.set(taxonomyRow.workPublicId, terms);
     }
 
+    const directTaxonomyRows =
+        workPublicIds.length > 0
+            ? await database
+                  .select({
+                      workPublicId: works.publicId,
+                      publicId: taxonomyTerms.publicId,
+                      name: taxonomyTerms.name,
+                      kind: taxonomyKinds.key,
+                  })
+                  .from(workTaxonomyAssignments)
+                  .innerJoin(works, eq(works.id, workTaxonomyAssignments.workId))
+                  .innerJoin(taxonomyTerms, eq(taxonomyTerms.id, workTaxonomyAssignments.termId))
+                  .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
+                  .where(inArray(works.publicId, workPublicIds))
+            : [];
+
+    const directTaxonomyByWork = new Map<string, { kind: string; name: string; publicId: string }[]>();
+    for (const taxonomyRow of directTaxonomyRows) {
+        const terms = directTaxonomyByWork.get(taxonomyRow.workPublicId) ?? [];
+        terms.push({
+            kind: taxonomyRow.kind,
+            name: taxonomyRow.name,
+            publicId: taxonomyRow.publicId,
+        });
+        directTaxonomyByWork.set(taxonomyRow.workPublicId, terms);
+    }
+
     return {
         data: items.map((item) => ({
             progressPublicId: item.progressPublicId,
             storyPublicId: item.storyPublicId,
             storyTitle: item.storyTitle,
-            storyAuthor: item.storyAuthor ?? "Unknown",
+            storyAuthor: item.storyAuthor ?? item.storyContributorNames.at(0) ?? "Unknown",
+            storyContributorNames: item.storyContributorNames,
             progressStatus: item.progressStatus,
             progressCurrentChapter: item.progressCurrentChapter ?? 0,
             progressRating: item.progressRating ?? 0,
             storyStatus: item.storyStatus,
             updatedAt: item.updatedAt ?? new Date(0),
+            directTaxonomyTerms: directTaxonomyByWork.get(item.storyPublicId) ?? [],
             taxonomyTerms: taxonomyByWork.get(item.storyPublicId) ?? [],
             storySource: legacySourceBySourceKey[item.storySourceKey ?? "other"] ?? "Other",
             storyUrl: item.storyUrl ?? undefined,

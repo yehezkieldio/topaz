@@ -1,1108 +1,2663 @@
 {
-    "id": "a1dbad59-e803-4487-9096-4b4bc9f6f461",
-    "prevId": "00000000-0000-0000-0000-000000000000",
-    "version": "7",
-    "dialect": "postgresql",
-    "tables": {
-        "public.topaz_fandom": {
-            "name": "topaz_fandom",
-            "schema": "",
-            "columns": {
-                "id": {
-                    "name": "id",
-                    "type": "uuid",
-                    "primaryKey": true,
-                    "notNull": true
-                },
-                "public_id": {
-                    "name": "public_id",
-                    "type": "varchar(128)",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "name": {
-                    "name": "name",
-                    "type": "citext",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "created_at": {
-                    "name": "created_at",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": false,
-                    "default": "CURRENT_TIMESTAMP"
-                },
-                "updated_at": {
-                    "name": "updated_at",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": false
-                }
-            },
-            "indexes": {
-                "fandom_pid_uidx": {
-                    "name": "fandom_pid_uidx",
-                    "columns": [
-                        {
-                            "expression": "public_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": true,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "fandom_name_uidx": {
-                    "name": "fandom_name_uidx",
-                    "columns": [
-                        {
-                            "expression": "name",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": true,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "fandom_created_idx": {
-                    "name": "fandom_created_idx",
-                    "columns": [
-                        {
-                            "expression": "created_at",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "fandom_updated_idx": {
-                    "name": "fandom_updated_idx",
-                    "columns": [
-                        {
-                            "expression": "updated_at",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "fandom_name_trgm_idx": {
-                    "name": "fandom_name_trgm_idx",
-                    "columns": [
-                        {
-                            "expression": "\"name\" gin_trgm_ops",
-                            "asc": true,
-                            "isExpression": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "gin",
-                    "with": {}
-                }
-            },
-            "foreignKeys": {},
-            "compositePrimaryKeys": {},
-            "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+  "id": "92ebd5ed-8980-4bd3-9e74-3649c2d04971",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.topaz_library_entry": {
+      "name": "topaz_library_entry",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
         },
-        "public.topaz_progress": {
-            "name": "topaz_progress",
-            "schema": "",
-            "columns": {
-                "id": {
-                    "name": "id",
-                    "type": "uuid",
-                    "primaryKey": true,
-                    "notNull": true
-                },
-                "public_id": {
-                    "name": "public_id",
-                    "type": "varchar(128)",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "user_id": {
-                    "name": "user_id",
-                    "type": "uuid",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "story_id": {
-                    "name": "story_id",
-                    "type": "uuid",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "reading_status": {
-                    "name": "reading_status",
-                    "type": "reading_status",
-                    "typeSchema": "public",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "'Reading'"
-                },
-                "current_chapter": {
-                    "name": "current_chapter",
-                    "type": "integer",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": 0
-                },
-                "rating": {
-                    "name": "rating",
-                    "type": "numeric(2, 1)",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "'0.0'"
-                },
-                "notes": {
-                    "name": "notes",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "created_at": {
-                    "name": "created_at",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": false,
-                    "default": "CURRENT_TIMESTAMP"
-                },
-                "updated_at": {
-                    "name": "updated_at",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": false
-                }
-            },
-            "indexes": {
-                "prog_pid_uidx": {
-                    "name": "prog_pid_uidx",
-                    "columns": [
-                        {
-                            "expression": "public_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": true,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "prog_user_story_uidx": {
-                    "name": "prog_user_story_uidx",
-                    "columns": [
-                        {
-                            "expression": "user_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "story_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": true,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "prog_user_status_idx": {
-                    "name": "prog_user_status_idx",
-                    "columns": [
-                        {
-                            "expression": "user_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "reading_status",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "prog_user_idx": {
-                    "name": "prog_user_idx",
-                    "columns": [
-                        {
-                            "expression": "user_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "prog_story_idx": {
-                    "name": "prog_story_idx",
-                    "columns": [
-                        {
-                            "expression": "story_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "prog_status_idx": {
-                    "name": "prog_status_idx",
-                    "columns": [
-                        {
-                            "expression": "reading_status",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "prog_updated_idx": {
-                    "name": "prog_updated_idx",
-                    "columns": [
-                        {
-                            "expression": "updated_at",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "prog_created_idx": {
-                    "name": "prog_created_idx",
-                    "columns": [
-                        {
-                            "expression": "created_at",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                }
-            },
-            "foreignKeys": {
-                "topaz_progress_user_id_topaz_user_id_fk": {
-                    "name": "topaz_progress_user_id_topaz_user_id_fk",
-                    "tableFrom": "topaz_progress",
-                    "tableTo": "topaz_user",
-                    "columnsFrom": ["user_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "cascade",
-                    "onUpdate": "no action"
-                },
-                "topaz_progress_story_id_topaz_story_id_fk": {
-                    "name": "topaz_progress_story_id_topaz_story_id_fk",
-                    "tableFrom": "topaz_progress",
-                    "tableTo": "topaz_story",
-                    "columnsFrom": ["story_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "cascade",
-                    "onUpdate": "no action"
-                }
-            },
-            "compositePrimaryKeys": {},
-            "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {
-                "rating between 0 and 5": {
-                    "name": "rating between 0 and 5",
-                    "value": "\"topaz_progress\".\"rating\" >= 0 AND \"topaz_progress\".\"rating\" <= 5"
-                }
-            },
-            "isRLSEnabled": false
+        "public_id": {
+          "name": "public_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
         },
-        "public.topaz_story": {
-            "name": "topaz_story",
-            "schema": "",
-            "columns": {
-                "id": {
-                    "name": "id",
-                    "type": "uuid",
-                    "primaryKey": true,
-                    "notNull": true
-                },
-                "public_id": {
-                    "name": "public_id",
-                    "type": "varchar(128)",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "author": {
-                    "name": "author",
-                    "type": "citext",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "'Unknown'"
-                },
-                "chapter_count": {
-                    "name": "chapter_count",
-                    "type": "integer",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "description": {
-                    "name": "description",
-                    "type": "citext",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "is_nsfw": {
-                    "name": "is_nsfw",
-                    "type": "boolean",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": false
-                },
-                "word_count": {
-                    "name": "word_count",
-                    "type": "integer",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "source": {
-                    "name": "source",
-                    "type": "source",
-                    "typeSchema": "public",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "'Other'"
-                },
-                "status": {
-                    "name": "status",
-                    "type": "story_status",
-                    "typeSchema": "public",
-                    "primaryKey": false,
-                    "notNull": true,
-                    "default": "'Ongoing'"
-                },
-                "summary": {
-                    "name": "summary",
-                    "type": "citext",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "title": {
-                    "name": "title",
-                    "type": "citext",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "url": {
-                    "name": "url",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "created_at": {
-                    "name": "created_at",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": false,
-                    "default": "CURRENT_TIMESTAMP"
-                },
-                "updated_at": {
-                    "name": "updated_at",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": false
-                }
-            },
-            "indexes": {
-                "story_pid_uidx": {
-                    "name": "story_pid_uidx",
-                    "columns": [
-                        {
-                            "expression": "public_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": true,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "story_source_status_idx": {
-                    "name": "story_source_status_idx",
-                    "columns": [
-                        {
-                            "expression": "source",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        },
-                        {
-                            "expression": "status",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "story_created_idx": {
-                    "name": "story_created_idx",
-                    "columns": [
-                        {
-                            "expression": "created_at",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "story_updated_idx": {
-                    "name": "story_updated_idx",
-                    "columns": [
-                        {
-                            "expression": "updated_at",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                }
-            },
-            "foreignKeys": {},
-            "compositePrimaryKeys": {},
-            "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
         },
-        "public.topaz_story_fandom": {
-            "name": "topaz_story_fandom",
-            "schema": "",
-            "columns": {
-                "story_id": {
-                    "name": "story_id",
-                    "type": "uuid",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "fandom_id": {
-                    "name": "fandom_id",
-                    "type": "uuid",
-                    "primaryKey": false,
-                    "notNull": true
-                }
-            },
-            "indexes": {
-                "storyfandom_story_idx": {
-                    "name": "storyfandom_story_idx",
-                    "columns": [
-                        {
-                            "expression": "story_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "storyfandom_fandom_idx": {
-                    "name": "storyfandom_fandom_idx",
-                    "columns": [
-                        {
-                            "expression": "fandom_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                }
-            },
-            "foreignKeys": {
-                "topaz_story_fandom_story_id_topaz_story_id_fk": {
-                    "name": "topaz_story_fandom_story_id_topaz_story_id_fk",
-                    "tableFrom": "topaz_story_fandom",
-                    "tableTo": "topaz_story",
-                    "columnsFrom": ["story_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "cascade",
-                    "onUpdate": "no action"
-                },
-                "topaz_story_fandom_fandom_id_topaz_fandom_id_fk": {
-                    "name": "topaz_story_fandom_fandom_id_topaz_fandom_id_fk",
-                    "tableFrom": "topaz_story_fandom",
-                    "tableTo": "topaz_fandom",
-                    "columnsFrom": ["fandom_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "cascade",
-                    "onUpdate": "no action"
-                }
-            },
-            "compositePrimaryKeys": {
-                "topaz_story_fandom_story_id_fandom_id_pk": {
-                    "name": "topaz_story_fandom_story_id_fandom_id_pk",
-                    "columns": ["story_id", "fandom_id"]
-                }
-            },
-            "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+        "work_id": {
+          "name": "work_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
         },
-        "public.topaz_story_tag": {
-            "name": "topaz_story_tag",
-            "schema": "",
-            "columns": {
-                "story_id": {
-                    "name": "story_id",
-                    "type": "uuid",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "tag_id": {
-                    "name": "tag_id",
-                    "type": "uuid",
-                    "primaryKey": false,
-                    "notNull": true
-                }
-            },
-            "indexes": {
-                "storytag_story_idx": {
-                    "name": "storytag_story_idx",
-                    "columns": [
-                        {
-                            "expression": "story_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "storytag_tag_idx": {
-                    "name": "storytag_tag_idx",
-                    "columns": [
-                        {
-                            "expression": "tag_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                }
-            },
-            "foreignKeys": {
-                "topaz_story_tag_story_id_topaz_story_id_fk": {
-                    "name": "topaz_story_tag_story_id_topaz_story_id_fk",
-                    "tableFrom": "topaz_story_tag",
-                    "tableTo": "topaz_story",
-                    "columnsFrom": ["story_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "cascade",
-                    "onUpdate": "no action"
-                },
-                "topaz_story_tag_tag_id_topaz_tag_id_fk": {
-                    "name": "topaz_story_tag_tag_id_topaz_tag_id_fk",
-                    "tableFrom": "topaz_story_tag",
-                    "tableTo": "topaz_tag",
-                    "columnsFrom": ["tag_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "cascade",
-                    "onUpdate": "no action"
-                }
-            },
-            "compositePrimaryKeys": {
-                "topaz_story_tag_story_id_tag_id_pk": {
-                    "name": "topaz_story_tag_story_id_tag_id_pk",
-                    "columns": ["story_id", "tag_id"]
-                }
-            },
-            "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Reading'"
         },
-        "public.topaz_tag": {
-            "name": "topaz_tag",
-            "schema": "",
-            "columns": {
-                "id": {
-                    "name": "id",
-                    "type": "uuid",
-                    "primaryKey": true,
-                    "notNull": true
-                },
-                "public_id": {
-                    "name": "public_id",
-                    "type": "varchar(128)",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "name": {
-                    "name": "name",
-                    "type": "citext",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "created_at": {
-                    "name": "created_at",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": false,
-                    "default": "CURRENT_TIMESTAMP"
-                },
-                "updated_at": {
-                    "name": "updated_at",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": false
-                }
-            },
-            "indexes": {
-                "tag_pid_uidx": {
-                    "name": "tag_pid_uidx",
-                    "columns": [
-                        {
-                            "expression": "public_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": true,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "tag_name_uidx": {
-                    "name": "tag_name_uidx",
-                    "columns": [
-                        {
-                            "expression": "name",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": true,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "tag_created_idx": {
-                    "name": "tag_created_idx",
-                    "columns": [
-                        {
-                            "expression": "created_at",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                },
-                "tag_updated_idx": {
-                    "name": "tag_updated_idx",
-                    "columns": [
-                        {
-                            "expression": "updated_at",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": true,
-                    "method": "btree",
-                    "with": {}
-                }
-            },
-            "foreignKeys": {},
-            "compositePrimaryKeys": {},
-            "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+        "favorite": {
+          "name": "favorite",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
-        "public.topaz_account": {
-            "name": "topaz_account",
-            "schema": "",
-            "columns": {
-                "user_id": {
-                    "name": "user_id",
-                    "type": "uuid",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "type": {
-                    "name": "type",
-                    "type": "varchar(255)",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "provider": {
-                    "name": "provider",
-                    "type": "varchar(255)",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "provider_account_id": {
-                    "name": "provider_account_id",
-                    "type": "varchar(255)",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "refresh_token": {
-                    "name": "refresh_token",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "access_token": {
-                    "name": "access_token",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "expires_at": {
-                    "name": "expires_at",
-                    "type": "integer",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "token_type": {
-                    "name": "token_type",
-                    "type": "varchar(255)",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "scope": {
-                    "name": "scope",
-                    "type": "varchar(255)",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "id_token": {
-                    "name": "id_token",
-                    "type": "text",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "session_state": {
-                    "name": "session_state",
-                    "type": "varchar(255)",
-                    "primaryKey": false,
-                    "notNull": false
-                }
-            },
-            "indexes": {
-                "account_user_id_idx": {
-                    "name": "account_user_id_idx",
-                    "columns": [
-                        {
-                            "expression": "user_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
-                }
-            },
-            "foreignKeys": {
-                "topaz_account_user_id_topaz_user_id_fk": {
-                    "name": "topaz_account_user_id_topaz_user_id_fk",
-                    "tableFrom": "topaz_account",
-                    "tableTo": "topaz_user",
-                    "columnsFrom": ["user_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "no action",
-                    "onUpdate": "no action"
-                }
-            },
-            "compositePrimaryKeys": {
-                "topaz_account_provider_provider_account_id_pk": {
-                    "name": "topaz_account_provider_provider_account_id_pk",
-                    "columns": ["provider", "provider_account_id"]
-                }
-            },
-            "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+        "priority": {
+          "name": "priority",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
-        "public.topaz_session": {
-            "name": "topaz_session",
-            "schema": "",
-            "columns": {
-                "session_token": {
-                    "name": "session_token",
-                    "type": "varchar(255)",
-                    "primaryKey": true,
-                    "notNull": true
-                },
-                "user_id": {
-                    "name": "user_id",
-                    "type": "uuid",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "expires": {
-                    "name": "expires",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": true
-                }
-            },
-            "indexes": {
-                "t_user_id_idx": {
-                    "name": "t_user_id_idx",
-                    "columns": [
-                        {
-                            "expression": "user_id",
-                            "isExpression": false,
-                            "asc": true,
-                            "nulls": "last"
-                        }
-                    ],
-                    "isUnique": false,
-                    "concurrently": false,
-                    "method": "btree",
-                    "with": {}
-                }
-            },
-            "foreignKeys": {
-                "topaz_session_user_id_topaz_user_id_fk": {
-                    "name": "topaz_session_user_id_topaz_user_id_fk",
-                    "tableFrom": "topaz_session",
-                    "tableTo": "topaz_user",
-                    "columnsFrom": ["user_id"],
-                    "columnsTo": ["id"],
-                    "onDelete": "no action",
-                    "onUpdate": "no action"
-                }
-            },
-            "compositePrimaryKeys": {},
-            "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+        "private": {
+          "name": "private",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
-        "public.topaz_user": {
-            "name": "topaz_user",
-            "schema": "",
-            "columns": {
-                "id": {
-                    "name": "id",
-                    "type": "uuid",
-                    "primaryKey": true,
-                    "notNull": true
-                },
-                "public_id": {
-                    "name": "public_id",
-                    "type": "varchar(128)",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "name": {
-                    "name": "name",
-                    "type": "varchar(255)",
-                    "primaryKey": false,
-                    "notNull": false
-                },
-                "email": {
-                    "name": "email",
-                    "type": "varchar(255)",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "email_verified": {
-                    "name": "email_verified",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": false,
-                    "default": "CURRENT_TIMESTAMP"
-                },
-                "image": {
-                    "name": "image",
-                    "type": "varchar(255)",
-                    "primaryKey": false,
-                    "notNull": false
-                }
-            },
-            "indexes": {},
-            "foreignKeys": {},
-            "compositePrimaryKeys": {},
-            "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+        "added_at": {
+          "name": "added_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
         },
-        "public.topaz_verification_token": {
-            "name": "topaz_verification_token",
-            "schema": "",
-            "columns": {
-                "identifier": {
-                    "name": "identifier",
-                    "type": "varchar(255)",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "token": {
-                    "name": "token",
-                    "type": "varchar(255)",
-                    "primaryKey": false,
-                    "notNull": true
-                },
-                "expires": {
-                    "name": "expires",
-                    "type": "timestamp with time zone",
-                    "primaryKey": false,
-                    "notNull": true
-                }
-            },
-            "indexes": {},
-            "foreignKeys": {},
-            "compositePrimaryKeys": {
-                "topaz_verification_token_identifier_token_pk": {
-                    "name": "topaz_verification_token_identifier_token_pk",
-                    "columns": ["identifier", "token"]
-                }
-            },
-            "uniqueConstraints": {},
-            "policies": {},
-            "checkConstraints": {},
-            "isRLSEnabled": false
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
-    },
-    "enums": {
-        "public.reading_status": {
-            "name": "reading_status",
-            "schema": "public",
-            "values": ["NotStarted", "Reading", "Paused", "Completed", "Dropped"]
+      },
+      "indexes": {
+        "library_entry_public_id_uidx": {
+          "name": "library_entry_public_id_uidx",
+          "columns": [
+            {
+              "expression": "public_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
         },
-        "public.source": {
-            "name": "source",
-            "schema": "public",
-            "values": [
-                "ArchiveOfOurOwn",
-                "FanFictionNet",
-                "Wattpad",
-                "SpaceBattles",
-                "SufficientVelocity",
-                "QuestionableQuesting",
-                "RoyalRoad",
-                "WebNovel",
-                "ScribbleHub",
-                "NovelBin",
-                "Other"
-            ]
+        "library_entry_user_work_uidx": {
+          "name": "library_entry_user_work_uidx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "work_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
         },
-        "public.story_status": {
-            "name": "story_status",
-            "schema": "public",
-            "values": ["Ongoing", "Completed", "Hiatus", "Abandoned"]
+        "library_entry_user_idx": {
+          "name": "library_entry_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "library_entry_work_idx": {
+          "name": "library_entry_work_idx",
+          "columns": [
+            {
+              "expression": "work_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "library_entry_user_status_idx": {
+          "name": "library_entry_user_status_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "library_entry_user_updated_idx": {
+          "name": "library_entry_user_updated_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
         }
-    },
-    "schemas": {},
-    "sequences": {},
-    "roles": {},
-    "policies": {},
-    "views": {
-        "public.library_mv": {
-            "columns": {},
-            "definition": "select \"topaz_progress\".\"public_id\" as \"progress_public_id\", \"topaz_user\".\"public_id\" as \"user_public_id\", \"topaz_story\".\"public_id\" as \"story_public_id\", \"topaz_story\".\"title\" as \"story_title\", \"topaz_story\".\"author\" as \"story_author\", \"topaz_story\".\"source\" as \"story_source\", \"topaz_story\".\"url\" as \"story_url\", \"topaz_story\".\"status\" as \"story_status\", \"topaz_story\".\"chapter_count\" as \"story_chapter_count\", \"topaz_story\".\"word_count\" as \"story_word_count\", \"topaz_story\".\"is_nsfw\" as \"story_is_nsfw\", \"topaz_story\".\"description\" as \"story_description\", \"topaz_progress\".\"reading_status\" as \"progress_status\", \"topaz_progress\".\"current_chapter\" as \"progress_current_chapter\", \"topaz_progress\".\"rating\" as \"progress_rating\", \"topaz_progress\".\"notes\" as \"progress_notes\", (\n                setweight(to_tsvector('english', \"topaz_story\".\"title\"), 'A') ||\n                setweight(to_tsvector('english', \"topaz_story\".\"author\"), 'B') ||\n                setweight(to_tsvector('english', coalesce(\"topaz_story\".\"description\", '')), 'C') ||\n                setweight(to_tsvector('english', coalesce(\"topaz_story\".\"summary\", '')), 'D') ||\n                setweight(to_tsvector('english', coalesce(string_agg(DISTINCT \"topaz_tag\".\"name\", ' '), '')), 'C') ||\n                setweight(to_tsvector('english', coalesce(string_agg(DISTINCT \"topaz_fandom\".\"name\", ' '), '')), 'C') ||\n                setweight(to_tsvector('english', coalesce(\"topaz_progress\".\"reading_status\"::text, 'Reading')), 'D') ||\n                setweight(to_tsvector('english', coalesce(\"topaz_progress\".\"notes\", '')), 'D')\n            ) as \"search_vector\", COALESCE(\n                json_agg(\n                    DISTINCT jsonb_build_object(\n                        'publicId', \"topaz_tag\".\"public_id\",\n                        'name', \"topaz_tag\".\"name\"\n                    )\n                ) FILTER (WHERE \"topaz_tag\".\"id\" IS NOT NULL),\n                '[]'::json\n            ) as \"tags\", COALESCE(\n                json_agg(\n                    DISTINCT jsonb_build_object(\n                        'publicId', \"topaz_fandom\".\"public_id\",\n                        'name', \"topaz_fandom\".\"name\"\n                    )\n                ) FILTER (WHERE \"topaz_fandom\".\"id\" IS NOT NULL),\n                '[]'::json\n            ) as \"fandoms\", \"topaz_progress\".\"updated_at\" as \"updated_at\", \"topaz_progress\".\"created_at\" as \"created_at\" from \"topaz_progress\" inner join \"topaz_user\" on \"topaz_user\".\"id\" = \"topaz_progress\".\"user_id\" inner join \"topaz_story\" on \"topaz_story\".\"id\" = \"topaz_progress\".\"story_id\" left join \"topaz_story_tag\" on \"topaz_story_tag\".\"story_id\" = \"topaz_story\".\"id\" left join \"topaz_tag\" on \"topaz_tag\".\"id\" = \"topaz_story_tag\".\"tag_id\" left join \"topaz_story_fandom\" on \"topaz_story_fandom\".\"story_id\" = \"topaz_story\".\"id\" left join \"topaz_fandom\" on \"topaz_fandom\".\"id\" = \"topaz_story_fandom\".\"fandom_id\" group by \"topaz_progress\".\"public_id\", \"topaz_user\".\"public_id\", \"topaz_story\".\"public_id\", \"topaz_story\".\"title\", \"topaz_story\".\"author\", \"topaz_story\".\"source\", \"topaz_story\".\"description\", \"topaz_story\".\"summary\", \"topaz_story\".\"url\", \"topaz_story\".\"status\", \"topaz_story\".\"chapter_count\", \"topaz_story\".\"word_count\", \"topaz_story\".\"is_nsfw\", \"topaz_progress\".\"reading_status\", \"topaz_progress\".\"current_chapter\", \"topaz_progress\".\"rating\", \"topaz_progress\".\"notes\", \"topaz_progress\".\"updated_at\", \"topaz_progress\".\"created_at\"",
-            "name": "library_mv",
-            "schema": "public",
-            "isExisting": false,
-            "materialized": true
+      },
+      "foreignKeys": {
+        "topaz_library_entry_user_id_topaz_user_id_fk": {
+          "name": "topaz_library_entry_user_id_topaz_user_id_fk",
+          "tableFrom": "topaz_library_entry",
+          "tableTo": "topaz_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
-        "public.library_stats_mv": {
-            "columns": {},
-            "definition": "select COALESCE(SUM(\"topaz_story\".\"word_count\"), 0) as \"total_words_read\", COALESCE(SUM(\"topaz_story\".\"chapter_count\"), 0) as \"total_chapters_read\", COUNT(DISTINCT \"topaz_fandom\".\"id\") as \"fandom_count\", COUNT(DISTINCT \"topaz_story\".\"id\") as \"story_count\", COUNT(CASE WHEN \"topaz_progress\".\"reading_status\" = 'Completed' THEN 1 END) as \"completed\", COUNT(CASE WHEN \"topaz_progress\".\"reading_status\" = 'Paused' THEN 1 END) as \"paused\", COUNT(CASE WHEN \"topaz_progress\".\"reading_status\" = 'Dropped' THEN 1 END) as \"dropped\", COUNT(CASE WHEN \"topaz_progress\".\"reading_status\" = 'Reading' THEN 1 END) as \"reading\", COALESCE(AVG(\"topaz_progress\".\"rating\"), 0) as \"average_rating\" from \"topaz_progress\" inner join \"topaz_story\" on \"topaz_story\".\"id\" = \"topaz_progress\".\"story_id\" left join \"topaz_story_fandom\" on \"topaz_story_fandom\".\"story_id\" = \"topaz_story\".\"id\" left join \"topaz_fandom\" on \"topaz_fandom\".\"id\" = \"topaz_story_fandom\".\"fandom_id\"",
-            "name": "library_stats_mv",
-            "schema": "public",
-            "isExisting": false,
-            "materialized": true
+        "topaz_library_entry_work_id_topaz_work_id_fk": {
+          "name": "topaz_library_entry_work_id_topaz_work_id_fk",
+          "tableFrom": "topaz_library_entry",
+          "tableTo": "topaz_work",
+          "columnsFrom": [
+            "work_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "_meta": {
-        "columns": {},
-        "schemas": {},
-        "tables": {}
+    "public.topaz_reading_event": {
+      "name": "topaz_reading_event",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_id": {
+          "name": "public_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "library_entry_id": {
+          "name": "library_entry_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_status": {
+          "name": "from_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_status": {
+          "name": "to_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "from_chapter": {
+          "name": "from_chapter",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_chapter": {
+          "name": "to_chapter",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "from_rating": {
+          "name": "from_rating",
+          "type": "numeric(2, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_rating": {
+          "name": "to_rating",
+          "type": "numeric(2, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "event_at": {
+          "name": "event_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "reading_event_public_id_uidx": {
+          "name": "reading_event_public_id_uidx",
+          "columns": [
+            {
+              "expression": "public_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "reading_event_library_entry_idx": {
+          "name": "reading_event_library_entry_idx",
+          "columns": [
+            {
+              "expression": "library_entry_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "reading_event_event_at_idx": {
+          "name": "reading_event_event_at_idx",
+          "columns": [
+            {
+              "expression": "event_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "reading_event_library_entry_event_at_idx": {
+          "name": "reading_event_library_entry_event_at_idx",
+          "columns": [
+            {
+              "expression": "library_entry_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "event_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "topaz_reading_event_library_entry_id_topaz_library_entry_id_fk": {
+          "name": "topaz_reading_event_library_entry_id_topaz_library_entry_id_fk",
+          "tableFrom": "topaz_reading_event",
+          "tableTo": "topaz_library_entry",
+          "columnsFrom": [
+            "library_entry_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "reading_event_metadata_object": {
+          "name": "reading_event_metadata_object",
+          "value": "jsonb_typeof(\"topaz_reading_event\".\"metadata\") = 'object'"
+        },
+        "reading_event_from_chapter_nonnegative": {
+          "name": "reading_event_from_chapter_nonnegative",
+          "value": "\"topaz_reading_event\".\"from_chapter\" IS NULL OR \"topaz_reading_event\".\"from_chapter\" >= 0"
+        },
+        "reading_event_to_chapter_nonnegative": {
+          "name": "reading_event_to_chapter_nonnegative",
+          "value": "\"topaz_reading_event\".\"to_chapter\" IS NULL OR \"topaz_reading_event\".\"to_chapter\" >= 0"
+        },
+        "reading_event_from_rating_range": {
+          "name": "reading_event_from_rating_range",
+          "value": "\"topaz_reading_event\".\"from_rating\" IS NULL OR (\"topaz_reading_event\".\"from_rating\" >= 0 AND \"topaz_reading_event\".\"from_rating\" <= 5)"
+        },
+        "reading_event_to_rating_range": {
+          "name": "reading_event_to_rating_range",
+          "value": "\"topaz_reading_event\".\"to_rating\" IS NULL OR (\"topaz_reading_event\".\"to_rating\" >= 0 AND \"topaz_reading_event\".\"to_rating\" <= 5)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.topaz_reading_state": {
+      "name": "topaz_reading_state",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_id": {
+          "name": "public_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "library_entry_id": {
+          "name": "library_entry_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_chapter": {
+          "name": "current_chapter",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "current_percent": {
+          "name": "current_percent",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rating": {
+          "name": "rating",
+          "type": "numeric(2, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_read_at": {
+          "name": "last_read_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reread_count": {
+          "name": "reread_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "reading_state_public_id_uidx": {
+          "name": "reading_state_public_id_uidx",
+          "columns": [
+            {
+              "expression": "public_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "reading_state_library_entry_uidx": {
+          "name": "reading_state_library_entry_uidx",
+          "columns": [
+            {
+              "expression": "library_entry_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "reading_state_library_entry_idx": {
+          "name": "reading_state_library_entry_idx",
+          "columns": [
+            {
+              "expression": "library_entry_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "topaz_reading_state_library_entry_id_topaz_library_entry_id_fk": {
+          "name": "topaz_reading_state_library_entry_id_topaz_library_entry_id_fk",
+          "tableFrom": "topaz_reading_state",
+          "tableTo": "topaz_library_entry",
+          "columnsFrom": [
+            "library_entry_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "reading_state_rating_range": {
+          "name": "reading_state_rating_range",
+          "value": "\"topaz_reading_state\".\"rating\" IS NULL OR (\"topaz_reading_state\".\"rating\" >= 0 AND \"topaz_reading_state\".\"rating\" <= 5)"
+        },
+        "reading_state_current_percent_range": {
+          "name": "reading_state_current_percent_range",
+          "value": "\"topaz_reading_state\".\"current_percent\" IS NULL OR (\"topaz_reading_state\".\"current_percent\" >= 0 AND \"topaz_reading_state\".\"current_percent\" <= 100)"
+        },
+        "reading_state_current_chapter_nonnegative": {
+          "name": "reading_state_current_chapter_nonnegative",
+          "value": "\"topaz_reading_state\".\"current_chapter\" >= 0"
+        },
+        "reading_state_reread_count_nonnegative": {
+          "name": "reading_state_reread_count_nonnegative",
+          "value": "\"topaz_reading_state\".\"reread_count\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.topaz_contributor": {
+      "name": "topaz_contributor",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_id": {
+          "name": "public_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "citext",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_name": {
+          "name": "sort_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "platform_handles": {
+          "name": "platform_handles",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "contributor_public_id_uidx": {
+          "name": "contributor_public_id_uidx",
+          "columns": [
+            {
+              "expression": "public_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "contributor_sort_name_idx": {
+          "name": "contributor_sort_name_idx",
+          "columns": [
+            {
+              "expression": "sort_name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "contributor_name_trgm_idx": {
+          "name": "contributor_name_trgm_idx",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "contributor_platform_handles_object": {
+          "name": "contributor_platform_handles_object",
+          "value": "jsonb_typeof(\"topaz_contributor\".\"platform_handles\") = 'object'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.topaz_source_platform": {
+      "name": "topaz_source_platform",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_id": {
+          "name": "public_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_url": {
+          "name": "base_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "source_platform_public_id_uidx": {
+          "name": "source_platform_public_id_uidx",
+          "columns": [
+            {
+              "expression": "public_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "source_platform_key_uidx": {
+          "name": "source_platform_key_uidx",
+          "columns": [
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.topaz_work_contributor": {
+      "name": "topaz_work_contributor",
+      "schema": "",
+      "columns": {
+        "work_id": {
+          "name": "work_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contributor_id": {
+          "name": "contributor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'author'"
+        },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "work_contributor_contributor_idx": {
+          "name": "work_contributor_contributor_idx",
+          "columns": [
+            {
+              "expression": "contributor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_contributor_work_idx": {
+          "name": "work_contributor_work_idx",
+          "columns": [
+            {
+              "expression": "work_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "topaz_work_contributor_work_id_topaz_work_id_fk": {
+          "name": "topaz_work_contributor_work_id_topaz_work_id_fk",
+          "tableFrom": "topaz_work_contributor",
+          "tableTo": "topaz_work",
+          "columnsFrom": [
+            "work_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "topaz_work_contributor_contributor_id_topaz_contributor_id_fk": {
+          "name": "topaz_work_contributor_contributor_id_topaz_contributor_id_fk",
+          "tableFrom": "topaz_work_contributor",
+          "tableTo": "topaz_contributor",
+          "columnsFrom": [
+            "contributor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "topaz_work_contributor_work_id_contributor_id_role_pk": {
+          "name": "topaz_work_contributor_work_id_contributor_id_role_pk",
+          "columns": [
+            "work_id",
+            "contributor_id",
+            "role"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.topaz_work_source": {
+      "name": "topaz_work_source",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_id": {
+          "name": "public_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "work_id": {
+          "name": "work_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_platform_id": {
+          "name": "source_platform_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "normalized_url": {
+          "name": "normalized_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "title_on_source": {
+          "name": "title_on_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "author_on_source": {
+          "name": "author_on_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chapter_count": {
+          "name": "chapter_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "word_count": {
+          "name": "word_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_status": {
+          "name": "source_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'unknown'"
+        },
+        "first_published_at": {
+          "name": "first_published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_updated_at": {
+          "name": "last_updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_checked_at": {
+          "name": "last_checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "raw_metadata": {
+          "name": "raw_metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "is_primary": {
+          "name": "is_primary",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "work_source_public_id_uidx": {
+          "name": "work_source_public_id_uidx",
+          "columns": [
+            {
+              "expression": "public_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_source_platform_normalized_url_uidx": {
+          "name": "work_source_platform_normalized_url_uidx",
+          "columns": [
+            {
+              "expression": "source_platform_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "normalized_url",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_source_platform_external_id_uidx": {
+          "name": "work_source_platform_external_id_uidx",
+          "columns": [
+            {
+              "expression": "source_platform_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "external_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"topaz_work_source\".\"external_id\" IS NOT NULL",
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_source_work_idx": {
+          "name": "work_source_work_idx",
+          "columns": [
+            {
+              "expression": "work_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_source_platform_idx": {
+          "name": "work_source_platform_idx",
+          "columns": [
+            {
+              "expression": "source_platform_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_source_primary_idx": {
+          "name": "work_source_primary_idx",
+          "columns": [
+            {
+              "expression": "work_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "is_primary",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "topaz_work_source_work_id_topaz_work_id_fk": {
+          "name": "topaz_work_source_work_id_topaz_work_id_fk",
+          "tableFrom": "topaz_work_source",
+          "tableTo": "topaz_work",
+          "columnsFrom": [
+            "work_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "topaz_work_source_source_platform_id_topaz_source_platform_id_fk": {
+          "name": "topaz_work_source_source_platform_id_topaz_source_platform_id_fk",
+          "tableFrom": "topaz_work_source",
+          "tableTo": "topaz_source_platform",
+          "columnsFrom": [
+            "source_platform_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "work_source_chapter_count_nonnegative": {
+          "name": "work_source_chapter_count_nonnegative",
+          "value": "\"topaz_work_source\".\"chapter_count\" IS NULL OR \"topaz_work_source\".\"chapter_count\" >= 0"
+        },
+        "work_source_word_count_nonnegative": {
+          "name": "work_source_word_count_nonnegative",
+          "value": "\"topaz_work_source\".\"word_count\" IS NULL OR \"topaz_work_source\".\"word_count\" >= 0"
+        },
+        "work_source_raw_metadata_object": {
+          "name": "work_source_raw_metadata_object",
+          "value": "jsonb_typeof(\"topaz_work_source\".\"raw_metadata\") = 'object'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.topaz_work": {
+      "name": "topaz_work",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_id": {
+          "name": "public_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "citext",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_title": {
+          "name": "sort_title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "publication_status": {
+          "name": "publication_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'unknown'"
+        },
+        "content_rating": {
+          "name": "content_rating",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'unknown'"
+        },
+        "is_nsfw": {
+          "name": "is_nsfw",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "work_public_id_uidx": {
+          "name": "work_public_id_uidx",
+          "columns": [
+            {
+              "expression": "public_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_sort_title_idx": {
+          "name": "work_sort_title_idx",
+          "columns": [
+            {
+              "expression": "sort_title",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_publication_status_idx": {
+          "name": "work_publication_status_idx",
+          "columns": [
+            {
+              "expression": "publication_status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_created_at_idx": {
+          "name": "work_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_updated_at_idx": {
+          "name": "work_updated_at_idx",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.topaz_taxonomy_kind": {
+      "name": "topaz_taxonomy_kind",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_id": {
+          "name": "public_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_assignable": {
+          "name": "is_assignable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "allows_relations": {
+          "name": "allows_relations",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "taxonomy_kind_public_id_uidx": {
+          "name": "taxonomy_kind_public_id_uidx",
+          "columns": [
+            {
+              "expression": "public_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_kind_key_uidx": {
+          "name": "taxonomy_kind_key_uidx",
+          "columns": [
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_kind_sort_order_idx": {
+          "name": "taxonomy_kind_sort_order_idx",
+          "columns": [
+            {
+              "expression": "sort_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.topaz_taxonomy_label": {
+      "name": "topaz_taxonomy_label",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_id": {
+          "name": "public_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "term_id": {
+          "name": "term_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "citext",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "normalized_label": {
+          "name": "normalized_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label_type": {
+          "name": "label_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'alias'"
+        },
+        "is_primary": {
+          "name": "is_primary",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_searchable": {
+          "name": "is_searchable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "taxonomy_label_public_id_uidx": {
+          "name": "taxonomy_label_public_id_uidx",
+          "columns": [
+            {
+              "expression": "public_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_label_term_normalized_uidx": {
+          "name": "taxonomy_label_term_normalized_uidx",
+          "columns": [
+            {
+              "expression": "term_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "normalized_label",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_label_primary_term_uidx": {
+          "name": "taxonomy_label_primary_term_uidx",
+          "columns": [
+            {
+              "expression": "term_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"topaz_taxonomy_label\".\"is_primary\" = true",
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_label_normalized_idx": {
+          "name": "taxonomy_label_normalized_idx",
+          "columns": [
+            {
+              "expression": "normalized_label",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_label_term_idx": {
+          "name": "taxonomy_label_term_idx",
+          "columns": [
+            {
+              "expression": "term_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_label_label_trgm_idx": {
+          "name": "taxonomy_label_label_trgm_idx",
+          "columns": [
+            {
+              "expression": "label",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "topaz_taxonomy_label_term_id_topaz_taxonomy_term_id_fk": {
+          "name": "topaz_taxonomy_label_term_id_topaz_taxonomy_term_id_fk",
+          "tableFrom": "topaz_taxonomy_label",
+          "tableTo": "topaz_taxonomy_term",
+          "columnsFrom": [
+            "term_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.topaz_taxonomy_relation": {
+      "name": "topaz_taxonomy_relation",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_id": {
+          "name": "public_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_term_id": {
+          "name": "from_term_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_term_id": {
+          "name": "to_term_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "relation_type": {
+          "name": "relation_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "taxonomy_relation_public_id_uidx": {
+          "name": "taxonomy_relation_public_id_uidx",
+          "columns": [
+            {
+              "expression": "public_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_relation_edge_uidx": {
+          "name": "taxonomy_relation_edge_uidx",
+          "columns": [
+            {
+              "expression": "from_term_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "to_term_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "relation_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_relation_from_idx": {
+          "name": "taxonomy_relation_from_idx",
+          "columns": [
+            {
+              "expression": "from_term_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_relation_to_idx": {
+          "name": "taxonomy_relation_to_idx",
+          "columns": [
+            {
+              "expression": "to_term_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_relation_type_idx": {
+          "name": "taxonomy_relation_type_idx",
+          "columns": [
+            {
+              "expression": "relation_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "topaz_taxonomy_relation_from_term_id_topaz_taxonomy_term_id_fk": {
+          "name": "topaz_taxonomy_relation_from_term_id_topaz_taxonomy_term_id_fk",
+          "tableFrom": "topaz_taxonomy_relation",
+          "tableTo": "topaz_taxonomy_term",
+          "columnsFrom": [
+            "from_term_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "topaz_taxonomy_relation_to_term_id_topaz_taxonomy_term_id_fk": {
+          "name": "topaz_taxonomy_relation_to_term_id_topaz_taxonomy_term_id_fk",
+          "tableFrom": "topaz_taxonomy_relation",
+          "tableTo": "topaz_taxonomy_term",
+          "columnsFrom": [
+            "to_term_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "taxonomy_relation_no_self_edge": {
+          "name": "taxonomy_relation_no_self_edge",
+          "value": "\"topaz_taxonomy_relation\".\"from_term_id\" <> \"topaz_taxonomy_relation\".\"to_term_id\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.topaz_taxonomy_term": {
+      "name": "topaz_taxonomy_term",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_id": {
+          "name": "public_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind_id": {
+          "name": "kind_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "citext",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "normalized_name": {
+          "name": "normalized_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "disambiguation": {
+          "name": "disambiguation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "merged_into_id": {
+          "name": "merged_into_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "taxonomy_term_public_id_uidx": {
+          "name": "taxonomy_term_public_id_uidx",
+          "columns": [
+            {
+              "expression": "public_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_term_kind_slug_uidx": {
+          "name": "taxonomy_term_kind_slug_uidx",
+          "columns": [
+            {
+              "expression": "kind_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_term_kind_active_normalized_name_uidx": {
+          "name": "taxonomy_term_kind_active_normalized_name_uidx",
+          "columns": [
+            {
+              "expression": "kind_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "normalized_name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"topaz_taxonomy_term\".\"status\" = 'active'",
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_term_kind_idx": {
+          "name": "taxonomy_term_kind_idx",
+          "columns": [
+            {
+              "expression": "kind_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_term_merged_into_idx": {
+          "name": "taxonomy_term_merged_into_idx",
+          "columns": [
+            {
+              "expression": "merged_into_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "taxonomy_term_name_trgm_idx": {
+          "name": "taxonomy_term_name_trgm_idx",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "gin",
+          "with": {}
+        },
+        "taxonomy_term_slug_trgm_idx": {
+          "name": "taxonomy_term_slug_trgm_idx",
+          "columns": [
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "topaz_taxonomy_term_kind_id_topaz_taxonomy_kind_id_fk": {
+          "name": "topaz_taxonomy_term_kind_id_topaz_taxonomy_kind_id_fk",
+          "tableFrom": "topaz_taxonomy_term",
+          "tableTo": "topaz_taxonomy_kind",
+          "columnsFrom": [
+            "kind_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "topaz_taxonomy_term_merged_into_id_topaz_taxonomy_term_id_fk": {
+          "name": "topaz_taxonomy_term_merged_into_id_topaz_taxonomy_term_id_fk",
+          "tableFrom": "topaz_taxonomy_term",
+          "tableTo": "topaz_taxonomy_term",
+          "columnsFrom": [
+            "merged_into_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.topaz_work_taxonomy_assignment": {
+      "name": "topaz_work_taxonomy_assignment",
+      "schema": "",
+      "columns": {
+        "work_id": {
+          "name": "work_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "term_id": {
+          "name": "term_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "work_taxonomy_assignment_work_idx": {
+          "name": "work_taxonomy_assignment_work_idx",
+          "columns": [
+            {
+              "expression": "work_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_taxonomy_assignment_term_idx": {
+          "name": "work_taxonomy_assignment_term_idx",
+          "columns": [
+            {
+              "expression": "term_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "topaz_work_taxonomy_assignment_work_id_topaz_work_id_fk": {
+          "name": "topaz_work_taxonomy_assignment_work_id_topaz_work_id_fk",
+          "tableFrom": "topaz_work_taxonomy_assignment",
+          "tableTo": "topaz_work",
+          "columnsFrom": [
+            "work_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "topaz_work_taxonomy_assignment_term_id_topaz_taxonomy_term_id_fk": {
+          "name": "topaz_work_taxonomy_assignment_term_id_topaz_taxonomy_term_id_fk",
+          "tableFrom": "topaz_work_taxonomy_assignment",
+          "tableTo": "topaz_taxonomy_term",
+          "columnsFrom": [
+            "term_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "topaz_work_taxonomy_assignment_work_id_term_id_pk": {
+          "name": "topaz_work_taxonomy_assignment_work_id_term_id_pk",
+          "columns": [
+            "work_id",
+            "term_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.topaz_work_taxonomy_effective": {
+      "name": "topaz_work_taxonomy_effective",
+      "schema": "",
+      "columns": {
+        "work_id": {
+          "name": "work_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "term_id": {
+          "name": "term_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_term_id": {
+          "name": "source_term_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "depth": {
+          "name": "depth",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "work_taxonomy_effective_work_idx": {
+          "name": "work_taxonomy_effective_work_idx",
+          "columns": [
+            {
+              "expression": "work_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_taxonomy_effective_term_idx": {
+          "name": "work_taxonomy_effective_term_idx",
+          "columns": [
+            {
+              "expression": "term_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_taxonomy_effective_source_term_idx": {
+          "name": "work_taxonomy_effective_source_term_idx",
+          "columns": [
+            {
+              "expression": "source_term_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        },
+        "work_taxonomy_effective_reason_idx": {
+          "name": "work_taxonomy_effective_reason_idx",
+          "columns": [
+            {
+              "expression": "reason",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": true,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "topaz_work_taxonomy_effective_work_id_topaz_work_id_fk": {
+          "name": "topaz_work_taxonomy_effective_work_id_topaz_work_id_fk",
+          "tableFrom": "topaz_work_taxonomy_effective",
+          "tableTo": "topaz_work",
+          "columnsFrom": [
+            "work_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "topaz_work_taxonomy_effective_term_id_topaz_taxonomy_term_id_fk": {
+          "name": "topaz_work_taxonomy_effective_term_id_topaz_taxonomy_term_id_fk",
+          "tableFrom": "topaz_work_taxonomy_effective",
+          "tableTo": "topaz_taxonomy_term",
+          "columnsFrom": [
+            "term_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "topaz_work_taxonomy_effective_source_term_id_topaz_taxonomy_term_id_fk": {
+          "name": "topaz_work_taxonomy_effective_source_term_id_topaz_taxonomy_term_id_fk",
+          "tableFrom": "topaz_work_taxonomy_effective",
+          "tableTo": "topaz_taxonomy_term",
+          "columnsFrom": [
+            "source_term_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "topaz_work_taxonomy_effective_work_id_term_id_pk": {
+          "name": "topaz_work_taxonomy_effective_work_id_term_id_pk",
+          "columns": [
+            "work_id",
+            "term_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "work_taxonomy_effective_depth_nonnegative": {
+          "name": "work_taxonomy_effective_depth_nonnegative",
+          "value": "\"topaz_work_taxonomy_effective\".\"depth\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.topaz_account": {
+      "name": "topaz_account",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_account_id": {
+          "name": "provider_account_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_type": {
+          "name": "token_type",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "session_state": {
+          "name": "session_state",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "account_user_id_idx": {
+          "name": "account_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "topaz_account_user_id_topaz_user_id_fk": {
+          "name": "topaz_account_user_id_topaz_user_id_fk",
+          "tableFrom": "topaz_account",
+          "tableTo": "topaz_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "topaz_account_provider_provider_account_id_pk": {
+          "name": "topaz_account_provider_provider_account_id_pk",
+          "columns": [
+            "provider",
+            "provider_account_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.topaz_session": {
+      "name": "topaz_session",
+      "schema": "",
+      "columns": {
+        "session_token": {
+          "name": "session_token",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires": {
+          "name": "expires",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "t_user_id_idx": {
+          "name": "t_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "topaz_session_user_id_topaz_user_id_fk": {
+          "name": "topaz_session_user_id_topaz_user_id_fk",
+          "tableFrom": "topaz_session",
+          "tableTo": "topaz_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.topaz_user": {
+      "name": "topaz_user",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_id": {
+          "name": "public_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "image": {
+          "name": "image",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.topaz_verification_token": {
+      "name": "topaz_verification_token",
+      "schema": "",
+      "columns": {
+        "identifier": {
+          "name": "identifier",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires": {
+          "name": "expires",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "topaz_verification_token_identifier_token_pk": {
+          "name": "topaz_verification_token_identifier_token_pk",
+          "columns": [
+            "identifier",
+            "token"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
 }

@@ -12,7 +12,13 @@ import {
     DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
 import { useLibraryFilter } from "#/features/library/hooks/use-library-filter";
-import { type ProgressSortBy, type ProgressStatus, progressStatusLabels } from "#/server/db/schema";
+import {
+    type ProgressSortBy,
+    type ProgressStatus,
+    progressStatusLabels,
+    type Source,
+    sourceLabels,
+} from "#/server/db/schema";
 
 export type SortOption = {
     value: ProgressSortBy;
@@ -46,6 +52,27 @@ export const STATUS_OPTIONS: StatusOption[] = [
     { value: "Dropped", label: progressStatusLabels.Dropped },
 ] as const;
 
+const SOURCE_OPTIONS: { value: Source | "all"; label: string }[] = [
+    { value: "all", label: "All Sources" },
+    { value: "ArchiveOfOurOwn", label: sourceLabels.ArchiveOfOurOwn },
+    { value: "FanFictionNet", label: sourceLabels.FanFictionNet },
+    { value: "Wattpad", label: sourceLabels.Wattpad },
+    { value: "SpaceBattles", label: sourceLabels.SpaceBattles },
+    { value: "SufficientVelocity", label: sourceLabels.SufficientVelocity },
+    { value: "QuestionableQuesting", label: sourceLabels.QuestionableQuesting },
+    { value: "RoyalRoad", label: sourceLabels.RoyalRoad },
+    { value: "WebNovel", label: sourceLabels.WebNovel },
+    { value: "ScribbleHub", label: sourceLabels.ScribbleHub },
+    { value: "NovelBin", label: sourceLabels.NovelBin },
+    { value: "Other", label: sourceLabels.Other },
+] as const;
+
+const TRI_STATE_OPTIONS = [
+    { value: "all", label: "All" },
+    { value: "yes", label: "Yes" },
+    { value: "no", label: "No" },
+] as const;
+
 type LibraryFilterContentProps = {
     currentStatusLabel: string;
 };
@@ -53,7 +80,22 @@ type LibraryFilterContentProps = {
 export const LibraryFilterContent = React.memo(function FilterContent({
     currentStatusLabel,
 }: LibraryFilterContentProps) {
-    const { status, setStatus, sortBy, setSortBy, sortOrder, setSortOrder } = useLibraryFilter();
+    const {
+        favorite,
+        hasNotes,
+        isNsfw,
+        setFavorite,
+        setHasNotes,
+        setIsNsfw,
+        setSource,
+        source,
+        status,
+        setStatus,
+        sortBy,
+        setSortBy,
+        sortOrder,
+        setSortOrder,
+    } = useLibraryFilter();
 
     const handleSortOrderToggle = useCallback(() => {
         setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -73,8 +115,36 @@ export const LibraryFilterContent = React.memo(function FilterContent({
         [setSortBy]
     );
 
+    const handleSourceChange = useCallback(
+        (value: string) => {
+            setSource(value as Source | "all");
+        },
+        [setSource]
+    );
+
+    const handleFavoriteChange = useCallback(
+        (value: string) => {
+            setFavorite(value as "all" | "yes" | "no");
+        },
+        [setFavorite]
+    );
+
+    const handleNsfwChange = useCallback(
+        (value: string) => {
+            setIsNsfw(value as "all" | "yes" | "no");
+        },
+        [setIsNsfw]
+    );
+
+    const handleNotesChange = useCallback(
+        (value: string) => {
+            setHasNotes(value as "all" | "yes" | "no");
+        },
+        [setHasNotes]
+    );
+
     return (
-        <div className="flex flex-col gap-2 px-3 sm:flex-row sm:items-center sm:px-0">
+        <div className="flex flex-col gap-2 px-3 sm:flex-row sm:flex-wrap sm:items-center sm:px-0">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button
@@ -90,6 +160,27 @@ export const LibraryFilterContent = React.memo(function FilterContent({
                 <DropdownMenuContent align="start" className="w-full max-w-xs rounded-md sm:w-auto sm:max-w-none">
                     <DropdownMenuRadioGroup onValueChange={handleStatusChange} value={status}>
                         {STATUS_OPTIONS.map((option) => (
+                            <DropdownMenuRadioItem key={option.value} value={option.value}>
+                                {option.label}
+                            </DropdownMenuRadioItem>
+                        ))}
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        className="w-full justify-center gap-2 rounded-md border-border text-foreground focus-visible:border-transparent focus-visible:ring-0 sm:w-auto"
+                        size="default"
+                        variant="outline"
+                    >
+                        {SOURCE_OPTIONS.find((option) => option.value === source)?.label ?? "All Sources"}
+                        <ChevronDownIcon className="size-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-full max-w-xs rounded-md sm:w-auto sm:max-w-none">
+                    <DropdownMenuRadioGroup onValueChange={handleSourceChange} value={source}>
+                        {SOURCE_OPTIONS.map((option) => (
                             <DropdownMenuRadioItem key={option.value} value={option.value}>
                                 {option.label}
                             </DropdownMenuRadioItem>
@@ -131,6 +222,54 @@ export const LibraryFilterContent = React.memo(function FilterContent({
                     {sortOrder === "asc" ? "Ascending (A-Z)" : "Descending (Z-A)"}
                 </span>
             </Button>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button className="w-full justify-center rounded-md sm:w-auto" size="default" variant="outline">
+                        Favorite: {TRI_STATE_OPTIONS.find((option) => option.value === favorite)?.label ?? "All"}
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="rounded-md">
+                    <DropdownMenuRadioGroup onValueChange={handleFavoriteChange} value={favorite}>
+                        {TRI_STATE_OPTIONS.map((option) => (
+                            <DropdownMenuRadioItem key={option.value} value={option.value}>
+                                {option.label}
+                            </DropdownMenuRadioItem>
+                        ))}
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button className="w-full justify-center rounded-md sm:w-auto" size="default" variant="outline">
+                        NSFW: {TRI_STATE_OPTIONS.find((option) => option.value === isNsfw)?.label ?? "All"}
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="rounded-md">
+                    <DropdownMenuRadioGroup onValueChange={handleNsfwChange} value={isNsfw}>
+                        {TRI_STATE_OPTIONS.map((option) => (
+                            <DropdownMenuRadioItem key={option.value} value={option.value}>
+                                {option.label}
+                            </DropdownMenuRadioItem>
+                        ))}
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button className="w-full justify-center rounded-md sm:w-auto" size="default" variant="outline">
+                        Notes: {TRI_STATE_OPTIONS.find((option) => option.value === hasNotes)?.label ?? "All"}
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="rounded-md">
+                    <DropdownMenuRadioGroup onValueChange={handleNotesChange} value={hasNotes}>
+                        {TRI_STATE_OPTIONS.map((option) => (
+                            <DropdownMenuRadioItem key={option.value} value={option.value}>
+                                {option.label}
+                            </DropdownMenuRadioItem>
+                        ))}
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
     );
 });

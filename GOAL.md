@@ -1,10 +1,23 @@
-# GOAL: Topaz V2 Start Phase
+# GOAL: Topaz V2 Usable Vertical Slice
 
 ## Objective
 
-Hard-cut Topaz from the current `story + progress + flat taxonomy + materialized views` model into the lean V2 foundation described in `topaz-v2-specs/`.
+Make the completed V2 domain foundation usable through the Topaz app.
 
-This first phase is not the full rewrite. It is the schema and backend foundation needed to make the next vertical UI slice possible.
+The previous phase replaced the active schema/backend foundation. This next phase must turn that into a working product slice:
+
+```text
+public user can browse/search/filter the V2 library
+admin can create/edit/delete a work
+admin can attach source and contributor data
+admin can assign taxonomy terms
+effective taxonomy inference is visible through filters/API
+admin can update reading state
+reading_event rows are written for reading changes
+home stats render from V2 data
+```
+
+This is still not a redesign. Keep the existing UI structure where it helps and rewire it to V2.
 
 ## Required Reading
 
@@ -12,123 +25,27 @@ Before changing code, read:
 
 ```text
 topaz-v2-specs/AGENT_INDEX.md
-topaz-v2-specs/00_context/00_project_summary.md
-topaz-v2-specs/01_principles/01_invariants.md
-topaz-v2-specs/02_data/00_schema_contract.md
-topaz-v2-specs/02_data/01_table_catalog.md
 topaz-v2-specs/03_implementation/00_roadmap.md
 topaz-v2-specs/03_implementation/01_acceptance_criteria.md
+topaz-v2-specs/02_data/02_query_and_index_policy.md
+topaz-v2-specs/04_quality/00_gates.md
 ```
 
-## Start Phase Scope
-
-Implement the V2 domain foundation:
+Also inspect the current V2 implementation before editing:
 
 ```text
-Core
-- work
-- source_platform
-- work_source
-- contributor
-- work_contributor
-
-Library
-- library_entry
-- reading_state
-- reading_event
-
-Taxonomy
-- taxonomy_kind
-- taxonomy_term
-- taxonomy_label
-- taxonomy_relation
-- work_taxonomy_assignment
-- work_taxonomy_effective
+src/server/db/schema/
+src/server/db/repositories/
+src/server/api/root.ts
+src/server/api/routers/
+src/features/library/
+src/app/(main)/library/page.tsx
+src/app/(main)/page.tsx
 ```
 
-## Hard-Cut Rules
+## Current Ledger From Previous Goal
 
-```text
-- Do not preserve old story/progress compatibility.
-- Do not keep schema-v2 beside schema in final code.
-- Do not add library_entry_index in this phase.
-- Do not add dirty queues, import jobs, external taxonomy refs, participant parsing, or contributor identities.
-- Replace old domain exports with the V2 canonical shape.
-- Prefer one complete working shape over adapters and dual models.
-```
-
-## Implementation Tasks
-
-1. Replace the Drizzle schema with the 14 V2 domain tables.
-2. Update schema exports so old domain tables are no longer canonical.
-3. Add constraints and indexes from `topaz-v2-specs/02_data/01_table_catalog.md`.
-4. Add seedable constants/helpers for:
-   - source platforms
-   - taxonomy kinds
-   - taxonomy relation types
-   - reading event types
-5. Implement repository primitives for:
-   - creating a work with a primary source
-   - creating/linking a contributor
-   - creating a library entry and reading state
-   - assigning taxonomy terms to a work
-   - rebuilding effective taxonomy rows for one work
-6. Replace or stub routers toward V2 names:
-   - `work`
-   - `library`
-   - `taxonomy`
-7. Keep the app compiling, even if some UI wiring is temporarily minimal.
-
-## Acceptance Criteria
-
-This phase is done when:
-
-```text
-14 V2 domain tables exist in active Drizzle schema
-old story/progress/story_taxonomy_term/taxonomy_alias shape is removed from active schema exports
-source_platform and taxonomy_kind are tables, not Postgres enums
-work_source has DB-level uniqueness for normalized URLs
-reading_event exists
-work_taxonomy_effective exists
-foreign-key columns have indexes
-repository code can create one usable library item
-repository code can rebuild effective terms for one work
-bun run typecheck passes
-```
-
-If time allows, also get:
-
-```text
-bun run lint
-```
-
-## Stop Conditions
-
-Stop and report clearly if:
-
-```text
-- the current migration chain blocks a clean hard cut
-- Drizzle cannot express a required partial unique/index cleanly
-- existing UI imports make a minimal compile impossible without a broader router rewrite
-- auth/user table changes would risk breaking NextAuth unexpectedly
-```
-
-## Out of Scope
-
-```text
-- full UI redesign
-- import/export system
-- denormalized library search index
-- background dirty queue
-- taxonomy participant parser
-- source-specific external taxonomy mapping
-- multi-user sharing/social features
-- careful old-data migration
-```
-
-## Ledger
-
-Status: Start Phase backend foundation implemented.
+Status: V2 backend foundation implemented.
 
 Completed:
 
@@ -162,5 +79,257 @@ Notes:
 
 ```text
 - scripts/populate-database-for-testing.ts no longer seeds V1 story/progress data; it now exits with a V2 fixture-loader notice.
-- No migration reset/generation was performed in this pass.
+- No migration reset/generation was performed in the previous pass.
+```
+
+## Next Phase Scope
+
+### 1. Database Reset/Migration Readiness
+
+Make local V2 schema usable.
+
+Tasks:
+
+```text
+- Decide the cleanest local hard-cut path for Drizzle migrations.
+- Generate or reset migrations only if needed for the app to run locally.
+- Keep this as a hard cut; do not preserve V1 migration compatibility.
+- Add a minimal V2 fixture/seed path if the app needs sample data for verification.
+```
+
+Acceptance:
+
+```text
+- local database can be brought to the V2 schema
+- source platforms and taxonomy kinds can be seeded
+- a minimal fixture library item can exist for UI verification
+```
+
+### 2. V2 Library Query Contract
+
+Make the library list query return the exact shape the UI needs.
+
+Tasks:
+
+```text
+- Verify or complete library list repository query over normal indexed joins.
+- Include work, primary source, contributors, reading state, direct terms, effective terms, and versions.
+- Preserve keyset pagination.
+- Preserve useful search behavior where feasible: full-text, ILIKE, trigram.
+- Implement filters from the V2 query policy as far as current UI supports them.
+```
+
+Acceptance:
+
+```text
+- library query returns stable item shape
+- search works by title, contributor/source author, taxonomy label, and notes
+- filters work for status, source platform, direct/effective taxonomy, rating, favorite, nsfw, and notes
+- no library_entry_index table is introduced
+```
+
+### 3. Create/Edit/Delete Work Flow
+
+Rewire admin mutation flows to V2.
+
+Tasks:
+
+```text
+- Update create form data mapping to work + source + contributor + library_entry + reading_state + taxonomy assignments.
+- Update edit form data mapping to V2 versions and fields.
+- Ensure update writes reading_event rows when status/chapter/rating/notes change.
+- Ensure taxonomy assignment changes rebuild work_taxonomy_effective synchronously.
+- Ensure delete removes dependent rows correctly through FK cascade or explicit transaction.
+```
+
+Acceptance:
+
+```text
+- admin can create a library item from UI
+- admin can edit work/source/contributor/reading/taxonomy fields
+- admin can delete a library item
+- taxonomy effective rows update after assignment changes
+- reading events are written for meaningful reading-state changes
+```
+
+### 4. Taxonomy UI and Inference
+
+Make the taxonomy graph useful, not just present.
+
+Tasks:
+
+```text
+- Update taxonomy multiselect/search to use taxonomy_label and taxonomy_kind.
+- Keep quick-create if practical, but do not block the slice on a perfect taxonomy editor.
+- Add or verify relation mutation support for implies/broader/equivalent_to.
+- Make effective taxonomy filters usable through API, UI, or both.
+```
+
+Acceptance:
+
+```text
+- assigning a direct term works
+- adding an implies/broader/equivalent_to relation can infer terms
+- filtering by an inferred effective term can find the work
+```
+
+### 5. Home Stats and Public Read Path
+
+Restore the public-facing product surface.
+
+Tasks:
+
+```text
+- Update home page stats to read V2 tables/events.
+- Keep public library browsing read-only.
+- Keep admin-only controls gated by existing auth.
+```
+
+Acceptance:
+
+```text
+- home page renders without V1 materialized views
+- library page renders for public users
+- write controls remain admin-only
+```
+
+## Hard-Cut Rules
+
+```text
+- Do not reintroduce V1 story/progress compatibility.
+- Do not add library_entry_index in this phase.
+- Do not add dirty queues, import jobs, external taxonomy refs, participant parsing, or contributor identities.
+- Do not revive full materialized-view refresh after normal mutations.
+- Prefer the existing UI structure unless a small replacement is faster and clearer.
+```
+
+## Validation Gates
+
+Required:
+
+```text
+bun run typecheck
+bunx biome check src scripts
+```
+
+Run if the Biome config/scope has been fixed:
+
+```text
+bun run lint
+```
+
+Manual verification:
+
+```text
+1. local DB is on V2 schema
+2. seed/source platform/taxonomy kind path works
+3. home page renders
+4. library page renders publicly
+5. admin can create a work
+6. admin can edit a work
+7. admin can assign taxonomy
+8. inferred effective taxonomy filter works
+9. admin can update status/chapter/rating/notes
+10. reading_event rows exist for updates
+11. admin can delete the item
+```
+
+## Stop Conditions
+
+Stop and report clearly if:
+
+```text
+- the current Drizzle migration chain needs a destructive reset decision before continuing
+- the local database cannot be safely reset under the user's expected workflow
+- V2 repository/router shape is incomplete enough that UI work would become guesswork
+- auth/session behavior breaks while rewiring public/admin surfaces
+- typecheck cannot be made green without a broader second pass
+```
+
+## Out of Scope
+
+```text
+- UI redesign
+- import/export system
+- denormalized library search index
+- background dirty queue
+- taxonomy participant parser
+- source-specific external taxonomy mapping
+- multi-user sharing/social features
+- careful old-data migration
+```
+
+## Current Ledger
+
+Status: V2 usable vertical slice is wired and verified through public render checks plus authenticated admin tRPC HTTP flow.
+
+Completed in this pass:
+
+```text
+- Replaced the local migration chain with a hard-cut V2 baseline migration.
+- Pinned the local Docker database to postgres:17 so the existing data-volume mount is stable.
+- Added db:prepare:v2 to install citext and pg_trgm before drizzle-kit push on fresh local databases.
+- Added script-local V2 reference/fixture seed commands that do not import server-only repository modules.
+- Verified fresh local DB reset path:
+  docker compose down --remove-orphans -v
+  docker compose up -d topaz-dev-db
+  bun run db:prepare:v2
+  bun run db:push
+  bun run db:seed:v2
+  bun run db:seed:v2:fixture
+- Seed verification showed:
+  source_platforms=11
+  taxonomy_kinds=10
+  fixture_sources=1
+  effective_terms=Character study:implies, Found family:direct
+  reading_events=1
+- Extended library list query for contributor names, direct taxonomy terms, direct/effective taxonomy filters, favorite, notes, NSFW, source, and range filters.
+- Extended library search across work title/description/summary, source title/author, contributor names, notes, and taxonomy labels.
+- Rewired edit defaults to use direct taxonomy assignments instead of effective taxonomy rows.
+- Added taxonomy relation list/create/delete router support and synchronous effective taxonomy rebuild after relation changes.
+- Added explicit adminProcedure usage for active write/admin routers.
+- Removed active V1 story/progress routers and story procedure source files.
+- Removed the unused deleteProgress compatibility alias from the V2 library repository.
+- Removed materialized-view refresh work from the active view router facade.
+- Added public library filter UI controls for source, favorite, NSFW, and notes.
+- Fixed direct/effective taxonomy filter SQL to use parameterized IN predicates instead of ANY over scalar postgres-js params.
+- Added verify:v2:admin to exercise authenticated HTTP tRPC create/update/taxonomy relation/inferred filter/reading event/delete flow against a running dev server.
+- Added verify:v2:public to exercise public home/library render plus browse/search/filter cases against the seeded V2 fixture.
+- Verified home page and public library page return HTTP 200 under the local V2 database.
+- Verified bun run verify:v2:public passed:
+  homePage=true
+  libraryPage=true
+  browse=true
+  titleSearch=true
+  notesSearch=true
+  statusFilter=true
+  sourceFilter=true
+  directTaxonomyFilter=true
+  effectiveTaxonomyFilter=true
+- Verified authenticated /api/auth/session returns HTTP 200 with a generated local Auth.js JWT for the fixture user.
+- Verified authenticated /library render passes isAdministratorUser=true to the client provider.
+- Verified bun run verify:v2:admin passed:
+  createdWork=g7hzhps7jwy6ptznpwienz8v
+  relation=implies
+  filteredByInferred=true
+  readingEventsBeforeDelete=2
+  deleted=true
+- Verified verify:v2:admin cleanup leaves:
+  http_terms=0
+  http_works=0
+- Verified hard-cut regression search found no banned V1/router/materialized-view symbols in src or scripts.
+```
+
+Validation:
+
+```text
+- bun run typecheck: passed
+- bunx biome check src scripts: passed
+- bun run lint: still blocked by repository-wide Biome scope over .agents/skills JSON-with-comments files, plus deprecated biome.json recommended field
+```
+
+Remaining verification:
+
+```text
+- Full browser click-through of modal fields was not run; the authenticated admin HTTP route used by the UI was verified end-to-end.
 ```

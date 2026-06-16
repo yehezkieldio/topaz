@@ -2,14 +2,19 @@ import "server-only";
 
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { cacheLife, cacheTag } from "next/cache";
 import { backendCacheTags } from "#/server/backend/cache/tags";
 import { db } from "#/server/db";
+import { rebuildEffectiveTaxonomyForWork } from "#/server/db/repositories/library-repository";
 import {
     type TaxonomyKind,
+    type TaxonomyRelationType,
     taxonomyKindEnum,
     taxonomyKinds,
     taxonomyLabels,
+    taxonomyRelations,
+    taxonomyRelationTypeEnum,
     taxonomyTerms,
     workTaxonomyAssignments,
 } from "#/server/db/schema/taxonomy";
@@ -17,6 +22,10 @@ import {
 type Database = typeof db;
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type DatabaseOrTransaction = Database | Transaction;
+const fromTerm = alias(taxonomyTerms, "from_term");
+const fromKind = alias(taxonomyKinds, "from_kind");
+const toTerm = alias(taxonomyTerms, "to_term");
+const toKind = alias(taxonomyKinds, "to_kind");
 
 export const TAXONOMY_NAME_MIN = 1;
 export const TAXONOMY_NAME_MAX = 255;
@@ -31,6 +40,13 @@ export type TaxonomyTermSummary = {
     kind: TaxonomyKind;
     name: string;
     publicId: string;
+};
+
+export type TaxonomyRelationSummary = {
+    publicId: string;
+    relationType: TaxonomyRelationType;
+    fromTerm: TaxonomyTermSummary;
+    toTerm: TaxonomyTermSummary;
 };
 
 export type TaxonomyMultiselectResult = {
@@ -363,6 +379,153 @@ export async function createTaxonomyTermForMultiselect(
         kind: input.kind,
         name,
         slug: slugifyTaxonomyName(name),
+    });
+}
+
+async function getTermByPublicId(database: DatabaseOrTransaction, publicId: string) {
+    const [term] = await database
+        .select({
+            id: taxonomyTerms.id,
+            publicId: taxonomyTerms.publicId,
+            name: taxonomyTerms.name,
+            kind: taxonomyKinds.key,
+        })
+        .from(taxonomyTerms)
+        .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
+        .where(eq(taxonomyTerms.publicId, publicId))
+        .limit(1);
+
+    if (!term) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Taxonomy term not found" });
+    }
+
+    return {
+        ...term,
+        kind: taxonomyKindEnum.parse(term.kind),
+    };
+}
+
+export async function listTaxonomyRelations(database: Database, input: { termPublicId?: string } = {}) {
+    const term = input.termPublicId ? await getTermByPublicId(database, input.termPublicId) : null;
+    const whereClause = term
+        ? sql`${taxonomyRelations.fromTermId} = ${term.id} OR ${taxonomyRelations.toTermId} = ${term.id}`
+        : undefined;
+
+    const rows = await database
+        .select({
+            publicId: taxonomyRelations.publicId,
+            relationType: taxonomyRelations.relation_type,
+            fromTermPublicId: fromTerm.publicId,
+            fromTermName: fromTerm.name,
+            fromTermKind: fromKind.key,
+            toTermPublicId: toTerm.publicId,
+            toTermName: toTerm.name,
+            toTermKind: toKind.key,
+        })
+        .from(taxonomyRelations)
+        .innerJoin(fromTerm, eq(fromTerm.id, taxonomyRelations.fromTermId))
+        .innerJoin(fromKind, eq(fromKind.id, fromTerm.kindId))
+        .innerJoin(toTerm, eq(toTerm.id, taxonomyRelations.toTermId))
+        .innerJoin(toKind, eq(toKind.id, toTerm.kindId))
+        .where(whereClause)
+        .orderBy(asc(taxonomyRelations.relation_type), asc(fromTerm.name), asc(toTerm.name));
+
+    return rows.map(
+        (row): TaxonomyRelationSummary => ({
+            publicId: row.publicId,
+            relationType: taxonomyRelationTypeEnum.parse(row.relationType),
+            fromTerm: {
+                publicId: row.fromTermPublicId,
+                name: row.fromTermName,
+                kind: taxonomyKindEnum.parse(row.fromTermKind),
+            },
+            toTerm: {
+                publicId: row.toTermPublicId,
+                name: row.toTermName,
+                kind: taxonomyKindEnum.parse(row.toTermKind),
+            },
+        })
+    );
+}
+
+export async function createTaxonomyRelation(
+    database: Database,
+    input: { fromTermPublicId: string; relationType: TaxonomyRelationType; toTermPublicId: string }
+) {
+    if (input.fromTermPublicId === input.toTermPublicId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Taxonomy relation cannot point to itself" });
+    }
+
+    return await database.transaction(async (tx) => {
+        const [fromTerm, toTerm] = await Promise.all([
+            getTermByPublicId(tx, input.fromTermPublicId),
+            getTermByPublicId(tx, input.toTermPublicId),
+        ]);
+
+        const [relation] = await tx
+            .insert(taxonomyRelations)
+            .values({
+                fromTermId: fromTerm.id,
+                toTermId: toTerm.id,
+                relation_type: input.relationType,
+            })
+            .onConflictDoUpdate({
+                target: [taxonomyRelations.fromTermId, taxonomyRelations.toTermId, taxonomyRelations.relation_type],
+                set: { updated_at: sql`CURRENT_TIMESTAMP` },
+            })
+            .returning({
+                id: taxonomyRelations.id,
+                publicId: taxonomyRelations.publicId,
+                relationType: taxonomyRelations.relation_type,
+            });
+
+        const affectedWorks = await tx
+            .select({ workId: workTaxonomyAssignments.workId })
+            .from(workTaxonomyAssignments)
+            .where(eq(workTaxonomyAssignments.termId, fromTerm.id))
+            .groupBy(workTaxonomyAssignments.workId);
+
+        for (const affectedWork of affectedWorks) {
+            await rebuildEffectiveTaxonomyForWork(tx, affectedWork.workId);
+        }
+
+        return {
+            publicId: relation?.publicId,
+            relationType: relation ? taxonomyRelationTypeEnum.parse(relation.relationType) : input.relationType,
+            affectedWorkIds: affectedWorks.map((work) => work.workId),
+        };
+    });
+}
+
+export async function deleteTaxonomyRelation(database: Database, publicId: string) {
+    return await database.transaction(async (tx) => {
+        const [relation] = await tx
+            .delete(taxonomyRelations)
+            .where(eq(taxonomyRelations.publicId, publicId))
+            .returning({
+                id: taxonomyRelations.id,
+                fromTermId: taxonomyRelations.fromTermId,
+                publicId: taxonomyRelations.publicId,
+            });
+
+        if (!relation) {
+            throw new TRPCError({ code: "NOT_FOUND", message: "Taxonomy relation not found" });
+        }
+
+        const affectedWorks = await tx
+            .select({ workId: workTaxonomyAssignments.workId })
+            .from(workTaxonomyAssignments)
+            .where(eq(workTaxonomyAssignments.termId, relation.fromTermId))
+            .groupBy(workTaxonomyAssignments.workId);
+
+        for (const affectedWork of affectedWorks) {
+            await rebuildEffectiveTaxonomyForWork(tx, affectedWork.workId);
+        }
+
+        return {
+            publicId: relation.publicId,
+            affectedWorkIds: affectedWorks.map((work) => work.workId),
+        };
     });
 }
 

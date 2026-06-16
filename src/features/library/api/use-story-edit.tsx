@@ -61,7 +61,7 @@ export function useStoryEdit({ item, onCloseAction }: UseStoryEditProps) {
             current_chapter: item.progressCurrentChapter || 0,
             rating: item.progressRating?.toString(),
             notes: item.progressNotes || "",
-            taxonomyTermIds: item.taxonomyTerms?.map((term) => term.publicId) || [],
+            taxonomyTermIds: item.directTaxonomyTerms?.map((term) => term.publicId) || [],
         },
     });
 

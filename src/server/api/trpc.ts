@@ -57,3 +57,11 @@ export const protectedProcedure = t.procedure.use(timingMiddleware).use(({ ctx, 
         },
     });
 });
+
+export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+    if (!ctx.session.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+    }
+
+    return next({ ctx });
+});

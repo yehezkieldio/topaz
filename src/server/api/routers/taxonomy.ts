@@ -1,15 +1,18 @@
 import { z } from "zod/v4";
 import { publicIdSchema } from "#/server/api/schemas/common";
-import { createTRPCRouter, protectedProcedure } from "#/server/api/trpc";
+import { adminProcedure, createTRPCRouter } from "#/server/api/trpc";
 import { invalidateTaxonomyReadModels } from "#/server/backend/cache/tags";
 import {
+    createTaxonomyRelation,
     createTaxonomyTerm,
     createTaxonomyTermForMultiselect,
+    deleteTaxonomyRelation,
     deleteTaxonomyTerm,
     getTaxonomyMultiselect,
     HOT_LIMIT_DEFAULT,
     HOT_LIMIT_MAX,
     HOT_LIMIT_MIN,
+    listTaxonomyRelations,
     MULTISELECT_LIMIT_DEFAULT,
     MULTISELECT_LIMIT_MAX,
     MULTISELECT_LIMIT_MIN,
@@ -17,15 +20,15 @@ import {
     TAXONOMY_NAME_MIN,
     updateTaxonomyTerm,
 } from "#/server/db/repositories/taxonomy-repository";
-import { taxonomyKindEnum } from "#/server/db/schema/taxonomy";
+import { taxonomyKindEnum, taxonomyRelationTypeEnum } from "#/server/db/schema/taxonomy";
 
 export const taxonomyRouter = createTRPCRouter({
-    delete: protectedProcedure.input(z.object({ publicId: publicIdSchema })).mutation(async ({ ctx, input }) => {
+    delete: adminProcedure.input(z.object({ publicId: publicIdSchema })).mutation(async ({ ctx, input }) => {
         const deletedTerm = await deleteTaxonomyTerm(ctx.db, input.publicId);
         await invalidateTaxonomyReadModels();
         return deletedTerm;
     }),
-    update: protectedProcedure
+    update: adminProcedure
         .input(
             z.object({
                 publicId: publicIdSchema,
@@ -40,7 +43,7 @@ export const taxonomyRouter = createTRPCRouter({
             await invalidateTaxonomyReadModels();
             return updatedTerm;
         }),
-    create: protectedProcedure
+    create: adminProcedure
         .input(
             z.object({
                 kind: taxonomyKindEnum,
@@ -54,7 +57,7 @@ export const taxonomyRouter = createTRPCRouter({
             await invalidateTaxonomyReadModels();
             return newTerm;
         }),
-    forMultiselect: protectedProcedure
+    forMultiselect: adminProcedure
         .input(
             z.object({
                 kind: taxonomyKindEnum.optional(),
@@ -69,7 +72,7 @@ export const taxonomyRouter = createTRPCRouter({
             })
         )
         .query(async ({ input }) => await getTaxonomyMultiselect(input)),
-    createForMultiselect: protectedProcedure
+    createForMultiselect: adminProcedure
         .input(
             z.object({
                 kind: taxonomyKindEnum.default("trope"),
@@ -81,4 +84,25 @@ export const taxonomyRouter = createTRPCRouter({
             await invalidateTaxonomyReadModels();
             return term;
         }),
+    relations: adminProcedure
+        .input(z.object({ termPublicId: publicIdSchema.optional() }).optional())
+        .query(async ({ ctx, input }) => await listTaxonomyRelations(ctx.db, input ?? {})),
+    createRelation: adminProcedure
+        .input(
+            z.object({
+                fromTermPublicId: publicIdSchema,
+                relationType: taxonomyRelationTypeEnum,
+                toTermPublicId: publicIdSchema,
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const relation = await createTaxonomyRelation(ctx.db, input);
+            await invalidateTaxonomyReadModels();
+            return relation;
+        }),
+    deleteRelation: adminProcedure.input(z.object({ publicId: publicIdSchema })).mutation(async ({ ctx, input }) => {
+        const relation = await deleteTaxonomyRelation(ctx.db, input.publicId);
+        await invalidateTaxonomyReadModels();
+        return relation;
+    }),
 });

@@ -1,7 +1,7 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import type { DefaultSession, NextAuthConfig } from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
-import { env } from "#/env";
+import { env, isDevelopment } from "#/env";
 import { db } from "#/server/db";
 import { accounts, sessions, users, verificationTokens } from "#/server/db/schema";
 
@@ -22,6 +22,7 @@ const THIRTY_DAYS = 30;
 const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * THIRTY_DAYS;
 
 export const authConfig = {
+    trustHost: isDevelopment,
     adapter: DrizzleAdapter(db, {
         usersTable: users,
         accountsTable: accounts,
