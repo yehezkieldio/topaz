@@ -292,7 +292,7 @@ Stop and report clearly if:
 
 ## Ledger
 
-Status: Completed source-reviewable V2 route/query/UI cleanup slices for library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, create/edit form boundary fixes, compact-row label polish, library item DTO typing, library filter/presentation boundary hardening, and React-only search/taxonomy state passes. Source gates pass, including the full lint gate. Runtime/profile proof is explicitly out of scope for the latest user continuation and remains blocked on a running app and PostgreSQL database.
+Status: Completed source-reviewable V2 route/query/UI cleanup slices for library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, create/edit form boundary fixes, compact-row label polish, library item DTO typing, library filter/presentation boundary hardening, and search/taxonomy state passes. Source gates pass, including the full lint gate. Next phase is a final-pass review across all GOAL targets, not a React-only continuation. Runtime/profile proof remains unavailable until a running app and PostgreSQL database are allowed.
 
 Findings:
 
@@ -375,12 +375,13 @@ Completed:
 - Validation passed after latest changes: bun run lint.
 - Validation passed after latest changes: git diff --check.
 - Runtime verification blocked in this shell: no dev server is listening on localhost:3000, AUTH_SECRET/DATABASE_URL/DEVELOPMENT_DATABASE_URL are not exported, and `bun run scripts/verify-v2-public-library.ts` fails with PostgreSQL ECONNREFUSED on localhost:5432.
-- Latest user scope: focus on React work only and do not verify through database/runtime paths.
-- Stop boundary reached for source-only work: remaining stats-query profiling and manual create/edit/delete/search/filter verification require a real database plus running app, matching the GOAL stop condition for performance concerns that cannot be justified without a database profile and the latest no-DB/no-runtime verification boundary.
+- Next phase scope: final-pass source review across every specified GOAL target, including route shape, query/data efficiency, React boundaries, multiselect/taxonomy UX, data-model/component boundaries, polish, and algorithm checks.
+- Stop boundary for already-completed source-only slices: remaining stats-query profiling and manual create/edit/delete/search/filter verification require a real database plus running app, matching the GOAL stop condition for performance concerns that cannot be justified without a database profile.
 ```
 
 Deferred:
 
 ```text
-- Database-backed stats query profiling and browser/API manual verification remain for a runtime-equipped pass.
+- Final-pass source review across all GOAL targets remains next.
+- Database-backed stats query profiling and browser/API manual verification remain for a runtime-equipped pass when runtime verification is allowed.
 ```
