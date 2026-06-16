@@ -3,6 +3,7 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { Badge } from "#/components/ui/badge";
 import { useLibraryItemContext } from "#/features/library/components/item/library-item-context";
+import { taxonomyKindEnum, taxonomyKindLabels } from "#/server/db/schema";
 
 type LibraryItemTagsProps = {
     showAllFandoms?: boolean;
@@ -10,24 +11,16 @@ type LibraryItemTagsProps = {
 };
 
 const MAX_TERMS_TO_SHOW = 10;
-const taxonomyKindLabels = {
-    Fandom: "Fandom",
-    Tag: "Tag",
-    Genre: "Genre",
-    Character: "Character",
-    Relationship: "Relationship",
-    Warning: "Warning",
-    SourceCategory: "Source category",
-    Custom: "Custom",
-} as const;
 
 function getTermVariant(kind?: string) {
-    return kind === "Fandom" ? "outline" : "secondary";
+    return kind === "fandom" ? "outline" : "secondary";
 }
 
 function getTermTitle(kind?: string) {
-    if (kind && kind in taxonomyKindLabels) {
-        return taxonomyKindLabels[kind as keyof typeof taxonomyKindLabels];
+    const parsedKind = taxonomyKindEnum.safeParse(kind);
+
+    if (parsedKind.success) {
+        return taxonomyKindLabels[parsedKind.data];
     }
 }
 

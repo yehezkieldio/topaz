@@ -8,7 +8,6 @@ import { LibraryCreateForm } from "#/features/library/components/forms/library-c
 export function LibraryCreateSheet() {
     const [isOpen, setIsOpen] = useState(false);
     const isOpenRef = useRef(isOpen);
-    const isHandlingKeyboardRef = useRef(false);
     const handleKeyDownRef = useRef<(event: KeyboardEvent) => void>(() => {});
 
     useEffect(() => {
@@ -16,18 +15,18 @@ export function LibraryCreateSheet() {
     }, [isOpen]);
 
     handleKeyDownRef.current = (event: KeyboardEvent) => {
-        if (isHandlingKeyboardRef.current) {
-            return;
-        }
-
         const isTargetKey = event.key.toLowerCase() === "t";
         const hasModifiers = event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
 
-        if (!isTargetKey || hasModifiers || isOpenRef.current) {
+        if (!isTargetKey || event.repeat || hasModifiers || isOpenRef.current) {
             return;
         }
 
-        const target = event.target as HTMLElement;
+        if (!(event.target instanceof HTMLElement)) {
+            return;
+        }
+
+        const target = event.target;
         const isInInputField =
             target.tagName === "INPUT" ||
             target.tagName === "TEXTAREA" ||
@@ -39,16 +38,10 @@ export function LibraryCreateSheet() {
             return;
         }
 
-        isHandlingKeyboardRef.current = true;
-
         event.preventDefault();
         event.stopImmediatePropagation();
 
         setIsOpen(true);
-
-        setTimeout(() => {
-            isHandlingKeyboardRef.current = false;
-        }, 100);
     };
 
     useEffect(() => {

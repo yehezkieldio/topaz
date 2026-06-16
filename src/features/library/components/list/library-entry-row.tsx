@@ -12,6 +12,7 @@ import {
     type LibraryItemValues,
 } from "#/features/library/hooks/use-library-item";
 import { cn } from "#/lib/utils";
+import { libraryEntryStatusLabels, sourceLabels } from "#/server/db/schema";
 
 const MAX_VISIBLE_TERMS = 4;
 const MAX_PROGRESS_PERCENTAGE = 100;
@@ -46,8 +47,8 @@ function createLibraryEntryRowViewModel(item: LibraryItem): LibraryEntryRowViewM
         author: item.sourceAuthor?.trim() || "Unknown author",
         chapterLabel: createChapterLabel(values),
         description: values.hasDescription ? item.workDescription?.trim() || null : null,
-        sourceLabel: item.source || "Unknown source",
-        statusLabel: item.libraryEntryStatus || "Untracked",
+        sourceLabel: sourceLabels[item.source],
+        statusLabel: libraryEntryStatusLabels[item.libraryEntryStatus],
         title: item.workTitle?.trim() || "Untitled work",
         visibleTerms,
         remainingTermCount,

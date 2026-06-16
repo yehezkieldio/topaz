@@ -77,6 +77,10 @@ type LibraryFilterContentProps = {
     currentStatusLabel: string;
 };
 
+function getOptionValue<TValue extends string>(options: ReadonlyArray<{ value: TValue }>, value: string) {
+    return options.find((option) => option.value === value)?.value;
+}
+
 export const LibraryFilterContent = React.memo(function FilterContent({
     currentStatusLabel,
 }: LibraryFilterContentProps) {
@@ -103,42 +107,66 @@ export const LibraryFilterContent = React.memo(function FilterContent({
 
     const handleStatusChange = useCallback(
         (value: string) => {
-            setStatus(value as typeof status);
+            const nextStatus = getOptionValue(STATUS_OPTIONS, value);
+
+            if (nextStatus) {
+                setStatus(nextStatus);
+            }
         },
         [setStatus]
     );
 
     const handleSortChange = useCallback(
         (value: string) => {
-            setSortBy(value as LibrarySortBy);
+            const nextSortBy = getOptionValue(SORT_OPTIONS, value);
+
+            if (nextSortBy) {
+                setSortBy(nextSortBy);
+            }
         },
         [setSortBy]
     );
 
     const handleSourceChange = useCallback(
         (value: string) => {
-            setSource(value as Source | "all");
+            const nextSource = getOptionValue(SOURCE_OPTIONS, value);
+
+            if (nextSource) {
+                setSource(nextSource);
+            }
         },
         [setSource]
     );
 
     const handleFavoriteChange = useCallback(
         (value: string) => {
-            setFavorite(value as "all" | "yes" | "no");
+            const nextFavorite = getOptionValue(TRI_STATE_OPTIONS, value);
+
+            if (nextFavorite) {
+                setFavorite(nextFavorite);
+            }
         },
         [setFavorite]
     );
 
     const handleNsfwChange = useCallback(
         (value: string) => {
-            setIsNsfw(value as "all" | "yes" | "no");
+            const nextIsNsfw = getOptionValue(TRI_STATE_OPTIONS, value);
+
+            if (nextIsNsfw) {
+                setIsNsfw(nextIsNsfw);
+            }
         },
         [setIsNsfw]
     );
 
     const handleNotesChange = useCallback(
         (value: string) => {
-            setHasNotes(value as "all" | "yes" | "no");
+            const nextHasNotes = getOptionValue(TRI_STATE_OPTIONS, value);
+
+            if (nextHasNotes) {
+                setHasNotes(nextHasNotes);
+            }
         },
         [setHasNotes]
     );

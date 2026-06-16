@@ -11,6 +11,7 @@ import { libraryEntryStatusLabels } from "#/server/db/schema";
 function LibraryItemHeaderComponent() {
     const { item } = useLibraryItemContext();
     const { hasValidUrl, isNsfw } = useLibraryItemValues(item);
+    const sourceUrl = hasValidUrl && item.sourceUrl ? item.sourceUrl : undefined;
 
     return (
         <div className="space-y-2">
@@ -18,10 +19,10 @@ function LibraryItemHeaderComponent() {
                 <div className="min-w-0 flex-1">
                     <div className="flex items-start gap-1 sm:gap-2">
                         <h2 className="line-clamp-2 font-semibold text-base text-foreground leading-tight sm:text-lg">
-                            {hasValidUrl ? (
+                            {sourceUrl ? (
                                 <Link
                                     className="font-display transition-colors hover:text-primary"
-                                    href={item.sourceUrl as string}
+                                    href={sourceUrl}
                                     prefetch={false}
                                     rel="noopener noreferrer"
                                     target="_blank"
@@ -32,7 +33,7 @@ function LibraryItemHeaderComponent() {
                                 <span>{item.workTitle || "Untitled"}</span>
                             )}
                         </h2>
-                        {hasValidUrl && (
+                        {sourceUrl && (
                             <span className="group/icon relative mt-[2px] hidden items-center sm:flex">
                                 <ExternalLinkIcon className="size-3.5 shrink-0 text-muted-foreground/60 transition-colors duration-150 group-hover/icon:text-white sm:size-4" />
                             </span>

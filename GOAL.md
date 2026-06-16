@@ -292,7 +292,7 @@ Stop and report clearly if:
 
 ## Ledger
 
-Status: Completed V2 route/query/UI cleanup slices for library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, edit-form boundary fixes, and library item DTO typing. Remaining work is broader V2 review, not a blocker for the completed slices.
+Status: Completed V2 route/query/UI cleanup slices for library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, edit-form boundary fixes, compact-row label polish, library item DTO typing, and library filter/presentation boundary hardening. Remaining work is broader V2 review, not a blocker for the completed slices.
 
 Findings:
 
@@ -316,6 +316,10 @@ Findings:
 - P1 edit form maps unrated items to `rating: undefined` while workWithLibraryEntrySchema requires a string rating and treats empty string as the valid unrated state. Trigger: opening and saving an existing unrated work. Cost: form starts invalid or submit mapping can fail even when the user is editing unrelated fields. Evidence: source inspection of useLibraryEntryEdit defaultValues and rating schema.
 - P1 taxonomy relation create/delete and term delete mutate work_taxonomy_effective or cascade taxonomy rows used by getLibraryStats.taxonomyTermCount, but invalidate only taxonomy read models. Trigger: adding/removing taxonomy relations or deleting taxonomy terms. Cost: public library stats can keep stale taxonomy term counts until the library stats cache expires. Evidence: source inspection of taxonomyRouter invalidation calls and getLibraryStats taxonomy aggregate.
 - P2 rebuildEffectiveTaxonomyForWork casts taxonomy relation text to the narrower effective-reason enum after filtering. Trigger: rebuilding inferred effective taxonomy rows. Cost: type assertion hides boundary drift if relation reason sets change. Evidence: source inspection of relationType cast and taxonomyEffectiveReasonEnum.
+- P2 compact library rows render raw source and library status enum values while item header, metadata, filters, and forms use canonical label maps. Trigger: scanning dense library rows. Cost: inconsistent readability and UI-facing DTO values leak into presentation. Evidence: source inspection of LibraryEntryRow view model versus item header/metadata label usage.
+- P2 LibraryFilterContent accepts Radix dropdown string values by casting them into enum-backed query-state setters. Trigger: changing source/status/sort/favorite/NSFW/notes filters. Cost: invalid UI event values can cross the query-state boundary and the casts hide parser drift. Evidence: source inspection of dropdown onValueChange handlers and search param enums.
+- P2 LibraryCreateSheet resets its keyboard shortcut guard with a fixed timeout after opening the sheet. Trigger: pressing the `t` shortcut. Cost: lifecycle timing depends on an arbitrary delay instead of the browser key repeat signal and sheet open state. Evidence: source inspection of setTimeout guard around keydown handling.
+- P2 library item presentation still used assertions for source links and taxonomy-kind labels after DTO typing was tightened. Trigger: rendering linked item titles and taxonomy tag badges. Cost: display code bypasses available URL/kind narrowing and schema labels. Evidence: source inspection of LibraryItemHeader and LibraryItemTags.
 ```
 
 Completed:
@@ -344,9 +348,14 @@ Completed:
 - Marked mobile quick-progress form updates as dirty/touched/validated when the stepper changes current chapter.
 - Invalidated library read models after taxonomy term deletion and relation create/delete mutations that affect effective taxonomy stats.
 - Replaced effective taxonomy relation reason cast with taxonomyEffectiveReasonEnum parsing at the rebuild boundary.
+- Switched compact library row source and reading status text to canonical label maps.
+- Replaced library filter dropdown casts with option-table parsing before query-state setters receive values.
+- Removed the create-sheet shortcut timeout and used `KeyboardEvent.repeat` plus sheet open state for duplicate-keydown suppression.
+- Removed remaining library item presentation assertions by narrowing source URLs locally and parsing taxonomy kinds through taxonomyKindEnum before label lookup.
 - Validation passed: bun run typecheck.
 - Validation passed: bunx biome check src scripts.
 - Validation passed: git diff --check.
+- Runtime verification blocked in this shell: no dev server is listening on localhost:3000, AUTH_SECRET/DATABASE_URL/DEVELOPMENT_DATABASE_URL are not exported, and `bun run scripts/verify-v2-public-library.ts` fails with PostgreSQL ECONNREFUSED on localhost:5432.
 ```
 
 Deferred:
