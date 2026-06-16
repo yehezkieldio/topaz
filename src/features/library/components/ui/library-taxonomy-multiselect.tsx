@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { toast } from "sonner";
 import { MultiSelect } from "#/components/ui/multiselect";
 import { type SelectedTaxonomyItem, useTaxonomySearch } from "#/features/library/api/use-taxonomy-search";
 import type { TaxonomyKind } from "#/server/db/schema";
@@ -35,7 +36,7 @@ export function LibraryTaxonomyMultiselect({
                 const newTerm = await createTaxonomyTerm(name);
                 onTermsChangeAction([...selectedTerms, newTerm]);
             } catch (error) {
-                console.error("Failed to create taxonomy term:", error);
+                toast.error(error instanceof Error ? error.message : "Failed to create taxonomy term.");
             }
         },
         [createTaxonomyTerm, selectedTerms, onTermsChangeAction]

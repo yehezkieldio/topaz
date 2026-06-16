@@ -9,6 +9,7 @@ import {
     type LibrarySortBy,
     libraryEntries,
     type libraryEntryStatusEnum,
+    librarySortByEnum,
     type ReadingEventType,
     readingEvents,
     readingStates,
@@ -215,11 +216,25 @@ function parseCursor(cursor: string | undefined): CursorData | null {
             typeof parsed.sortBy === "string" &&
             (parsed.sortOrder === "asc" || parsed.sortOrder === "desc")
         ) {
+            const sortBy = librarySortByEnum.safeParse(parsed.sortBy);
+            const value = parsed.value;
+            if (
+                !(
+                    sortBy.success &&
+                    (value === null ||
+                        typeof value === "boolean" ||
+                        typeof value === "number" ||
+                        typeof value === "string")
+                )
+            ) {
+                return null;
+            }
+
             return {
                 id: parsed.id,
-                sortBy: parsed.sortBy as LibrarySortBy,
+                sortBy: sortBy.data,
                 sortOrder: parsed.sortOrder,
-                value: parsed.value as CursorData["value"],
+                value,
             };
         }
     } catch {
@@ -282,24 +297,35 @@ function createOrderByClause(sortBy: LibrarySortBy, sortOrder: "asc" | "desc"): 
     }
 }
 
+function isNullableSort(sortBy: LibrarySortBy): boolean {
+    return ["author", "rating", "progress", "wordCount", "chapterCount"].includes(sortBy);
+}
+
 function createCursorCondition(cursor: CursorData, sortBy: LibrarySortBy, sortOrder: "asc" | "desc"): SQL | undefined {
     if (cursor.sortBy !== sortBy || cursor.sortOrder !== sortOrder) {
         return;
     }
 
     const expression = sortExpression(sortBy);
+    const isNullable = isNullableSort(sortBy);
     const idDirection =
         sortOrder === "asc"
             ? sql`${libraryEntries.publicId} > ${cursor.id}`
             : sql`${libraryEntries.publicId} < ${cursor.id}`;
 
     if (cursor.value === null) {
-        return idDirection;
+        return sortOrder === "asc"
+            ? sql`(${expression} IS NULL AND ${idDirection})`
+            : sql`(${expression} IS NOT NULL OR (${expression} IS NULL AND ${idDirection}))`;
     }
 
-    return sortOrder === "asc"
-        ? sql`(${expression} > ${cursor.value} OR (${expression} = ${cursor.value} AND ${libraryEntries.publicId} > ${cursor.id}))`
-        : sql`(${expression} < ${cursor.value} OR (${expression} = ${cursor.value} AND ${libraryEntries.publicId} < ${cursor.id}))`;
+    if (sortOrder === "asc") {
+        return isNullable
+            ? sql`(${expression} > ${cursor.value} OR ${expression} IS NULL OR (${expression} = ${cursor.value} AND ${libraryEntries.publicId} > ${cursor.id}))`
+            : sql`(${expression} > ${cursor.value} OR (${expression} = ${cursor.value} AND ${libraryEntries.publicId} > ${cursor.id}))`;
+    }
+
+    return sql`(${expression} < ${cursor.value} OR (${expression} = ${cursor.value} AND ${libraryEntries.publicId} < ${cursor.id}))`;
 }
 
 function cursorValueForItem(
@@ -365,11 +391,20 @@ function buildWhereConditions(input: Omit<LibraryQueryInput, "limit" | "cursor" 
             OR ${workSources.author_on_source} ILIKE ${`%${sanitizedSearch}%`}
             OR ${contributors.name} ILIKE ${`%${sanitizedSearch}%`}
             OR ${readingStates.notes} ILIKE ${`%${sanitizedSearch}%`}
-            OR ${taxonomyLabels.label} ILIKE ${`%${sanitizedSearch}%`}
+            OR EXISTS (
+                SELECT 1
+                FROM ${workTaxonomyEffective}
+                INNER JOIN ${taxonomyTerms} ON ${taxonomyTerms.id} = ${workTaxonomyEffective.termId}
+                INNER JOIN ${taxonomyLabels} ON ${taxonomyLabels.termId} = ${taxonomyTerms.id}
+                WHERE ${workTaxonomyEffective.workId} = ${works.id}
+                AND (
+                    ${taxonomyLabels.label} ILIKE ${`%${sanitizedSearch}%`}
+                    OR similarity(lower(${taxonomyLabels.label}), lower(${sanitizedSearch})) > 0.2
+                )
+            )
             OR similarity(lower(${works.title}), lower(${sanitizedSearch})) > 0.2
             OR similarity(lower(${workSources.title_on_source}), lower(${sanitizedSearch})) > 0.2
             OR similarity(lower(${contributors.name}), lower(${sanitizedSearch})) > 0.2
-            OR similarity(lower(${taxonomyLabels.label}), lower(${sanitizedSearch})) > 0.2
         )`);
     }
 
@@ -1012,9 +1047,6 @@ export async function listLibraryEntries(database: Database, input: LibraryQuery
         .leftJoin(sourcePlatforms, eq(sourcePlatforms.id, workSources.sourcePlatformId))
         .leftJoin(workContributors, eq(workContributors.workId, works.id))
         .leftJoin(contributors, eq(contributors.id, workContributors.contributorId))
-        .leftJoin(workTaxonomyEffective, eq(workTaxonomyEffective.workId, works.id))
-        .leftJoin(taxonomyTerms, eq(taxonomyTerms.id, workTaxonomyEffective.termId))
-        .leftJoin(taxonomyLabels, eq(taxonomyLabels.termId, taxonomyTerms.id))
         .where(whereClause)
         .groupBy(
             libraryEntries.publicId,

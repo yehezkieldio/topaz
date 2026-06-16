@@ -18,7 +18,7 @@ type MultiSelectProps = {
     selectedValues: MultiSelectOption[];
     onSelectionChangeAction: (selected: MultiSelectOption[]) => void;
     onSearchAction?: (query: string) => void;
-    onCreateAction?: (value: string) => void;
+    onCreateAction?: (value: string) => Promise<void> | void;
     placeholder?: string;
     emptyMessage?: string;
     isLoading?: boolean;
@@ -90,9 +90,9 @@ export function MultiSelect({
         [selectedValues, onSelectionChangeAction]
     );
 
-    const handleCreate = React.useCallback(() => {
+    const handleCreate = React.useCallback(async () => {
         if (inputValue.trim() && onCreateAction) {
-            onCreateAction(inputValue.trim());
+            await onCreateAction(inputValue.trim());
             setInputValue("");
         }
     }, [inputValue, onCreateAction]);
@@ -119,7 +119,6 @@ export function MultiSelect({
                 if (inputValue === "") {
                     onSearchAction?.("");
                 }
-                setTimeout(() => inputRef.current?.focus(), 0);
             } else {
                 setInputValue("");
             }
@@ -144,6 +143,10 @@ export function MultiSelect({
                 <PopoverContent
                     align="start"
                     className="max-h-[300px] w-full overflow-hidden rounded-md p-0"
+                    onOpenAutoFocus={(event) => {
+                        event.preventDefault();
+                        inputRef.current?.focus();
+                    }}
                     side="bottom"
                     style={{
                         minWidth: "var(--radix-popover-trigger-width)",

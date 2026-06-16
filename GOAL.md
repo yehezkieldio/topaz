@@ -292,23 +292,32 @@ Stop and report clearly if:
 
 ## Ledger
 
-Status: Not started.
+Status: Completed first V2 route/query/UI cleanup slice. Stop criteria apply for this handoff because the remaining full-repo lint failure is unrelated to touched V2 source and comes from `.agents/skills` assets outside the active app scope.
 
 Findings:
 
 ```text
-- Pending review.
+- P1 listLibraryEntries cursor pagination does not model PostgreSQL null ordering for nullable sorts. Trigger: infinite library pagination sorted by author/rating/progress/wordCount/chapterCount. Cost: can stop early or skip rows when a page boundary contains NULL. Evidence: source inspection of createCursorCondition and nullable left-joined sort expressions.
+- P1 listLibraryEntries joins work_taxonomy_effective/taxonomy_term/taxonomy_label into the main list query only for search predicates, then fetches taxonomy DTO rows separately. Trigger: library search/list. Cost: unnecessary join fan-out before grouping and pagination. Evidence: source inspection of listLibraryEntries projection and follow-up taxonomy fetch.
+- P2 cursor parser validates only part of CursorData and casts sortBy/value after JSON parse. Trigger: client-supplied cursor. Cost: weak boundary for invalid cursor payloads. Evidence: source inspection of parseCursor.
 ```
 
 Completed:
 
 ```text
-- Pending implementation.
+- Required reading complete: AGENT_INDEX, invariants, query/index policy, gates, and GOAL.
+- Fixed listLibraryEntries cursor parsing to reject invalid sort/value cursor payloads without type assertions.
+- Fixed keyset cursor predicates for nullable sort columns under PostgreSQL NULL ordering.
+- Removed taxonomy effective/term/label joins from the main library list projection; taxonomy search now uses an EXISTS predicate and the DTO taxonomy fetch remains separate.
+- Removed multiselect open-focus timer and moved focus to PopoverContent onOpenAutoFocus.
+- Replaced taxonomy quick-create console-only failure handling with a user-visible toast error.
+- Validation passed: bun run typecheck.
+- Validation passed: bunx biome check src scripts.
 ```
 
 Deferred:
 
 ```text
-- Pending review.
+- Full bun run lint is blocked by pre-existing repository-scope issues outside touched app files: biome.json deprecated linter.recommended config and parse errors in .agents/skills/typescript-best-practices/assets/tsconfig-presets/strict.json. Scoped src/scripts Biome gate passes.
+- Broader V2 review targets remain for future slices: mutation transaction shape, stats query profiling, form DTO boundaries, and visual polish.
 ```
-
