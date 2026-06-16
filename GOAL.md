@@ -292,7 +292,7 @@ Stop and report clearly if:
 
 ## Ledger
 
-Status: Final-pass source-reviewable V2 route/query/UI cleanup is complete for the currently actionable GOAL targets. Completed slices cover library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, create/edit form boundary fixes, compact-row label polish, library item DTO typing, library filter/presentation boundary hardening, search/taxonomy state, taxonomy multiselect result ownership/context, fixture canonical status seeding, the library Suspense boundary, taxonomy selection/verifier fallback cleanup, final source/form presentation boundary tightening, and schema artifact alignment for canonical work/source statuses. Current continuation audit found no additional source-level code issue to patch. Final source gates are pending after this ledger update. Per latest user instruction, no further browser or verifier-script execution was run after that instruction.
+Status: Final-pass source-reviewable V2 route/query/UI cleanup is complete for the currently actionable GOAL targets. Completed slices cover library pagination/search, stats aggregation, contributor update ownership, multiselect focus/error handling, duplicate/dead route removal, cache header correction, taxonomy quick-create duplicate hardening, taxonomy/library cache invalidation, create/edit form boundary fixes, compact-row label polish, library item DTO typing, library filter/presentation boundary hardening, search/taxonomy state, taxonomy multiselect result ownership/context, fixture canonical status seeding, the library Suspense boundary, taxonomy selection/verifier fallback cleanup, final source/form presentation boundary tightening, and schema artifact alignment for canonical work/source statuses. Current continuation audit found no additional source-level code issue to patch. Final source gates pass after this continuation audit. Per latest user instruction, no further browser or verifier-script execution was run after that instruction.
 
 Findings:
 
@@ -409,10 +409,10 @@ Completed:
 - Aligned `work_source.source_status` defaults in schema, Drizzle SQL, and snapshot metadata with canonical `Unknown` status.
 - Current continuation audit found no additional source-level code issue to patch: active-source regression strings are absent from `src`, `scripts`, and `drizzle`; remaining lowercase `unknown` schema metadata is limited to `content_rating`, not work/source status.
 - Local runtime services were stopped after runtime checks: Next dev server interrupted and Docker Compose Postgres stopped with its named volume preserved.
-- Validation pending after current continuation ledger update: bun run typecheck.
-- Validation pending after current continuation ledger update: bunx biome check src scripts.
-- Validation pending after current continuation ledger update: bun run lint.
-- Validation pending after current continuation ledger update: git diff --check.
+- Validation passed after current continuation audit: bun run typecheck.
+- Validation passed after current continuation audit: bunx biome check src scripts.
+- Validation passed after current continuation audit: bun run lint.
+- Validation passed after current continuation audit: git diff --check.
 - Test gate note: package.json has no `test` script.
 - Stop boundary now limited to browser/manual verification and deeper database profiling: browser/verifier execution is intentionally stopped by the latest user instruction; profiling beyond the source-level cleanup still requires an equipped runtime session. Full GOAL completion cannot be claimed until that verification boundary is reopened or the contract is narrowed.
 ```
