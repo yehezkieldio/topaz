@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Time Discipline"
+  short_description: "Decide when to edit code or hold back"
+  default_prompt: "Use $code-time-discipline to decide whether this task is code time and execute only evidence-backed changes."
