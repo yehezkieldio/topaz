@@ -8,16 +8,16 @@ import {
     rebuildEffectiveTaxonomyForWork,
     updateLibraryItem,
 } from "#/server/db/repositories/library-repository";
-import { sourceEnum, storyCreateWithProgressSchema, storyStatusEnum } from "#/server/db/schema/story";
+import { sourceEnum, workStatusEnum, workWithLibraryEntrySchema } from "#/server/db/schema/work";
 
 export const workRouter = createTRPCRouter({
     createWithLibraryEntry: adminProcedure
         .input(
-            storyCreateWithProgressSchema.omit({
-                storyPublicId: true,
-                progressPublicId: true,
-                storyVersion: true,
-                progressVersion: true,
+            workWithLibraryEntrySchema.omit({
+                workPublicId: true,
+                libraryEntryPublicId: true,
+                workVersion: true,
+                libraryEntryVersion: true,
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -32,7 +32,7 @@ export const workRouter = createTRPCRouter({
                 wordCount: input.word_count,
                 isNsfw: input.is_nsfw,
                 workStatus: input.status,
-                status: input.progressStatus,
+                status: input.libraryEntryStatus,
                 currentChapter: input.current_chapter,
                 rating: input.rating === "" ? null : Number(input.rating),
                 notes: input.notes ?? null,
@@ -43,12 +43,12 @@ export const workRouter = createTRPCRouter({
             await invalidateTaxonomyReadModels();
             return created;
         }),
-    updateWithLibraryEntry: adminProcedure.input(storyCreateWithProgressSchema).mutation(async ({ ctx, input }) => {
+    updateWithLibraryEntry: adminProcedure.input(workWithLibraryEntrySchema).mutation(async ({ ctx, input }) => {
         const updated = await updateLibraryItem(ctx.db, {
-            workPublicId: input.storyPublicId,
-            libraryEntryPublicId: input.progressPublicId,
-            workVersion: input.storyVersion,
-            libraryEntryVersion: input.progressVersion,
+            workPublicId: input.workPublicId,
+            libraryEntryPublicId: input.libraryEntryPublicId,
+            workVersion: input.workVersion,
+            libraryEntryVersion: input.libraryEntryVersion,
             title: input.title,
             author: input.author,
             url: input.url,
@@ -58,7 +58,7 @@ export const workRouter = createTRPCRouter({
             wordCount: input.word_count,
             isNsfw: input.is_nsfw,
             workStatus: input.status,
-            status: input.progressStatus,
+            status: input.libraryEntryStatus,
             currentChapter: input.current_chapter,
             rating: input.rating === "" ? null : Number(input.rating),
             notes: input.notes ?? null,
@@ -89,5 +89,5 @@ export const workRouter = createTRPCRouter({
         return effectiveRows;
     }),
     sourceOptions: adminProcedure.query(() => sourceEnum.options),
-    statusOptions: adminProcedure.query(() => storyStatusEnum.options),
+    statusOptions: adminProcedure.query(() => workStatusEnum.options),
 });

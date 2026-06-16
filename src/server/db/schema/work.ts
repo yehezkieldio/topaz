@@ -74,15 +74,15 @@ export const sourceEnum = z.enum([
 ]);
 export type Source = z.infer<typeof sourceEnum>;
 
-export const storyStatusEnum = z.enum(["Ongoing", "Completed", "Hiatus", "Abandoned", "Unknown"]);
-export type StoryStatus = z.infer<typeof storyStatusEnum>;
-export const storyStatusLabels = {
+export const workStatusEnum = z.enum(["Ongoing", "Completed", "Hiatus", "Abandoned", "Unknown"]);
+export type WorkStatus = z.infer<typeof workStatusEnum>;
+export const workStatusLabels = {
     Ongoing: "Ongoing",
     Completed: "Completed",
     Hiatus: "Hiatus",
     Abandoned: "Abandoned",
     Unknown: "Unknown",
-} satisfies Record<StoryStatus, string>;
+} satisfies Record<WorkStatus, string>;
 
 export const works = createTable(
     "work",
@@ -240,7 +240,7 @@ const ratingRegex = /^\d*\.?\d*$/;
 const MIN_RATING = 0;
 const MAX_RATING = 5;
 
-export const storyCreateWithProgressSchema = z.object({
+export const workWithLibraryEntrySchema = z.object({
     title: z.string().min(1, "Title is required"),
     author: z.string().min(1, "Author is required"),
     url: z.url("Must be a valid URL"),
@@ -249,8 +249,8 @@ export const storyCreateWithProgressSchema = z.object({
     chapter_count: z.number().min(0),
     word_count: z.number().min(0),
     is_nsfw: z.boolean(),
-    status: storyStatusEnum,
-    progressStatus: z.enum([
+    status: workStatusEnum,
+    libraryEntryStatus: z.enum([
         "NotStarted",
         "Reading",
         "Paused",
@@ -273,9 +273,9 @@ export const storyCreateWithProgressSchema = z.object({
         ),
     notes: z.string().optional(),
     taxonomyTermIds: z.array(z.string()),
-    storyPublicId: z.string(),
-    progressPublicId: z.string(),
-    storyVersion: z.number(),
-    progressVersion: z.number(),
+    workPublicId: z.string(),
+    libraryEntryPublicId: z.string(),
+    workVersion: z.number(),
+    libraryEntryVersion: z.number(),
 });
-export type StoryCreateWithProgressValues = z.infer<typeof storyCreateWithProgressSchema>;
+export type WorkWithLibraryEntryValues = z.infer<typeof workWithLibraryEntrySchema>;

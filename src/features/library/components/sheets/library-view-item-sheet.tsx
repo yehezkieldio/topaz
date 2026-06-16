@@ -45,9 +45,9 @@ function LibraryItemViewSheetComponent({ item, isOpen, onClose }: ViewSheetProps
             <LibraryItemProvider value={contextValue}>
                 <div className="flex h-full w-full flex-col">
                     <SheetHeader className="flex-none border-b p-6 text-left">
-                        <SheetTitle className="text-xl">{item.storyTitle || "Untitled"}</SheetTitle>
+                        <SheetTitle className="text-xl">{item.workTitle || "Untitled"}</SheetTitle>
                         <SheetDescription className="text-base">
-                            by {item.storyAuthor || "Unknown Author"}
+                            by {item.sourceAuthor || "Unknown Author"}
                         </SheetDescription>
                     </SheetHeader>
 
@@ -55,7 +55,7 @@ function LibraryItemViewSheetComponent({ item, isOpen, onClose }: ViewSheetProps
                         <div className="space-y-4 p-6">
                             <div className="space-y-3">
                                 <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">
-                                    Story Details
+                                    Work Details
                                 </h3>
                                 <LibraryItemMetadata />
                             </div>
@@ -101,7 +101,7 @@ function LibraryItemViewSheetComponent({ item, isOpen, onClose }: ViewSheetProps
                                             }
                                         }}
                                         style={{ maxHeight: "16rem" }}
-                                        value={item.storyDescription ?? ""}
+                                        value={item.workDescription ?? ""}
                                     />
                                 </div>
                             )}
@@ -120,8 +120,8 @@ function LibraryItemViewSheetComponent({ item, isOpen, onClose }: ViewSheetProps
                     <SheetFooter className="flex-none border-t p-6">
                         {hasValidUrl ? (
                             <Button asChild type="button" variant="outline">
-                                <Link href={item.storyUrl ?? ""} rel="noopener noreferrer" target="_blank">
-                                    Open Story
+                                <Link href={item.sourceUrl ?? ""} rel="noopener noreferrer" target="_blank">
+                                    Open Work
                                     <ExternalLinkIcon className="ml-1 size-4" />
                                 </Link>
                             </Button>

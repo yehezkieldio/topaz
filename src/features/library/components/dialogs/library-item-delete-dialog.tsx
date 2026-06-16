@@ -29,26 +29,26 @@ function LibraryItemDeleteDialogComponent({ item, isOpen, onClose, onDelete }: L
     const trpc = useTRPC();
     const refetchLibrary = useLibraryRefetch();
 
-    const deleteStory = useMutation(trpc.work.delete.mutationOptions());
-    const isPending = deleteStory.isPending;
+    const deleteWorkMutation = useMutation(trpc.work.delete.mutationOptions());
+    const isPending = deleteWorkMutation.isPending;
 
     const handleDelete = useCallback(async () => {
         try {
-            await deleteStory.mutateAsync({
-                publicId: item.storyPublicId,
+            await deleteWorkMutation.mutateAsync({
+                publicId: item.workPublicId,
             });
 
-            toast.success("Story deleted from library!");
+            toast.success("Work deleted from library.");
 
             await refetchLibrary();
 
             onDelete?.(item);
             onClose();
         } catch (error) {
-            console.error("Error deleting story/progress:", error);
-            toast.error("Failed to delete story.");
+            console.error("Error deleting library work:", error);
+            toast.error(error instanceof Error ? error.message : "Failed to delete work.");
         }
-    }, [deleteStory, item, refetchLibrary, onDelete, onClose]);
+    }, [deleteWorkMutation, item, refetchLibrary, onDelete, onClose]);
 
     const contextValue = useMemo(
         () => ({
@@ -65,8 +65,8 @@ function LibraryItemDeleteDialogComponent({ item, isOpen, onClose, onDelete }: L
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the story "
-                            {item.storyTitle || "Untitled"}" and all associated progress data.
+                            This action cannot be undone. This will permanently delete the work "
+                            {item.workTitle || "Untitled"}" and its library, source, reading, and taxonomy rows.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -78,7 +78,7 @@ function LibraryItemDeleteDialogComponent({ item, isOpen, onClose, onDelete }: L
                             disabled={isPending}
                             onClick={handleDelete}
                         >
-                            {isPending ? "Deleting..." : "Delete Story"}
+                            {isPending ? "Deleting..." : "Delete Work"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

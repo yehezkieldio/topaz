@@ -5,25 +5,25 @@ import { toast } from "sonner";
 import type z from "zod/v4";
 import { useLibraryRefetch } from "#/features/library/api/use-library-data";
 import { useSearchQuery } from "#/features/library/hooks/use-search-query";
-import { storyCreateWithProgressSchema } from "#/server/db/schema";
+import { workWithLibraryEntrySchema } from "#/server/db/schema";
 import { useTRPC } from "#/trpc/react";
 
-export const createStorySchema = storyCreateWithProgressSchema.omit({
-    storyPublicId: true,
-    progressPublicId: true,
-    storyVersion: true,
-    progressVersion: true,
+export const createLibraryEntrySchema = workWithLibraryEntrySchema.omit({
+    workPublicId: true,
+    libraryEntryPublicId: true,
+    workVersion: true,
+    libraryEntryVersion: true,
 });
 
-export type CreateStoryFormData = z.infer<typeof createStorySchema>;
+export type CreateLibraryEntryFormData = z.infer<typeof createLibraryEntrySchema>;
 
-export function useStoryCreate({ onClose }: { onClose: () => void }) {
+export function useLibraryEntryCreate({ onClose }: { onClose: () => void }) {
     const trpc = useTRPC();
     const refetchLibrary = useLibraryRefetch();
     const [, setSearch] = useSearchQuery();
 
-    const form = useForm<CreateStoryFormData>({
-        resolver: zodResolver(createStorySchema),
+    const form = useForm<CreateLibraryEntryFormData>({
+        resolver: zodResolver(createLibraryEntrySchema),
         defaultValues: {
             title: "",
             author: "",
@@ -34,7 +34,7 @@ export function useStoryCreate({ onClose }: { onClose: () => void }) {
             word_count: 0,
             is_nsfw: false,
             status: "Ongoing",
-            progressStatus: "Reading",
+            libraryEntryStatus: "Reading",
             current_chapter: 0,
             rating: "0",
             notes: "",
@@ -42,11 +42,11 @@ export function useStoryCreate({ onClose }: { onClose: () => void }) {
         },
     });
 
-    const createStoryWithProgress = useMutation(trpc.work.createWithLibraryEntry.mutationOptions());
+    const createWorkWithLibraryEntry = useMutation(trpc.work.createWithLibraryEntry.mutationOptions());
 
-    const onSubmit = async (data: CreateStoryFormData) => {
+    const onSubmit = async (data: CreateLibraryEntryFormData) => {
         try {
-            await createStoryWithProgress.mutateAsync({
+            await createWorkWithLibraryEntry.mutateAsync({
                 title: data.title,
                 author: data.author,
                 url: data.url,
@@ -57,7 +57,7 @@ export function useStoryCreate({ onClose }: { onClose: () => void }) {
                 is_nsfw: data.is_nsfw,
                 status: data.status,
                 taxonomyTermIds: data.taxonomyTermIds,
-                progressStatus: data.progressStatus,
+                libraryEntryStatus: data.libraryEntryStatus,
                 current_chapter: data.current_chapter,
                 rating: data.rating,
                 notes: data.notes,
@@ -70,16 +70,16 @@ export function useStoryCreate({ onClose }: { onClose: () => void }) {
             await setSearch("");
             await refetchLibrary();
 
-            toast.success("Story added to library!");
+            toast.success("Work added to library.");
         } catch (error) {
-            toast.error("Failed to add story.");
-            console.error("Error creating story:", error);
+            toast.error(error instanceof Error ? error.message : "Failed to add work.");
+            console.error("Error creating library work:", error);
         }
     };
 
     return {
         form,
         onSubmit,
-        isLoading: createStoryWithProgress.isPending,
+        isLoading: createWorkWithLibraryEntry.isPending,
     };
 }

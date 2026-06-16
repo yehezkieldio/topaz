@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
-import { sourcePlatformSeeds, sourcePlatforms } from "#/server/db/schema/story";
 import { taxonomyKindSeeds, taxonomyKinds } from "#/server/db/schema/taxonomy";
+import { sourcePlatformSeeds, sourcePlatforms } from "#/server/db/schema/work";
 import { scriptDb } from "./script-db";
 
 export async function seedV2ReferenceDataForScripts() {

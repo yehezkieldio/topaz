@@ -104,7 +104,7 @@ type CreateWorkResult = {
 };
 
 type LibraryListResult = {
-    data?: Array<{ storyPublicId: string }>;
+    data?: Array<{ workPublicId: string }>;
 };
 
 let createdWorkPublicId: string | null = null;
@@ -139,7 +139,7 @@ try {
         word_count: 24_680,
         is_nsfw: false,
         status: "Ongoing",
-        progressStatus: "Reading",
+        libraryEntryStatus: "Reading",
         current_chapter: 2,
         rating: "3.5",
         notes: "Created through authenticated tRPC verification.",
@@ -159,10 +159,10 @@ try {
     }
 
     await trpcMutation("work.updateWithLibraryEntry", {
-        storyPublicId: created.work.publicId,
-        progressPublicId: created.libraryEntry.publicId,
-        storyVersion: versions.work_version,
-        progressVersion: versions.entry_version,
+        workPublicId: created.work.publicId,
+        libraryEntryPublicId: created.libraryEntry.publicId,
+        workVersion: versions.work_version,
+        libraryEntryVersion: versions.entry_version,
         title: `V2 HTTP Admin Flow Updated ${suffix}`,
         author: "Mara Solenne",
         url: `https://example.com/topaz-v2-admin-flow-${suffix}`,
@@ -172,7 +172,7 @@ try {
         word_count: 26_001,
         is_nsfw: false,
         status: "Ongoing",
-        progressStatus: "Completed",
+        libraryEntryStatus: "Completed",
         current_chapter: 9,
         rating: "4.0",
         notes: "Updated note through authenticated tRPC verification.",
@@ -186,7 +186,7 @@ try {
         sortOrder: "desc",
         effectiveTaxonomyTermIds: [inferred.publicId],
     })) as LibraryListResult;
-    const filteredByInferred = Boolean(filtered.data?.some((item) => item.storyPublicId === created.work.publicId));
+    const filteredByInferred = Boolean(filtered.data?.some((item) => item.workPublicId === created.work.publicId));
     if (!filteredByInferred) {
         throw new Error("Effective taxonomy filter did not find the updated work");
     }

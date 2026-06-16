@@ -6,22 +6,13 @@ import { cacheLife, cacheTag } from "next/cache";
 import { backendCacheTags } from "#/server/backend/cache/tags";
 import { db } from "#/server/db";
 import {
+    type LibrarySortBy,
     libraryEntries,
-    type ProgressSortBy,
-    type progressStatusEnum,
+    type libraryEntryStatusEnum,
     type ReadingEventType,
     readingEvents,
     readingStates,
-} from "#/server/db/schema/progress";
-import {
-    contributors,
-    type Source,
-    sourcePlatformSeeds,
-    sourcePlatforms,
-    workContributors,
-    workSources,
-    works,
-} from "#/server/db/schema/story";
+} from "#/server/db/schema/library-entry";
 import {
     taxonomyKindSeeds,
     taxonomyKinds,
@@ -31,6 +22,15 @@ import {
     workTaxonomyAssignments,
     workTaxonomyEffective,
 } from "#/server/db/schema/taxonomy";
+import {
+    contributors,
+    type Source,
+    sourcePlatformSeeds,
+    sourcePlatforms,
+    workContributors,
+    workSources,
+    works,
+} from "#/server/db/schema/work";
 
 export const MAX_SEARCH_LENGTH = 255;
 const MIN_RATING = 0;
@@ -49,30 +49,30 @@ type Database = typeof db;
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type DatabaseOrTransaction = Database | Transaction;
 
-export type ProgressQueryResult = {
+export type LibraryQueryResult = {
     data: {
-        progressPublicId: string;
-        storyPublicId: string;
-        storyTitle: string;
-        storyAuthor: string;
-        progressStatus: string;
-        progressCurrentChapter: number;
-        progressRating: number;
-        storyStatus: string;
-        storyContributorNames: string[];
+        libraryEntryPublicId: string;
+        workPublicId: string;
+        workTitle: string;
+        sourceAuthor: string;
+        libraryEntryStatus: string;
+        currentChapter: number;
+        rating: number;
+        workStatus: string;
+        contributorNames: string[];
         updatedAt: Date;
         directTaxonomyTerms: { kind: string; publicId: string; name: string }[];
         taxonomyTerms: { kind: string; publicId: string; name: string }[];
-        storySource?: string;
-        storyUrl?: string;
-        storyChapterCount?: number;
-        storyWordCount?: number;
-        storyIsNsfw?: boolean;
-        storyDescription?: string | null;
-        progressNotes?: string | null;
+        source?: string;
+        sourceUrl?: string;
+        sourceChapterCount?: number;
+        sourceWordCount?: number;
+        workIsNsfw?: boolean;
+        workDescription?: string | null;
+        readingNotes?: string | null;
         createdAt?: Date;
-        storyVersion: number;
-        progressVersion: number;
+        workVersion: number;
+        libraryEntryVersion: number;
     }[];
     meta: {
         hasNextPage: boolean;
@@ -85,9 +85,9 @@ export type LibraryQueryInput = {
     limit: number;
     cursor?: string;
     search?: string;
-    sortBy: ProgressSortBy;
+    sortBy: LibrarySortBy;
     sortOrder: "asc" | "desc" | null;
-    status?: (typeof progressStatusEnum.options)[number][];
+    status?: (typeof libraryEntryStatusEnum.options)[number][];
     source?: Source[];
     isNsfw?: boolean;
     minRating?: number;
@@ -134,9 +134,12 @@ export type UpdateLibraryItemInput = Omit<CreateLibraryItemInput, "userId"> & {
 
 type CursorData = {
     id: string;
+    sortBy: LibrarySortBy;
+    sortOrder: "asc" | "desc";
+    value: boolean | number | string | null;
 };
 
-const sourceKeyByLegacySource: Record<Source, string> = {
+const sourcePlatformKeyBySource: Record<Source, string> = {
     ArchiveOfOurOwn: "ao3",
     FanFictionNet: "fanfiction_net",
     Wattpad: "wattpad",
@@ -150,7 +153,7 @@ const sourceKeyByLegacySource: Record<Source, string> = {
     Other: "other",
 };
 
-const legacySourceBySourceKey: Record<string, Source> = {
+const sourceBySourcePlatformKey: Record<string, Source> = {
     ao3: "ArchiveOfOurOwn",
     fanfiction_net: "FanFictionNet",
     wattpad: "Wattpad",
@@ -192,8 +195,8 @@ function normalizeUrl(url: string): string {
     }
 }
 
-function createCursor(id: string): string {
-    return Buffer.from(JSON.stringify({ id } satisfies CursorData)).toString("base64");
+function createCursor(data: CursorData): string {
+    return Buffer.from(JSON.stringify(data)).toString("base64");
 }
 
 function parseCursor(cursor: string | undefined): CursorData | null {
@@ -201,8 +204,23 @@ function parseCursor(cursor: string | undefined): CursorData | null {
 
     try {
         const parsed = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8")) as unknown;
-        if (typeof parsed === "object" && parsed !== null && "id" in parsed && typeof parsed.id === "string") {
-            return { id: parsed.id };
+        if (
+            typeof parsed === "object" &&
+            parsed !== null &&
+            "id" in parsed &&
+            "sortBy" in parsed &&
+            "sortOrder" in parsed &&
+            "value" in parsed &&
+            typeof parsed.id === "string" &&
+            typeof parsed.sortBy === "string" &&
+            (parsed.sortOrder === "asc" || parsed.sortOrder === "desc")
+        ) {
+            return {
+                id: parsed.id,
+                sortBy: parsed.sortBy as LibrarySortBy,
+                sortOrder: parsed.sortOrder,
+                value: parsed.value as CursorData["value"],
+            };
         }
     } catch {
         return null;
@@ -211,7 +229,32 @@ function parseCursor(cursor: string | undefined): CursorData | null {
     return null;
 }
 
-function createOrderByClause(sortBy: ProgressSortBy, sortOrder: "asc" | "desc"): SQL[] {
+function sortExpression(sortBy: LibrarySortBy): SQL {
+    switch (sortBy) {
+        case "title":
+            return sql`${works.sort_title}`;
+        case "author":
+            return sql`${workSources.author_on_source}`;
+        case "status":
+            return sql`${libraryEntries.status}`;
+        case "rating":
+            return sql`${readingStates.rating}`;
+        case "progress":
+            return sql`${readingStates.current_chapter}`;
+        case "createdAt":
+            return sql`${libraryEntries.created_at}`;
+        case "wordCount":
+            return sql`${workSources.word_count}`;
+        case "chapterCount":
+            return sql`${workSources.chapter_count}`;
+        case "isNsfw":
+            return sql`${works.is_nsfw}`;
+        default:
+            return sql`${libraryEntries.updated_at}`;
+    }
+}
+
+function createOrderByClause(sortBy: LibrarySortBy, sortOrder: "asc" | "desc"): SQL[] {
     const direction = sortOrder === "asc" ? asc : desc;
     const tiebreaker = direction(libraryEntries.publicId);
 
@@ -236,6 +279,65 @@ function createOrderByClause(sortBy: ProgressSortBy, sortOrder: "asc" | "desc"):
             return [direction(works.is_nsfw), tiebreaker];
         default:
             return [direction(libraryEntries.updated_at), tiebreaker];
+    }
+}
+
+function createCursorCondition(cursor: CursorData, sortBy: LibrarySortBy, sortOrder: "asc" | "desc"): SQL | undefined {
+    if (cursor.sortBy !== sortBy || cursor.sortOrder !== sortOrder) {
+        return;
+    }
+
+    const expression = sortExpression(sortBy);
+    const idDirection =
+        sortOrder === "asc"
+            ? sql`${libraryEntries.publicId} > ${cursor.id}`
+            : sql`${libraryEntries.publicId} < ${cursor.id}`;
+
+    if (cursor.value === null) {
+        return idDirection;
+    }
+
+    return sortOrder === "asc"
+        ? sql`(${expression} > ${cursor.value} OR (${expression} = ${cursor.value} AND ${libraryEntries.publicId} > ${cursor.id}))`
+        : sql`(${expression} < ${cursor.value} OR (${expression} = ${cursor.value} AND ${libraryEntries.publicId} < ${cursor.id}))`;
+}
+
+function cursorValueForItem(
+    item: {
+        createdAt: Date | null;
+        currentChapter: number | null;
+        libraryEntryStatus: string;
+        rating: number | null;
+        sourceAuthor: string | null;
+        sourceChapterCount: number | null;
+        sourceWordCount: number | null;
+        updatedAt: Date | null;
+        workIsNsfw: boolean;
+        workTitle: string;
+    },
+    sortBy: LibrarySortBy
+): CursorData["value"] {
+    switch (sortBy) {
+        case "title":
+            return sortTitle(item.workTitle);
+        case "author":
+            return item.sourceAuthor;
+        case "status":
+            return item.libraryEntryStatus;
+        case "rating":
+            return item.rating;
+        case "progress":
+            return item.currentChapter;
+        case "createdAt":
+            return item.createdAt?.toISOString() ?? null;
+        case "wordCount":
+            return item.sourceWordCount;
+        case "chapterCount":
+            return item.sourceChapterCount;
+        case "isNsfw":
+            return item.workIsNsfw;
+        default:
+            return item.updatedAt?.toISOString() ?? null;
     }
 }
 
@@ -279,7 +381,7 @@ function buildWhereConditions(input: Omit<LibraryQueryInput, "limit" | "cursor" 
         whereConditions.push(
             inArray(
                 sourcePlatforms.key,
-                input.source.map((source) => sourceKeyByLegacySource[source])
+                input.source.map((source) => sourcePlatformKeyBySource[source])
             )
         );
     }
@@ -402,7 +504,7 @@ export async function seedV2ReferenceData(database: Database) {
 }
 
 async function getSourcePlatformId(database: DatabaseOrTransaction, source: Source) {
-    const sourceKey = sourceKeyByLegacySource[source];
+    const sourceKey = sourcePlatformKeyBySource[source];
     const [sourcePlatform] = await database
         .select({ id: sourcePlatforms.id })
         .from(sourcePlatforms)
@@ -417,6 +519,37 @@ async function getSourcePlatformId(database: DatabaseOrTransaction, source: Sour
     }
 
     return sourcePlatform.id;
+}
+
+async function assertSourceUrlAvailable(
+    database: DatabaseOrTransaction,
+    input: {
+        normalizedUrl: string;
+        sourcePlatformId: string;
+        workIdToExclude?: string;
+    }
+) {
+    const conditions = [
+        eq(workSources.sourcePlatformId, input.sourcePlatformId),
+        eq(workSources.normalized_url, input.normalizedUrl),
+    ];
+
+    if (input.workIdToExclude) {
+        conditions.push(sql`${workSources.workId} != ${input.workIdToExclude}`);
+    }
+
+    const [existingSource] = await database
+        .select({ publicId: workSources.publicId })
+        .from(workSources)
+        .where(and(...conditions))
+        .limit(1);
+
+    if (existingSource) {
+        throw new TRPCError({
+            code: "CONFLICT",
+            message: "A library work already uses this source URL.",
+        });
+    }
 }
 
 export async function rebuildEffectiveTaxonomyForWork(database: DatabaseOrTransaction, workId: string, maxDepth = 4) {
@@ -560,6 +693,9 @@ export async function createOrLinkContributor(
 export async function createLibraryItem(database: Database, input: CreateLibraryItemInput) {
     return await database.transaction(async (tx) => {
         const sourcePlatformId = await getSourcePlatformId(tx, input.source);
+        const normalizedUrl = normalizeUrl(input.url);
+        await assertSourceUrlAvailable(tx, { sourcePlatformId, normalizedUrl });
+
         const [newWork] = await tx
             .insert(works)
             .values({
@@ -581,7 +717,7 @@ export async function createLibraryItem(database: Database, input: CreateLibrary
             workId: newWork.id,
             sourcePlatformId,
             url: input.url,
-            normalized_url: normalizeUrl(input.url),
+            normalized_url: normalizedUrl,
             external_id: input.externalId ?? null,
             title_on_source: input.title,
             author_on_source: input.author,
@@ -709,12 +845,19 @@ export async function updateLibraryItem(database: Database, input: UpdateLibrary
             .where(eq(works.id, existing.workId));
 
         const sourcePlatformId = await getSourcePlatformId(tx, input.source);
+        const normalizedUrl = normalizeUrl(input.url);
+        await assertSourceUrlAvailable(tx, {
+            sourcePlatformId,
+            normalizedUrl,
+            workIdToExclude: existing.workId,
+        });
+
         await tx
             .update(workSources)
             .set({
                 sourcePlatformId,
                 url: input.url,
-                normalized_url: normalizeUrl(input.url),
+                normalized_url: normalizedUrl,
                 external_id: input.externalId ?? null,
                 title_on_source: input.title,
                 author_on_source: input.author,
@@ -816,7 +959,7 @@ export async function deleteLibraryEntry(database: Database, publicId: string) {
     return deletedLibraryEntry;
 }
 
-export async function listLibraryProgress(database: Database, input: LibraryQueryInput): Promise<ProgressQueryResult> {
+export async function listLibraryEntries(database: Database, input: LibraryQueryInput): Promise<LibraryQueryResult> {
     const { limit, cursor, search, sortBy, sortOrder: inputSortOrder, ...filterInput } = input;
     const sortOrder = inputSortOrder ?? "asc";
     const effectiveLimit = Math.min(limit, MAX_LIMIT);
@@ -831,39 +974,36 @@ export async function listLibraryProgress(database: Database, input: LibraryQuer
     }
 
     const whereConditions = buildWhereConditions({ ...filterInput, search: sanitizedSearch });
-    if (cursorData) {
-        whereConditions.push(
-            sortOrder === "asc"
-                ? sql`${libraryEntries.publicId} > ${cursorData.id}`
-                : sql`${libraryEntries.publicId} < ${cursorData.id}`
-        );
+    const cursorCondition = cursorData ? createCursorCondition(cursorData, sortBy, sortOrder) : undefined;
+    if (cursorCondition) {
+        whereConditions.push(cursorCondition);
     }
     const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
     const rows = await database
         .select({
-            progressPublicId: libraryEntries.publicId,
-            storyPublicId: works.publicId,
-            storyTitle: works.title,
-            storyAuthor: workSources.author_on_source,
-            storyContributorNames: sql<
+            libraryEntryPublicId: libraryEntries.publicId,
+            workPublicId: works.publicId,
+            workTitle: works.title,
+            sourceAuthor: workSources.author_on_source,
+            contributorNames: sql<
                 string[]
             >`COALESCE(array_remove(array_agg(DISTINCT ${contributors.name}), NULL), ARRAY[]::text[])`,
-            progressStatus: libraryEntries.status,
-            progressCurrentChapter: readingStates.current_chapter,
-            progressRating: readingStates.rating,
-            storyStatus: works.publication_status,
+            libraryEntryStatus: libraryEntries.status,
+            currentChapter: readingStates.current_chapter,
+            rating: readingStates.rating,
+            workStatus: works.publication_status,
             updatedAt: libraryEntries.updated_at,
-            storySourceKey: sourcePlatforms.key,
-            storyUrl: workSources.url,
-            storyChapterCount: workSources.chapter_count,
-            storyWordCount: workSources.word_count,
-            storyIsNsfw: works.is_nsfw,
-            storyDescription: works.description,
-            progressNotes: readingStates.notes,
+            sourcePlatformKey: sourcePlatforms.key,
+            sourceUrl: workSources.url,
+            sourceChapterCount: workSources.chapter_count,
+            sourceWordCount: workSources.word_count,
+            workIsNsfw: works.is_nsfw,
+            workDescription: works.description,
+            readingNotes: readingStates.notes,
             createdAt: libraryEntries.created_at,
-            storyVersion: works.version,
-            progressVersion: libraryEntries.version,
+            workVersion: works.version,
+            libraryEntryVersion: libraryEntries.version,
         })
         .from(libraryEntries)
         .innerJoin(works, eq(works.id, libraryEntries.workId))
@@ -902,7 +1042,7 @@ export async function listLibraryProgress(database: Database, input: LibraryQuer
 
     const hasNextPage = rows.length > effectiveLimit;
     const items = hasNextPage ? rows.slice(0, effectiveLimit) : rows;
-    const workPublicIds = items.map((item) => item.storyPublicId);
+    const workPublicIds = items.map((item) => item.workPublicId);
     const taxonomyRows =
         workPublicIds.length > 0
             ? await database
@@ -957,49 +1097,47 @@ export async function listLibraryProgress(database: Database, input: LibraryQuer
         directTaxonomyByWork.set(taxonomyRow.workPublicId, terms);
     }
 
+    const lastItem = items.at(-1);
+
     return {
         data: items.map((item) => ({
-            progressPublicId: item.progressPublicId,
-            storyPublicId: item.storyPublicId,
-            storyTitle: item.storyTitle,
-            storyAuthor: item.storyAuthor ?? item.storyContributorNames.at(0) ?? "Unknown",
-            storyContributorNames: item.storyContributorNames,
-            progressStatus: item.progressStatus,
-            progressCurrentChapter: item.progressCurrentChapter ?? 0,
-            progressRating: item.progressRating ?? 0,
-            storyStatus: item.storyStatus,
+            libraryEntryPublicId: item.libraryEntryPublicId,
+            workPublicId: item.workPublicId,
+            workTitle: item.workTitle,
+            sourceAuthor: item.sourceAuthor ?? item.contributorNames.at(0) ?? "Unknown",
+            contributorNames: item.contributorNames,
+            libraryEntryStatus: item.libraryEntryStatus,
+            currentChapter: item.currentChapter ?? 0,
+            rating: item.rating ?? 0,
+            workStatus: item.workStatus,
             updatedAt: item.updatedAt ?? new Date(0),
-            directTaxonomyTerms: directTaxonomyByWork.get(item.storyPublicId) ?? [],
-            taxonomyTerms: taxonomyByWork.get(item.storyPublicId) ?? [],
-            storySource: legacySourceBySourceKey[item.storySourceKey ?? "other"] ?? "Other",
-            storyUrl: item.storyUrl ?? undefined,
-            storyChapterCount: item.storyChapterCount ?? undefined,
-            storyWordCount: item.storyWordCount ?? undefined,
-            storyIsNsfw: item.storyIsNsfw,
-            storyDescription: item.storyDescription,
-            progressNotes: item.progressNotes,
+            directTaxonomyTerms: directTaxonomyByWork.get(item.workPublicId) ?? [],
+            taxonomyTerms: taxonomyByWork.get(item.workPublicId) ?? [],
+            source: sourceBySourcePlatformKey[item.sourcePlatformKey ?? "other"] ?? "Other",
+            sourceUrl: item.sourceUrl ?? undefined,
+            sourceChapterCount: item.sourceChapterCount ?? undefined,
+            sourceWordCount: item.sourceWordCount ?? undefined,
+            workIsNsfw: item.workIsNsfw,
+            workDescription: item.workDescription,
+            readingNotes: item.readingNotes,
             createdAt: item.createdAt ?? undefined,
-            storyVersion: item.storyVersion,
-            progressVersion: item.progressVersion,
+            workVersion: item.workVersion,
+            libraryEntryVersion: item.libraryEntryVersion,
         })),
         meta: {
             hasNextPage,
-            nextCursor: hasNextPage ? createCursor(items.at(-1)?.progressPublicId ?? "") : undefined,
+            nextCursor:
+                hasNextPage && lastItem
+                    ? createCursor({
+                          id: lastItem.libraryEntryPublicId,
+                          sortBy,
+                          sortOrder,
+                          value: cursorValueForItem(lastItem, sortBy),
+                      })
+                    : undefined,
             ...(sanitizedSearch && { searchTerm: sanitizedSearch }),
         },
     };
-}
-
-export async function refreshLibraryView(_database: Database) {
-    return { success: true };
-}
-
-export async function refreshLibraryStatsView(_database: Database) {
-    return { success: true };
-}
-
-export async function refreshLibraryReadModels(_database: Database) {
-    return { success: true };
 }
 
 export async function getLibraryStats() {
@@ -1009,7 +1147,7 @@ export async function getLibraryStats() {
 
     const [stats] = await db
         .select({
-            storyCount: sql<number>`COUNT(DISTINCT ${works.id})`,
+            workCount: sql<number>`COUNT(DISTINCT ${works.id})`,
             completed: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Completed' THEN 1 END)`,
             paused: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Paused' THEN 1 END)`,
             dropped: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Dropped' THEN 1 END)`,

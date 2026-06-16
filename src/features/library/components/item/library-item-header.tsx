@@ -6,12 +6,12 @@ import { memo } from "react";
 import { Badge } from "#/components/ui/badge";
 import { useLibraryItemContext } from "#/features/library/components/item/library-item-context";
 import { useLibraryItemValues } from "#/features/library/hooks/use-library-item";
-import { type ProgressStatus, progressStatusLabels } from "#/server/db/schema";
+import { type LibraryEntryStatus, libraryEntryStatusLabels } from "#/server/db/schema";
 
 function LibraryItemHeaderComponent() {
     const { item } = useLibraryItemContext();
     const { hasValidUrl, isNsfw } = useLibraryItemValues(item);
-    const progressStatus = item.progressStatus as ProgressStatus;
+    const libraryEntryStatus = item.libraryEntryStatus as LibraryEntryStatus;
 
     return (
         <div className="space-y-2">
@@ -22,15 +22,15 @@ function LibraryItemHeaderComponent() {
                             {hasValidUrl ? (
                                 <Link
                                     className="font-display transition-colors hover:text-primary"
-                                    href={item.storyUrl as string}
+                                    href={item.sourceUrl as string}
                                     prefetch={false}
                                     rel="noopener noreferrer"
                                     target="_blank"
                                 >
-                                    {item.storyTitle || "Untitled"}
+                                    {item.workTitle || "Untitled"}
                                 </Link>
                             ) : (
-                                <span>{item.storyTitle || "Untitled"}</span>
+                                <span>{item.workTitle || "Untitled"}</span>
                             )}
                         </h2>
                         {hasValidUrl && (
@@ -40,7 +40,7 @@ function LibraryItemHeaderComponent() {
                         )}
                     </div>
                     <p className="text-muted-foreground text-xs lg:text-sm">
-                        by <span>{item.storyAuthor || "Unknown Author"}</span>
+                        by <span>{item.sourceAuthor || "Unknown Author"}</span>
                     </p>
                 </div>
 
@@ -50,7 +50,7 @@ function LibraryItemHeaderComponent() {
                     </Badge>
                 )}
                 <Badge className="shrink-0 rounded-md text-xs lg:text-sm" variant="secondary">
-                    {progressStatusLabels[progressStatus]}
+                    {libraryEntryStatusLabels[libraryEntryStatus]}
                 </Badge>
             </div>
         </div>

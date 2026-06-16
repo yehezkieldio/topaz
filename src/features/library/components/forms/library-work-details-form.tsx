@@ -1,79 +1,101 @@
 "use client";
 
 import type { Control, Path } from "react-hook-form";
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "#/components/ui/form";
+import { Checkbox } from "#/components/ui/checkbox";
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "#/components/ui/form";
 import { Input } from "#/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
-import { Textarea } from "#/components/ui/textarea";
 import { useLibraryFormContext } from "#/features/library/components/forms/library-form";
-import { progressStatusEnum, progressStatusLabels } from "#/server/db/schema";
+import { workStatusEnum, workStatusLabels } from "#/server/db/schema";
 
-type ProgressFormFields = {
-    progressStatus?: string;
-    current_chapter?: number;
-    rating?: number | string;
-    notes?: string;
+type WorkDetailsFields = {
+    word_count?: number;
+    chapter_count?: number;
+    status?: string;
+    is_nsfw?: boolean;
 };
 
-type LibraryStoryProgressFormProps<T extends ProgressFormFields> = {
+type LibraryWorkDetailsFieldsFormProps<T extends WorkDetailsFields> = {
     control?: Control<T>;
-    progressStatusField?: Path<T>;
-    currentChapterField?: Path<T>;
-    ratingField?: Path<T>;
-    notesField?: Path<T>;
 };
 
-export function LibraryStoryProgressForm<T extends ProgressFormFields>({
+export function LibraryWorkDetailsFieldsForm<T extends WorkDetailsFields>({
     control: propControl,
-    progressStatusField = "progressStatus" as Path<T>,
-    currentChapterField = "current_chapter" as Path<T>,
-    ratingField = "rating" as Path<T>,
-    notesField = "notes" as Path<T>,
-}: LibraryStoryProgressFormProps<T>) {
+}: LibraryWorkDetailsFieldsFormProps<T>) {
     const context = useLibraryFormContext<T>();
     const isInCompoundContext = context !== null;
     const control = context?.control ?? propControl;
 
     if (!control) {
-        throw new Error("LibraryStoryProgressForm requires either control prop or compound component context");
+        throw new Error("LibraryWorkDetailsFieldsForm requires either control prop or compound component context");
     }
 
     const formFields = (
         <>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <FormField
                     control={control}
-                    name={progressStatusField}
+                    name={"word_count" as Path<T>}
                     render={({ field }) => (
-                        <FormItem className="w-full">
-                            <FormLabel>Status</FormLabel>
-                            <Select
-                                defaultValue={typeof field.value === "string" ? field.value : undefined}
-                                onValueChange={field.onChange}
-                            >
-                                <FormControl>
-                                    <SelectTrigger className="w-full truncate rounded-md">
-                                        <SelectValue className="truncate" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="min-w-[12rem] max-w-[20rem] rounded-md">
-                                    {progressStatusEnum.options.map((status) => (
-                                        <SelectItem className="truncate" key={status} value={status}>
-                                            {progressStatusLabels[status]}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                        <FormItem>
+                            <FormLabel>Word Count</FormLabel>
+                            <FormControl>
+                                <Input
+                                    className="rounded-md"
+                                    placeholder="0"
+                                    type="number"
+                                    {...field}
+                                    onBlur={(e) => {
+                                        if (e.target.value === "") {
+                                            e.target.value = "0";
+                                            field.onChange(0);
+                                        }
+                                    }}
+                                    onChange={(e) => {
+                                        const value = e.target.value === "" ? "" : Number(e.target.value);
+                                        field.onChange(value);
+                                    }}
+                                    onClick={(e) => {
+                                        if (e.currentTarget.value === "0") {
+                                            e.currentTarget.value = "";
+                                            field.onChange("");
+                                        }
+                                    }}
+                                    onFocus={(e) => {
+                                        if (e.target.value === "0") {
+                                            e.target.value = "";
+                                            field.onChange("");
+                                        }
+                                    }}
+                                    onPaste={(e) => {
+                                        e.preventDefault();
+                                        let pasted = e.clipboardData.getData("text");
+                                        pasted = pasted.replace(/[\s,.]/g, "");
+                                        const num = Number(pasted);
+                                        if (!Number.isNaN(num)) {
+                                            field.onChange(num);
+                                        }
+                                    }}
+                                    value={
+                                        typeof field.value === "number"
+                                            ? field.value
+                                            : field.value === "" || field.value === undefined
+                                              ? ""
+                                              : Number(field.value) || ""
+                                    }
+                                />
+                            </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
+
                 <FormField
                     control={control}
-                    name={currentChapterField}
+                    name={"chapter_count" as Path<T>}
                     render={({ field }) => (
-                        <FormItem className="w-full">
-                            <FormLabel>Current</FormLabel>
+                        <FormItem>
+                            <FormLabel>Total Chapters</FormLabel>
                             <FormControl>
                                 <Input
                                     className="rounded-md"
@@ -115,67 +137,52 @@ export function LibraryStoryProgressForm<T extends ProgressFormFields>({
                         </FormItem>
                     )}
                 />
+
                 <FormField
                     control={control}
-                    name={ratingField}
+                    name={"status" as Path<T>}
                     render={({ field }) => (
                         <FormItem className="w-full">
-                            <FormLabel>Rating (0-5)</FormLabel>
-                            <FormControl>
-                                <Input
-                                    className="rounded-md"
-                                    max="5"
-                                    min="0"
-                                    placeholder="0"
-                                    step="0.1"
-                                    type="number"
-                                    {...field}
-                                    onBlur={(e) => {
-                                        // Allow empty string, otherwise keep as string
-                                        if (e.target.value === "" || Number.isNaN(Number(e.target.value))) {
-                                            field.onChange("");
-                                        } else {
-                                            field.onChange(e.target.value);
-                                        }
-                                    }}
-                                    onChange={(e) => {
-                                        // Always store as string
-                                        field.onChange(e.target.value);
-                                    }}
-                                    onClick={(e) => {
-                                        if (e.currentTarget.value === "0") {
-                                            e.currentTarget.value = "";
-                                            field.onChange("");
-                                        }
-                                    }}
-                                    onFocus={(e) => {
-                                        if (e.target.value === "0") {
-                                            e.target.value = "";
-                                            field.onChange("");
-                                        }
-                                    }}
-                                    value={field.value ?? ""}
-                                />
-                            </FormControl>
+                            <FormLabel>Work Status</FormLabel>
+                            <Select
+                                defaultValue={typeof field.value === "string" ? field.value : undefined}
+                                onValueChange={field.onChange}
+                            >
+                                <FormControl className="w-full">
+                                    <SelectTrigger className="rounded-md">
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="w-full rounded-md">
+                                    {workStatusEnum.options.map((status) => (
+                                        <SelectItem key={status} value={status}>
+                                            {workStatusLabels[status]}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
             </div>
+
             <FormField
                 control={control}
-                name={notesField}
+                name={"is_nsfw" as Path<T>}
                 render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Notes</FormLabel>
+                    <FormItem className="flex flex-row items-start gap-x-3 gap-y-0 rounded-md border p-4">
                         <FormControl>
-                            <Textarea
-                                className="min-h-[80px] resize-none"
-                                placeholder="Personal notes about this story..."
-                                {...field}
+                            <Checkbox
+                                checked={typeof field.value === "boolean" ? field.value : false}
+                                className="rounded-md"
+                                onCheckedChange={field.onChange}
                             />
                         </FormControl>
-                        <FormMessage />
+                        <div className="space-y-1 leading-none">
+                            <FormLabel>NSFW Content</FormLabel>
+                            <FormDescription>Mark this work as containing adult or explicit content.</FormDescription>
+                        </div>
                     </FormItem>
                 )}
             />
@@ -188,7 +195,7 @@ export function LibraryStoryProgressForm<T extends ProgressFormFields>({
 
     return (
         <div className="space-y-4">
-            <h3 className="font-medium text-lg">Reading Progress</h3>
+            <h3 className="font-medium text-lg">Details</h3>
             {formFields}
         </div>
     );

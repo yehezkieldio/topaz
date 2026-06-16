@@ -3,19 +3,19 @@
 import { Button } from "#/components/ui/button";
 import { Form } from "#/components/ui/form";
 import { SheetClose, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "#/components/ui/sheet";
-import { useStoryCreate } from "#/features/library/api/use-story-create";
+import { useLibraryEntryCreate } from "#/features/library/api/use-library-entry-create";
 import { LibraryForm } from "#/features/library/components/forms/library-form";
-import { LibraryStoryCategoriesForm } from "#/features/library/components/forms/library-story-categories-form";
-import { LibraryStoryDetailsForm } from "#/features/library/components/forms/library-story-details-form";
-import { LibraryStoryInfoForm } from "#/features/library/components/forms/library-story-info-form";
-import { LibraryStoryProgressForm } from "#/features/library/components/forms/library-story-progress-form";
+import { LibraryReadingStateForm } from "#/features/library/components/forms/library-reading-state-form";
+import { LibraryWorkDetailsFieldsForm } from "#/features/library/components/forms/library-work-details-form";
+import { LibraryWorkSourceFieldsForm } from "#/features/library/components/forms/library-work-source-form";
+import { LibraryWorkTaxonomyForm } from "#/features/library/components/forms/library-work-taxonomy-form";
 
 type LibraryCreateFormProps = {
     onClose: () => void;
 };
 
 export function LibraryCreateForm({ onClose }: LibraryCreateFormProps) {
-    const { form, onSubmit, isLoading } = useStoryCreate({ onClose });
+    const { form, onSubmit, isLoading } = useLibraryEntryCreate({ onClose });
 
     return (
         <Form {...form}>
@@ -28,16 +28,16 @@ export function LibraryCreateForm({ onClose }: LibraryCreateFormProps) {
                 <div className="flex-1 overflow-y-auto">
                     <LibraryForm className="space-y-8 p-6" control={form.control} isLoading={isLoading}>
                         <LibraryForm.Info>
-                            <LibraryStoryInfoForm />
+                            <LibraryWorkSourceFieldsForm />
                         </LibraryForm.Info>
                         <LibraryForm.Details>
-                            <LibraryStoryDetailsForm />
+                            <LibraryWorkDetailsFieldsForm />
                         </LibraryForm.Details>
                         <LibraryForm.Categories>
-                            <LibraryStoryCategoriesForm />
+                            <LibraryWorkTaxonomyForm />
                         </LibraryForm.Categories>
                         <LibraryForm.Progress>
-                            <LibraryStoryProgressForm />
+                            <LibraryReadingStateForm />
                         </LibraryForm.Progress>
                     </LibraryForm>
                 </div>

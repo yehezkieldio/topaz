@@ -1,9 +1,9 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as progressSchema from "#/server/db/schema/progress";
-import * as storySchema from "#/server/db/schema/story";
+import * as libraryEntrySchema from "#/server/db/schema/library-entry";
 import * as taxonomySchema from "#/server/db/schema/taxonomy";
 import * as userSchema from "#/server/db/schema/user";
+import * as workSchema from "#/server/db/schema/work";
 
 const databaseUrl = process.env.DEVELOPMENT_DATABASE_URL ?? process.env.DATABASE_URL;
 
@@ -15,10 +15,10 @@ export const scriptSql = postgres(databaseUrl, { prepare: false });
 
 export const scriptDb = drizzle(scriptSql, {
     schema: {
-        ...progressSchema,
-        ...storySchema,
+        ...libraryEntrySchema,
         ...taxonomySchema,
         ...userSchema,
+        ...workSchema,
     },
     casing: "snake_case",
     logger: false,

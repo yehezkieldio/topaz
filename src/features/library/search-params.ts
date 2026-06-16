@@ -1,6 +1,6 @@
 import { debounce, type inferParserType, parseAsString, parseAsStringEnum } from "nuqs/server";
 import type { SortOrder } from "#/lib/utils";
-import type { ProgressSortBy, ProgressStatus, Source } from "#/server/db/schema";
+import type { LibraryEntryStatus, LibrarySortBy, Source } from "#/server/db/schema";
 
 export const LIBRARY_PAGE_SIZE = 20;
 export const LIBRARY_SEARCH_DEBOUNCE_MS = 400;
@@ -30,7 +30,7 @@ export const LIBRARY_SORT_OPTIONS = [
     "wordCount",
     "chapterCount",
     "isNsfw",
-] as const satisfies readonly ProgressSortBy[];
+] as const satisfies readonly LibrarySortBy[];
 
 export const LIBRARY_STATUS_OPTIONS = [
     "NotStarted",
@@ -40,7 +40,7 @@ export const LIBRARY_STATUS_OPTIONS = [
     "Dropped",
     "PlanToRead",
     "DroppedAsAbandoned",
-] as const satisfies readonly ProgressStatus[];
+] as const satisfies readonly LibraryEntryStatus[];
 
 export const librarySearchParamsParsers = {
     q: parseAsString.withDefault("").withOptions({
@@ -54,7 +54,7 @@ export const librarySearchParamsParsers = {
             clearOnDefault: true,
             shallow: false,
         }),
-    sortBy: parseAsStringEnum<ProgressSortBy>([...LIBRARY_SORT_OPTIONS])
+    sortBy: parseAsStringEnum<LibrarySortBy>([...LIBRARY_SORT_OPTIONS])
         .withDefault("updatedAt")
         .withOptions({
             clearOnDefault: true,
@@ -64,7 +64,7 @@ export const librarySearchParamsParsers = {
         clearOnDefault: true,
         shallow: false,
     }),
-    status: parseAsStringEnum<ProgressStatus | "all">(["all", ...LIBRARY_STATUS_OPTIONS])
+    status: parseAsStringEnum<LibraryEntryStatus | "all">(["all", ...LIBRARY_STATUS_OPTIONS])
         .withDefault("all")
         .withOptions({
             clearOnDefault: true,

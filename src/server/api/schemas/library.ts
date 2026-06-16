@@ -2,20 +2,20 @@ import { z } from "zod/v4";
 import { sortOrderEnum } from "#/lib/utils";
 import { publicIdSchema } from "#/server/api/schemas/common";
 import { DEFAULT_LIMIT, MAX_LIMIT, MAX_SEARCH_LENGTH, MIN_LIMIT } from "#/server/db/repositories/library-repository";
-import { progressSortByEnum, progressStatusEnum } from "#/server/db/schema/progress";
-import { sourceEnum } from "#/server/db/schema/story";
+import { libraryEntryStatusEnum, librarySortByEnum } from "#/server/db/schema/library-entry";
+import { sourceEnum } from "#/server/db/schema/work";
 
 const MIN_RATING = 0;
 const MAX_RATING = 5;
 
-export const progressQuerySchema = z
+export const libraryQuerySchema = z
     .object({
         limit: z.number().min(MIN_LIMIT).max(MAX_LIMIT).default(DEFAULT_LIMIT),
         cursor: z.string().optional(),
         search: z.string().max(MAX_SEARCH_LENGTH).optional(),
-        sortBy: progressSortByEnum.default("updatedAt"),
+        sortBy: librarySortByEnum.default("updatedAt"),
         sortOrder: sortOrderEnum.nullable().default("asc"),
-        status: z.array(progressStatusEnum).max(10).optional(),
+        status: z.array(libraryEntryStatusEnum).max(10).optional(),
         source: z.array(sourceEnum).max(10).optional(),
         isNsfw: z.boolean().optional(),
         minRating: z.number().min(MIN_RATING).max(MAX_RATING).optional(),

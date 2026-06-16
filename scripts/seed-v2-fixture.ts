@@ -1,6 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
-import { libraryEntries, readingEvents, readingStates } from "#/server/db/schema/progress";
-import { contributors, sourcePlatforms, workContributors, workSources, works } from "#/server/db/schema/story";
+import { libraryEntries, readingEvents, readingStates } from "#/server/db/schema/library-entry";
 import {
     taxonomyKinds,
     taxonomyLabels,
@@ -10,6 +9,7 @@ import {
     workTaxonomyEffective,
 } from "#/server/db/schema/taxonomy";
 import { users } from "#/server/db/schema/user";
+import { contributors, sourcePlatforms, workContributors, workSources, works } from "#/server/db/schema/work";
 import { scriptDb, scriptSql } from "./script-db";
 import { seedV2ReferenceDataForScripts } from "./seed-v2-reference-data.shared";
 

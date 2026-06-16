@@ -2,7 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import { type AnyPgColumn, check, index, primaryKey, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import { z } from "zod/v4";
-import { works } from "#/server/db/schema/story";
+import { works } from "#/server/db/schema/work";
 import { citext, createTable, ids, timestamps } from "#/server/db/utils";
 
 export const taxonomyKindKeys = [

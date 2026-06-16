@@ -13,7 +13,7 @@ import { useLibraryFormContext } from "#/features/library/components/forms/libra
 import { detectSourceFromUrl, isValidUrl } from "#/lib/utils";
 import { sourceEnum, sourceLabels } from "#/server/db/schema";
 
-type StoryInfo = {
+type WorkSourceFields = {
     title: string;
     author: string;
     url: string;
@@ -21,11 +21,11 @@ type StoryInfo = {
     description?: string;
 };
 
-type LibraryStoryInfoFormProps<T extends StoryInfo> = {
+type LibraryWorkSourceFieldsFormProps<T extends WorkSourceFields> = {
     control?: Control<T>;
 };
 
-function useStorySourceHandlers(sourceOnChangeRef: React.MutableRefObject<((value: string) => void) | null>) {
+function useWorkSourceHandlers(sourceOnChangeRef: React.MutableRefObject<((value: string) => void) | null>) {
     const autoDetectSource = React.useCallback(
         (url: string) => {
             if (!isValidUrl(url)) return;
@@ -78,7 +78,9 @@ function useStorySourceHandlers(sourceOnChangeRef: React.MutableRefObject<((valu
     return { autoDetectSource, handlePasteFromClipboard };
 }
 
-export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl }: LibraryStoryInfoFormProps<T>) {
+export function LibraryWorkSourceFieldsForm<T extends WorkSourceFields>({
+    control: propControl,
+}: LibraryWorkSourceFieldsFormProps<T>) {
     const context = useLibraryFormContext<T>();
     const isInCompoundContext = context !== null;
 
@@ -86,10 +88,10 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
     const sourceOnChangeRef = React.useRef<((value: string) => void) | null>(null);
 
     if (!control) {
-        throw new Error("LibraryStoryInfoForm requires either control prop or compound component context");
+        throw new Error("LibraryWorkSourceFieldsForm requires either control prop or compound component context");
     }
 
-    const { autoDetectSource, handlePasteFromClipboard } = useStorySourceHandlers(sourceOnChangeRef);
+    const { autoDetectSource, handlePasteFromClipboard } = useWorkSourceHandlers(sourceOnChangeRef);
 
     const formFields = (
         <>
@@ -105,7 +107,7 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
                             <FormControl>
                                 <Input
                                     className="rounded-md"
-                                    placeholder="Story title"
+                                    placeholder="Work title"
                                     {...field}
                                     onPaste={(e) => {
                                         e.preventDefault();
@@ -253,7 +255,7 @@ export function LibraryStoryInfoForm<T extends StoryInfo>({ control: propControl
                         <FormControl>
                             <Textarea
                                 className="min-h-[80px] resize-none rounded-md"
-                                placeholder="Story description or summary..."
+                                placeholder="Work description or summary..."
                                 {...field}
                                 onPaste={(e) => {
                                     e.preventDefault();

@@ -14,7 +14,7 @@ function LibraryItemNotesComponent() {
 
     return (
         <div className="border-primary/30 border-l-2 bg-muted/30 p-3">
-            <p className="line-clamp-2 text-muted-foreground text-xs lg:text-sm">{(item.progressNotes ?? "").trim()}</p>
+            <p className="line-clamp-2 text-muted-foreground text-xs lg:text-sm">{(item.readingNotes ?? "").trim()}</p>
         </div>
     );
 }

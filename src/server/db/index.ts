@@ -2,16 +2,16 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 import { env } from "#/env";
-import * as progressSchema from "./schema/progress";
-import * as storySchema from "./schema/story";
+import * as libraryEntrySchema from "./schema/library-entry";
 import * as taxonomySchema from "./schema/taxonomy";
 import * as userSchema from "./schema/user";
+import * as workSchema from "./schema/work";
 
 const schema = {
-    ...progressSchema,
-    ...storySchema,
+    ...libraryEntrySchema,
     ...taxonomySchema,
     ...userSchema,
+    ...workSchema,
 };
 
 const globalForDb = globalThis as unknown as {

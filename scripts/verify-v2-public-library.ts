@@ -45,7 +45,7 @@ async function libraryAll(input: Record<string, unknown>) {
     const response = await fetch(url, { method: "GET" });
     const body = (await response.json()) as {
         error?: unknown;
-        result?: { data?: { json?: { data?: Array<{ storyPublicId: string }> } } };
+        result?: { data?: { json?: { data?: Array<{ workPublicId: string }> } } };
     };
 
     if (!response.ok || body.error) {
@@ -57,7 +57,7 @@ async function libraryAll(input: Record<string, unknown>) {
 
 async function expectFixture(input: Record<string, unknown>, label: string) {
     const rows = await libraryAll({ limit: 10, sortBy: "updatedAt", sortOrder: "desc", ...input });
-    if (!rows.some((row) => row.storyPublicId === fixture.work_public_id)) {
+    if (!rows.some((row) => row.workPublicId === fixture.work_public_id)) {
         throw new Error(`${label} did not return the fixture work`);
     }
 }

@@ -240,7 +240,7 @@ try {
 
     await evaluatePage(`window.__topazVerify.clickDeleteForTitle(${JSON.stringify(updatedTitle)})`);
     await waitForPageCondition(`document.body.innerText.includes("Are you absolutely sure?")`);
-    await evaluatePage(`window.__topazVerify.clickByText("Delete Story")`);
+    await evaluatePage(`window.__topazVerify.clickByText("Delete Work")`);
     await waitForPageCondition(`!document.body.innerText.includes(${JSON.stringify(updatedTitle)})`, 30_000);
 
     const [remaining] = await sql`

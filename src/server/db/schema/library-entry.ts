@@ -2,11 +2,11 @@ import { relations, sql } from "drizzle-orm";
 import { check, index, jsonb, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import { z } from "zod/v4";
-import { works } from "#/server/db/schema/story";
 import { users } from "#/server/db/schema/user";
+import { works } from "#/server/db/schema/work";
 import { createTable, ids, timestamps } from "#/server/db/utils";
 
-export const progressStatusEnum = z.enum([
+export const libraryEntryStatusEnum = z.enum([
     "NotStarted",
     "Reading",
     "Paused",
@@ -15,9 +15,9 @@ export const progressStatusEnum = z.enum([
     "PlanToRead",
     "DroppedAsAbandoned",
 ]);
-export type ProgressStatus = z.infer<typeof progressStatusEnum>;
+export type LibraryEntryStatus = z.infer<typeof libraryEntryStatusEnum>;
 
-export const progressStatusLabels: Record<ProgressStatus, string> = {
+export const libraryEntryStatusLabels: Record<LibraryEntryStatus, string> = {
     NotStarted: "Not Started",
     Reading: "Reading",
     Paused: "Paused",
@@ -43,7 +43,7 @@ export const readingEventTypeEnum = z.enum([
 export type ReadingEventType = z.infer<typeof readingEventTypeEnum>;
 export const readingEventTypes = readingEventTypeEnum.options;
 
-export const progressSortByEnum = z.enum([
+export const librarySortByEnum = z.enum([
     "title",
     "author",
     "status",
@@ -55,7 +55,7 @@ export const progressSortByEnum = z.enum([
     "chapterCount",
     "isNsfw",
 ]);
-export type ProgressSortBy = z.infer<typeof progressSortByEnum>;
+export type LibrarySortBy = z.infer<typeof librarySortByEnum>;
 
 export const libraryEntries = createTable(
     "library_entry",

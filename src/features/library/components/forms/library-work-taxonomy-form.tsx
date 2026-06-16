@@ -17,7 +17,7 @@ type InitialTaxonomyTerm = {
     name: string;
 };
 
-type LibraryStoryCategoriesFormProps<T extends Categories & FieldValues> = {
+type LibraryWorkTaxonomyFormProps<T extends Categories & FieldValues> = {
     control?: Control<T>;
     taxonomyTermsField?: Path<T>;
     initialTaxonomyTerms?: InitialTaxonomyTerm[];
@@ -25,17 +25,17 @@ type LibraryStoryCategoriesFormProps<T extends Categories & FieldValues> = {
 
 const EMPTY_INITIAL_TAXONOMY_TERMS: InitialTaxonomyTerm[] = [];
 
-export function LibraryStoryCategoriesForm<T extends Categories & FieldValues>({
+export function LibraryWorkTaxonomyForm<T extends Categories & FieldValues>({
     control: propControl,
     taxonomyTermsField = "taxonomyTermIds" as Path<T>,
     initialTaxonomyTerms = EMPTY_INITIAL_TAXONOMY_TERMS,
-}: LibraryStoryCategoriesFormProps<T>) {
+}: LibraryWorkTaxonomyFormProps<T>) {
     const context = useLibraryFormContext<T>();
     const isInCompoundContext = context !== null;
     const control = context?.control ?? propControl;
 
     if (!control) {
-        throw new Error("LibraryStoryCategoriesForm requires either control prop or compound component context");
+        throw new Error("LibraryWorkTaxonomyForm requires either control prop or compound component context");
     }
 
     const { taxonomyData } = useTaxonomySearch();

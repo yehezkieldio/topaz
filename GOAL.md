@@ -217,6 +217,54 @@ Stop and report clearly if:
 - typecheck exposes a broad architectural mismatch that should not be papered over
 ```
 
+## Current Ledger
+
+Status: V2 hardening pass completed for code-level cleanup and compile/lint gates; destructive/manual verification deferred.
+
+Completed in this pass:
+
+```text
+- renamed active schema modules from story/progress to work/library-entry
+- renamed active create/edit form hooks and form sections away from story/progress vocabulary
+- changed library API result fields to work/libraryEntry/source/reading names
+- removed obsolete view.refreshAll/view.refreshLibrary/view.refreshLibraryStats tRPC mutation surface
+- removed no-op refreshLibraryView/refreshLibraryStatsView/refreshLibraryReadModels repository helpers
+- added preflight duplicate normalized source URL conflict checks on create and edit
+- kept optimistic version conflict checks for work and library_entry updates
+- preserved synchronous effective taxonomy rebuild in create/edit/assignment flows
+- fixed keyset cursor payloads to include sort key/order/value and ignore stale cursors after sort changes
+- updated admin/public verification scripts for the renamed API contract
+- improved library virtualization with stable getItemKey and memoized estimateSize
+- replaced edit quick-update broad form.watch reads with useWatch for chapter fields
+- updated active UI copy from story/progress wording to work/library/reading wording
+- verified bun run typecheck passes after the rename and React changes
+- verified bunx biome check src scripts passes
+```
+
+Not run in this pass:
+
+```text
+- destructive fresh local database reset; requires explicit user approval before data destruction
+- manual browser/admin verification flow; run after final gates with a known disposable DB/server
+```
+
+Known gate note:
+
+```text
+- bun run lint still fails because biome check . scans .agents/skills JSON-with-comments assets and reports a deprecated biome.json recommended field
+- scoped required source gate bunx biome check src scripts passes
+```
+
+Recommended next pass:
+
+```text
+- rework the library React layer around the cleaned LibraryEntry view model
+- split create/edit forms into smaller React Hook Form field sections with isolated useWatch/useController subscriptions
+- replace the current card-heavy virtual row with a denser virtualized row/list design
+- keep TanStack Virtual stable keys, memoized estimates, dynamic measurement only where needed, and explicit empty/error/loading states
+- consider this a UI architecture pass, not more V2 domain migration work
+```
+
 ## Out of Scope
 
 ```text
@@ -229,4 +277,3 @@ Stop and report clearly if:
 - visual redesign
 - careful old-data migration
 ```
-

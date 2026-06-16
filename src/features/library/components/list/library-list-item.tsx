@@ -85,7 +85,7 @@ export const LibraryListItem = memo(function LibraryListItem({
                                 onClick={fetchNextPage}
                                 variant="ghost"
                             >
-                                Load More Stories
+                                Load More Works
                             </Button>
                         )}
                     </div>

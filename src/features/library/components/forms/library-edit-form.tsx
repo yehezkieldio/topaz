@@ -1,15 +1,16 @@
 "use client";
 
+import { useWatch } from "react-hook-form";
 import { Button } from "#/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "#/components/ui/form";
 import { ProgressControls } from "#/components/ui/progress-controls";
 import { SheetClose, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "#/components/ui/sheet";
-import { useStoryEdit } from "#/features/library/api/use-story-edit";
+import { useLibraryEntryEdit } from "#/features/library/api/use-library-entry-edit";
 import { LibraryForm } from "#/features/library/components/forms/library-form";
-import { LibraryStoryCategoriesForm } from "#/features/library/components/forms/library-story-categories-form";
-import { LibraryStoryDetailsForm } from "#/features/library/components/forms/library-story-details-form";
-import { LibraryStoryInfoForm } from "#/features/library/components/forms/library-story-info-form";
-import { LibraryStoryProgressForm } from "#/features/library/components/forms/library-story-progress-form";
+import { LibraryReadingStateForm } from "#/features/library/components/forms/library-reading-state-form";
+import { LibraryWorkDetailsFieldsForm } from "#/features/library/components/forms/library-work-details-form";
+import { LibraryWorkSourceFieldsForm } from "#/features/library/components/forms/library-work-source-form";
+import { LibraryWorkTaxonomyForm } from "#/features/library/components/forms/library-work-taxonomy-form";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
 import { useIsMobile } from "#/hooks/use-mobile";
 
@@ -19,11 +20,13 @@ type LibraryEditFormProps = {
 };
 
 export function LibraryEditForm({ item, onCloseAction }: LibraryEditFormProps) {
-    const { form, onSubmit, isLoading } = useStoryEdit({ item, onCloseAction });
+    const { form, onSubmit, isLoading } = useLibraryEntryEdit({ item, onCloseAction });
     const isMobile = useIsMobile();
 
-    const currentChapter = form.watch("current_chapter");
-    const totalChapters = form.watch("chapter_count");
+    const [currentChapter = 0, totalChapters = 0] = useWatch({
+        control: form.control,
+        name: ["current_chapter", "chapter_count"],
+    });
 
     const handleChapterIncrement = () => {
         const current = currentChapter;
@@ -74,16 +77,16 @@ export function LibraryEditForm({ item, onCloseAction }: LibraryEditFormProps) {
                         )}
 
                         <LibraryForm.Info>
-                            <LibraryStoryInfoForm />
+                            <LibraryWorkSourceFieldsForm />
                         </LibraryForm.Info>
                         <LibraryForm.Details>
-                            <LibraryStoryDetailsForm />
+                            <LibraryWorkDetailsFieldsForm />
                         </LibraryForm.Details>
                         <LibraryForm.Categories>
-                            <LibraryStoryCategoriesForm initialTaxonomyTerms={item.taxonomyTerms || []} />
+                            <LibraryWorkTaxonomyForm initialTaxonomyTerms={item.taxonomyTerms || []} />
                         </LibraryForm.Categories>
                         <LibraryForm.Progress>
-                            <LibraryStoryProgressForm />
+                            <LibraryReadingStateForm />
                         </LibraryForm.Progress>
                     </LibraryForm>
                 </div>

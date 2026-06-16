@@ -66,10 +66,17 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
     const { allItems, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading } =
         useLibraryDataContext();
 
+    const estimateSize = useCallback(() => itemHeight, [itemHeight]);
+    const getItemKey = useCallback(
+        (index: number) => allItems[index]?.libraryEntryPublicId ?? `loader-${index}`,
+        [allItems]
+    );
+
     const virtualizer = useVirtualizer({
         count: hasNextPage ? allItems.length + 1 : allItems.length,
         getScrollElement: () => parentRef.current,
-        estimateSize: () => itemHeight,
+        estimateSize,
+        getItemKey,
         overscan: OVERSCAN,
         measureElement:
             typeof window === "undefined"
@@ -127,11 +134,9 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
     }
 
     if (allItems.length === 0) {
-        const message = search
-            ? `No stories match your search for "${search}"`
-            : "Welcome to the beginning of a legendary odyssey!";
+        const message = search ? `No works match your search for "${search}"` : "No library works yet.";
 
-        return <EmptyState message={message} title="No Stories Found" />;
+        return <EmptyState message={message} title="No Works Found" />;
     }
 
     return (

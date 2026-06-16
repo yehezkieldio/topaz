@@ -1,162 +1,65 @@
 "use client";
 
 import type { Control, Path } from "react-hook-form";
-import { Checkbox } from "#/components/ui/checkbox";
-import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "#/components/ui/form";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "#/components/ui/form";
 import { Input } from "#/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
+import { Textarea } from "#/components/ui/textarea";
 import { useLibraryFormContext } from "#/features/library/components/forms/library-form";
-import { storyStatusEnum, storyStatusLabels } from "#/server/db/schema";
+import { libraryEntryStatusEnum, libraryEntryStatusLabels } from "#/server/db/schema";
 
-type StoryDetails = {
-    word_count?: number;
-    chapter_count?: number;
-    status?: string;
-    is_nsfw?: boolean;
+type ReadingStateFields = {
+    libraryEntryStatus?: string;
+    current_chapter?: number;
+    rating?: number | string;
+    notes?: string;
 };
 
-type LibraryStoryDetailsFormProps<T extends StoryDetails> = {
+type LibraryReadingStateFormProps<T extends ReadingStateFields> = {
     control?: Control<T>;
+    libraryEntryStatusField?: Path<T>;
+    currentChapterField?: Path<T>;
+    ratingField?: Path<T>;
+    notesField?: Path<T>;
 };
 
-export function LibraryStoryDetailsForm<T extends StoryDetails>({
+export function LibraryReadingStateForm<T extends ReadingStateFields>({
     control: propControl,
-}: LibraryStoryDetailsFormProps<T>) {
+    libraryEntryStatusField = "libraryEntryStatus" as Path<T>,
+    currentChapterField = "current_chapter" as Path<T>,
+    ratingField = "rating" as Path<T>,
+    notesField = "notes" as Path<T>,
+}: LibraryReadingStateFormProps<T>) {
     const context = useLibraryFormContext<T>();
     const isInCompoundContext = context !== null;
     const control = context?.control ?? propControl;
 
     if (!control) {
-        throw new Error("LibraryStoryDetailsForm requires either control prop or compound component context");
+        throw new Error("LibraryReadingStateForm requires either control prop or compound component context");
     }
 
     const formFields = (
         <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                 <FormField
                     control={control}
-                    name={"word_count" as Path<T>}
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Word Count</FormLabel>
-                            <FormControl>
-                                <Input
-                                    className="rounded-md"
-                                    placeholder="0"
-                                    type="number"
-                                    {...field}
-                                    onBlur={(e) => {
-                                        if (e.target.value === "") {
-                                            e.target.value = "0";
-                                            field.onChange(0);
-                                        }
-                                    }}
-                                    onChange={(e) => {
-                                        const value = e.target.value === "" ? "" : Number(e.target.value);
-                                        field.onChange(value);
-                                    }}
-                                    onClick={(e) => {
-                                        if (e.currentTarget.value === "0") {
-                                            e.currentTarget.value = "";
-                                            field.onChange("");
-                                        }
-                                    }}
-                                    onFocus={(e) => {
-                                        if (e.target.value === "0") {
-                                            e.target.value = "";
-                                            field.onChange("");
-                                        }
-                                    }}
-                                    onPaste={(e) => {
-                                        e.preventDefault();
-                                        let pasted = e.clipboardData.getData("text");
-                                        pasted = pasted.replace(/[\s,.]/g, "");
-                                        const num = Number(pasted);
-                                        if (!Number.isNaN(num)) {
-                                            field.onChange(num);
-                                        }
-                                    }}
-                                    value={
-                                        typeof field.value === "number"
-                                            ? field.value
-                                            : field.value === "" || field.value === undefined
-                                              ? ""
-                                              : Number(field.value) || ""
-                                    }
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={control}
-                    name={"chapter_count" as Path<T>}
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Total Chapters</FormLabel>
-                            <FormControl>
-                                <Input
-                                    className="rounded-md"
-                                    placeholder="0"
-                                    type="number"
-                                    {...field}
-                                    onBlur={(e) => {
-                                        if (e.target.value === "") {
-                                            e.target.value = "0";
-                                            field.onChange(0);
-                                        }
-                                    }}
-                                    onChange={(e) => {
-                                        const value = e.target.value === "" ? "" : Number(e.target.value);
-                                        field.onChange(value);
-                                    }}
-                                    onClick={(e) => {
-                                        if (e.currentTarget.value === "0") {
-                                            e.currentTarget.value = "";
-                                            field.onChange("");
-                                        }
-                                    }}
-                                    onFocus={(e) => {
-                                        if (e.target.value === "0") {
-                                            e.target.value = "";
-                                            field.onChange("");
-                                        }
-                                    }}
-                                    value={
-                                        typeof field.value === "number"
-                                            ? field.value
-                                            : field.value === "" || field.value === undefined
-                                              ? ""
-                                              : Number(field.value) || ""
-                                    }
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={control}
-                    name={"status" as Path<T>}
+                    name={libraryEntryStatusField}
                     render={({ field }) => (
                         <FormItem className="w-full">
-                            <FormLabel>Story Status</FormLabel>
+                            <FormLabel>Status</FormLabel>
                             <Select
                                 defaultValue={typeof field.value === "string" ? field.value : undefined}
                                 onValueChange={field.onChange}
                             >
-                                <FormControl className="w-full">
-                                    <SelectTrigger className="rounded-md">
-                                        <SelectValue placeholder="Select status" />
+                                <FormControl>
+                                    <SelectTrigger className="w-full truncate rounded-md">
+                                        <SelectValue className="truncate" />
                                     </SelectTrigger>
                                 </FormControl>
-                                <SelectContent className="w-full rounded-md">
-                                    {storyStatusEnum.options.map((status) => (
-                                        <SelectItem key={status} value={status}>
-                                            {storyStatusLabels[status]}
+                                <SelectContent className="min-w-[12rem] max-w-[20rem] rounded-md">
+                                    {libraryEntryStatusEnum.options.map((status) => (
+                                        <SelectItem className="truncate" key={status} value={status}>
+                                            {libraryEntryStatusLabels[status]}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -165,24 +68,114 @@ export function LibraryStoryDetailsForm<T extends StoryDetails>({
                         </FormItem>
                     )}
                 />
+                <FormField
+                    control={control}
+                    name={currentChapterField}
+                    render={({ field }) => (
+                        <FormItem className="w-full">
+                            <FormLabel>Current</FormLabel>
+                            <FormControl>
+                                <Input
+                                    className="rounded-md"
+                                    placeholder="0"
+                                    type="number"
+                                    {...field}
+                                    onBlur={(e) => {
+                                        if (e.target.value === "") {
+                                            e.target.value = "0";
+                                            field.onChange(0);
+                                        }
+                                    }}
+                                    onChange={(e) => {
+                                        const value = e.target.value === "" ? "" : Number(e.target.value);
+                                        field.onChange(value);
+                                    }}
+                                    onClick={(e) => {
+                                        if (e.currentTarget.value === "0") {
+                                            e.currentTarget.value = "";
+                                            field.onChange("");
+                                        }
+                                    }}
+                                    onFocus={(e) => {
+                                        if (e.target.value === "0") {
+                                            e.target.value = "";
+                                            field.onChange("");
+                                        }
+                                    }}
+                                    value={
+                                        typeof field.value === "number"
+                                            ? field.value
+                                            : field.value === "" || field.value === undefined
+                                              ? ""
+                                              : Number(field.value) || ""
+                                    }
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={control}
+                    name={ratingField}
+                    render={({ field }) => (
+                        <FormItem className="w-full">
+                            <FormLabel>Rating (0-5)</FormLabel>
+                            <FormControl>
+                                <Input
+                                    className="rounded-md"
+                                    max="5"
+                                    min="0"
+                                    placeholder="0"
+                                    step="0.1"
+                                    type="number"
+                                    {...field}
+                                    onBlur={(e) => {
+                                        // Allow empty string, otherwise keep as string
+                                        if (e.target.value === "" || Number.isNaN(Number(e.target.value))) {
+                                            field.onChange("");
+                                        } else {
+                                            field.onChange(e.target.value);
+                                        }
+                                    }}
+                                    onChange={(e) => {
+                                        // Always store as string
+                                        field.onChange(e.target.value);
+                                    }}
+                                    onClick={(e) => {
+                                        if (e.currentTarget.value === "0") {
+                                            e.currentTarget.value = "";
+                                            field.onChange("");
+                                        }
+                                    }}
+                                    onFocus={(e) => {
+                                        if (e.target.value === "0") {
+                                            e.target.value = "";
+                                            field.onChange("");
+                                        }
+                                    }}
+                                    value={field.value ?? ""}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
             </div>
-
             <FormField
                 control={control}
-                name={"is_nsfw" as Path<T>}
+                name={notesField}
                 render={({ field }) => (
-                    <FormItem className="flex flex-row items-start gap-x-3 gap-y-0 rounded-md border p-4">
+                    <FormItem>
+                        <FormLabel>Notes</FormLabel>
                         <FormControl>
-                            <Checkbox
-                                checked={typeof field.value === "boolean" ? field.value : false}
-                                className="rounded-md"
-                                onCheckedChange={field.onChange}
+                            <Textarea
+                                className="min-h-[80px] resize-none"
+                                placeholder="Personal notes about this work..."
+                                {...field}
                             />
                         </FormControl>
-                        <div className="space-y-1 leading-none">
-                            <FormLabel>NSFW Content</FormLabel>
-                            <FormDescription>Mark this story as containing adult or explicit content.</FormDescription>
-                        </div>
+                        <FormMessage />
                     </FormItem>
                 )}
             />
@@ -195,7 +188,7 @@ export function LibraryStoryDetailsForm<T extends StoryDetails>({
 
     return (
         <div className="space-y-4">
-            <h3 className="font-medium text-lg">Details</h3>
+            <h3 className="font-medium text-lg">Reading Progress</h3>
             {formFields}
         </div>
     );

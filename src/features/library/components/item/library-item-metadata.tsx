@@ -10,7 +10,7 @@ function LibraryItemMetadataComponent() {
     const { item } = useLibraryItemContext();
     const { hasWordCount, wordCount, totalChapters, hasCurrentChapterOnly, currentChapter, isComplete, lastUpdated } =
         useLibraryItemValues(item);
-    const source = item.storySource as Source;
+    const source = item.source as Source;
     const isMobile = useIsMobile();
 
     return (
@@ -56,7 +56,7 @@ function LibraryItemMetadataComponent() {
             )}
 
             <span className="text-muted-foreground/40">•</span>
-            <span>{item.storyStatus}</span>
+            <span>{item.workStatus}</span>
         </div>
     );
 }

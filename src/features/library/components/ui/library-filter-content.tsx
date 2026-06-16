@@ -13,15 +13,15 @@ import {
 } from "#/components/ui/dropdown-menu";
 import { useLibraryFilter } from "#/features/library/hooks/use-library-filter";
 import {
-    type ProgressSortBy,
-    type ProgressStatus,
-    progressStatusLabels,
+    type LibraryEntryStatus,
+    type LibrarySortBy,
+    libraryEntryStatusLabels,
     type Source,
     sourceLabels,
 } from "#/server/db/schema";
 
 export type SortOption = {
-    value: ProgressSortBy;
+    value: LibrarySortBy;
     label: string;
 };
 
@@ -39,17 +39,17 @@ export const SORT_OPTIONS: SortOption[] = [
 ] as const;
 
 export type StatusOption = {
-    value: ProgressStatus | "all";
+    value: LibraryEntryStatus | "all";
     label: string;
 };
 
 export const STATUS_OPTIONS: StatusOption[] = [
     { value: "all", label: "All" },
-    { value: "Reading", label: progressStatusLabels.Reading },
-    { value: "NotStarted", label: progressStatusLabels.NotStarted },
-    { value: "Paused", label: progressStatusLabels.Paused },
-    { value: "Completed", label: progressStatusLabels.Completed },
-    { value: "Dropped", label: progressStatusLabels.Dropped },
+    { value: "Reading", label: libraryEntryStatusLabels.Reading },
+    { value: "NotStarted", label: libraryEntryStatusLabels.NotStarted },
+    { value: "Paused", label: libraryEntryStatusLabels.Paused },
+    { value: "Completed", label: libraryEntryStatusLabels.Completed },
+    { value: "Dropped", label: libraryEntryStatusLabels.Dropped },
 ] as const;
 
 const SOURCE_OPTIONS: { value: Source | "all"; label: string }[] = [
@@ -110,7 +110,7 @@ export const LibraryFilterContent = React.memo(function FilterContent({
 
     const handleSortChange = useCallback(
         (value: string) => {
-            setSortBy(value as ProgressSortBy);
+            setSortBy(value as LibrarySortBy);
         },
         [setSortBy]
     );

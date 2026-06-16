@@ -79,7 +79,7 @@ type LibraryItemRatingProps = {
 function LibraryItemRatingComponent({ children }: LibraryItemRatingProps) {
     const { item } = useLibraryItemContext();
 
-    const rating = Number(item.progressRating ?? 0);
+    const rating = Number(item.rating ?? 0);
 
     if (rating <= 0) {
         return null;
@@ -87,7 +87,7 @@ function LibraryItemRatingComponent({ children }: LibraryItemRatingProps) {
 
     return (
         <>
-            <LibraryItemRating value={item.progressRating} />
+            <LibraryItemRating value={item.rating} />
             {children}
         </>
     );
