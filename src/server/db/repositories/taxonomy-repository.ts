@@ -241,8 +241,11 @@ export async function listTaxonomyTerms(input: {
     offset: number;
 }): Promise<TaxonomyTermListResult> {
     const trimmedSearch = input.search?.trim();
+    // Search on `name`/`slug`, not `normalized_name` — those two columns carry the
+    // gin_trgm_ops indexes (taxonomy_term_name_trgm_idx, taxonomy_term_slug_trgm_idx);
+    // normalized_name has no trigram index, so ILIKE against it forces a sequential scan.
     const searchClause = trimmedSearch
-        ? sql`(${taxonomyTerms.normalized_name} ILIKE ${`%${normalizeTaxonomyText(trimmedSearch)}%`} OR ${taxonomyTerms.slug} ILIKE ${`%${trimmedSearch}%`})`
+        ? sql`(${taxonomyTerms.name} ILIKE ${`%${trimmedSearch}%`} OR ${taxonomyTerms.slug} ILIKE ${`%${trimmedSearch}%`})`
         : undefined;
     const whereClause = and(kindPredicate(input.kind), searchClause);
 

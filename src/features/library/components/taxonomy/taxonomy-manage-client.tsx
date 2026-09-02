@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
     ArrowLeftIcon,
     ChevronLeftIcon,
@@ -115,14 +115,15 @@ export function TaxonomyManageClient() {
         setOffset(0);
     }, [kind, debouncedSearch]);
 
-    const listQuery = useQuery(
-        trpc.taxonomy.list.queryOptions({
+    const listQuery = useQuery({
+        ...trpc.taxonomy.list.queryOptions({
             kind: kind === ALL_KINDS ? undefined : kind,
             limit: PAGE_SIZE,
             offset,
             search: debouncedSearch.trim() || undefined,
-        })
-    );
+        }),
+        placeholderData: keepPreviousData,
+    });
 
     const [formTarget, setFormTarget] = React.useState<TaxonomyTermFormTarget | null | undefined>(undefined);
     const [deleteTarget, setDeleteTarget] = React.useState<TaxonomyTermDeleteTarget | null>(null);

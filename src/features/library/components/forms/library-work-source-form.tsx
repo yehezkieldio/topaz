@@ -3,7 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { ClipboardIcon, LoaderCircleIcon, WandSparklesIcon } from "lucide-react";
 import * as React from "react";
-import type { Control, Path } from "react-hook-form";
+import type { Control, Path, UseFormGetValues, UseFormSetValue } from "react-hook-form";
 import { useFormContext } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
@@ -107,15 +107,42 @@ const METADATA_PROVIDER_LABELS = {
     opengraph: "the page's metadata",
 } as const;
 
-type LooseFieldSetter = (name: string, value: unknown, options?: { shouldDirty?: boolean }) => void;
-
 function useWorkMetadataFetch<T extends WorkSourceFields>() {
     const trpc = useTRPC();
-    const { setValue, getValues } = useFormContext<T>();
-    const setFieldValue = setValue as unknown as LooseFieldSetter;
+    const formContext = useFormContext<T>();
     const lastFetchedUrlRef = React.useRef<string | null>(null);
 
     const fetchMetadataMutation = useMutation(trpc.work.fetchMetadata.mutationOptions());
+
+    // WORKAROUND: react-hook-form's Path<T>/PathValue<T, K> can't be correlated per-field when
+    // T is only known through the `T extends WorkSourceFields` bound (T itself is never concrete
+    // inside this generic hook) — every distinct call site collapses to the union of all paths,
+    // so per-key inference fails even though each field below is declared directly on
+    // WorkSourceFields. Narrowing setValue/getValues to that base shape is sound for these calls
+    // specifically, since any T satisfying the bound has these exact fields with these exact
+    // types. Root cause is a known bounded-polymorphism gap in react-hook-form's typing
+    // (https://github.com/react-hook-form/react-hook-form/issues/6679), not something fixable
+    // from this call site.
+    const { setValue, getValues } = formContext as unknown as {
+        setValue: UseFormSetValue<WorkSourceFields>;
+        getValues: UseFormGetValues<WorkSourceFields>;
+    };
+
+    const setFieldIfEmpty = React.useCallback(
+        <K extends keyof WorkSourceFields>(name: K, value: WorkSourceFields[K] | undefined) => {
+            if (value === undefined || value === "") {
+                return;
+            }
+            if (getValues(name)) {
+                return;
+            }
+            // These are always shallow (non-dotted) keys of WorkSourceFields, so the runtime
+            // shape matches exactly — see the WORKAROUND note above for why RHF's mapped
+            // conditional type can't confirm that statically here.
+            setValue(name, value as never, { shouldDirty: true });
+        },
+        [getValues, setValue]
+    );
 
     const applyFetchedMetadata = React.useCallback(
         (metadata: {
@@ -127,30 +154,16 @@ function useWorkMetadataFetch<T extends WorkSourceFields>() {
             chapterCount?: number;
             provider: "fichub" | "opengraph";
         }) => {
-            const values = getValues();
-
-            if (metadata.title && !values.title) {
-                setFieldValue("title", metadata.title, { shouldDirty: true });
-            }
-            if (metadata.author && !values.author) {
-                setFieldValue("author", metadata.author, { shouldDirty: true });
-            }
-            if (metadata.description && !values.description) {
-                setFieldValue("description", metadata.description, { shouldDirty: true });
-            }
-            if (metadata.status && !values.status) {
-                setFieldValue("status", metadata.status, { shouldDirty: true });
-            }
-            if (metadata.wordCount && !values.word_count) {
-                setFieldValue("word_count", metadata.wordCount, { shouldDirty: true });
-            }
-            if (metadata.chapterCount && !values.chapter_count) {
-                setFieldValue("chapter_count", metadata.chapterCount, { shouldDirty: true });
-            }
+            setFieldIfEmpty("title", metadata.title);
+            setFieldIfEmpty("author", metadata.author);
+            setFieldIfEmpty("description", metadata.description);
+            setFieldIfEmpty("status", metadata.status);
+            setFieldIfEmpty("word_count", metadata.wordCount);
+            setFieldIfEmpty("chapter_count", metadata.chapterCount);
 
             toast.success(`Fetched story info from ${METADATA_PROVIDER_LABELS[metadata.provider]}.`);
         },
-        [getValues, setValue]
+        [setFieldIfEmpty]
     );
 
     const fetchMetadataForUrl = React.useCallback(
