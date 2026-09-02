@@ -43,13 +43,13 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
                         (op.direction === "down" && op.result instanceof Error),
                 }),
                 httpBatchStreamLink({
-                    transformer: SuperJSON,
-                    url: `${getBaseUrl()}/api/trpc`,
                     headers: () => {
                         const headers = new Headers();
                         headers.set("x-trpc-source", "nextjs-react");
                         return headers;
                     },
+                    transformer: SuperJSON,
+                    url: `${getBaseUrl()}/api/trpc`,
                 }),
             ],
         })

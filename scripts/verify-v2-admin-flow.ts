@@ -63,24 +63,24 @@ if (!user) {
 }
 
 const token = await encode({
-    secret: authSecret,
     salt: "authjs.session-token",
+    secret: authSecret,
     token: {
-        id: user.id,
-        sub: user.id,
         email: user.email,
+        id: user.id,
         name: user.name,
+        sub: user.id,
     },
 });
 
 async function trpcMutation(path: string, input: Record<string, unknown>) {
     const response = await fetch(`${baseUrl}/api/trpc/${path}`, {
-        method: "POST",
+        body: JSON.stringify({ json: input }),
         headers: {
             "content-type": "application/json",
             cookie: `authjs.session-token=${token}`,
         },
-        body: JSON.stringify({ json: input }),
+        method: "POST",
     });
     const text = await response.text();
     const body = trpcResponseSchema.parse(JSON.parse(text));
@@ -96,10 +96,10 @@ async function trpcQuery(path: string, input: Record<string, unknown>) {
     const url = new URL(`${baseUrl}/api/trpc/${path}`);
     url.searchParams.set("input", JSON.stringify({ json: input }));
     const response = await fetch(url, {
-        method: "GET",
         headers: {
             cookie: `authjs.session-token=${token}`,
         },
+        method: "GET",
     });
     const text = await response.text();
     const body = trpcResponseSchema.parse(JSON.parse(text));
@@ -141,20 +141,20 @@ try {
 
     const created = createWorkResultSchema.parse(
         await trpcMutation("work.createWithLibraryEntry", {
-            title: `V2 HTTP Admin Flow ${suffix}`,
             author: "Mara Solenne",
-            url: `https://example.com/topaz-v2-admin-flow-${suffix}`,
-            source: "Other",
-            description: "Authenticated tRPC admin flow verification item.",
             chapter_count: 8,
-            word_count: 24_680,
-            is_nsfw: false,
-            status: "Ongoing",
-            libraryEntryStatus: "Reading",
             current_chapter: 2,
-            rating: "3.5",
+            description: "Authenticated tRPC admin flow verification item.",
+            is_nsfw: false,
+            libraryEntryStatus: "Reading",
             notes: "Created through authenticated tRPC verification.",
+            rating: "3.5",
+            source: "Other",
+            status: "Ongoing",
             taxonomyTermIds: [direct.publicId],
+            title: `V2 HTTP Admin Flow ${suffix}`,
+            url: `https://example.com/topaz-v2-admin-flow-${suffix}`,
+            word_count: 24_680,
         })
     );
     createdWorkPublicId = created.work.publicId;
@@ -171,33 +171,33 @@ try {
     }
 
     await trpcMutation("work.updateWithLibraryEntry", {
-        workPublicId: created.work.publicId,
-        libraryEntryPublicId: created.libraryEntry.publicId,
-        workVersion: versions.work_version,
-        libraryEntryVersion: versions.entry_version,
-        title: `V2 HTTP Admin Flow Updated ${suffix}`,
         author: "Mara Solenne",
-        url: `https://example.com/topaz-v2-admin-flow-${suffix}`,
-        source: "Other",
-        description: "Updated through authenticated tRPC verification.",
         chapter_count: 9,
-        word_count: 26_001,
-        is_nsfw: false,
-        status: "Ongoing",
-        libraryEntryStatus: "Completed",
         current_chapter: 9,
-        rating: "4.0",
+        description: "Updated through authenticated tRPC verification.",
+        is_nsfw: false,
+        libraryEntryPublicId: created.libraryEntry.publicId,
+        libraryEntryStatus: "Completed",
+        libraryEntryVersion: versions.entry_version,
         notes: "Updated note through authenticated tRPC verification.",
+        rating: "4.0",
+        source: "Other",
+        status: "Ongoing",
         taxonomyTermIds: [direct.publicId],
+        title: `V2 HTTP Admin Flow Updated ${suffix}`,
+        url: `https://example.com/topaz-v2-admin-flow-${suffix}`,
+        word_count: 26_001,
+        workPublicId: created.work.publicId,
+        workVersion: versions.work_version,
     });
 
     const filtered = libraryListResultSchema.parse(
         await trpcQuery("library.all", {
+            effectiveTaxonomyTermIds: [inferred.publicId],
             limit: 10,
             search: "",
             sortBy: "updatedAt",
             sortOrder: "desc",
-            effectiveTaxonomyTermIds: [inferred.publicId],
         })
     );
     const filteredByInferred = Boolean(filtered.data?.some((item) => item.workPublicId === created.work.publicId));

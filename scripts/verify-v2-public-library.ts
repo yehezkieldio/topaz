@@ -86,7 +86,7 @@ try {
     await expectFixture({ search: "Fixture note" }, "notes search");
     await expectFixture({ status: ["Reading"] }, "status filter");
     await expectFixture({ source: ["ArchiveOfOurOwn"] }, "source filter");
-    await expectFixture({ minRating: 4, maxRating: 5 }, "rating filter");
+    await expectFixture({ maxRating: 5, minRating: 4 }, "rating filter");
     await expectFixture({ favorite: false }, "favorite filter");
     await expectFixture({ isNsfw: false }, "NSFW filter");
     await expectFixture({ hasNotes: true }, "notes filter");

@@ -79,9 +79,9 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
 
     const virtualizer = useVirtualizer({
         count: hasNextPage ? allItems.length + 1 : allItems.length,
-        getScrollElement: () => parentRef.current,
         estimateSize,
         getItemKey,
+        getScrollElement: () => parentRef.current,
         overscan: OVERSCAN,
     });
 
@@ -147,8 +147,8 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
             <div
                 style={{
                     height: virtualizer.getTotalSize(),
-                    width: "100%",
                     position: "relative",
+                    width: "100%",
                 }}
             >
                 {items.map((virtualItem) => {

@@ -33,9 +33,9 @@ function LibraryItemViewSheetComponent({ item, isOpen, onClose }: ViewSheetProps
     const contextValue = useMemo(
         () => ({
             item,
-            onView: undefined,
-            onEdit: undefined,
             onDelete: undefined,
+            onEdit: undefined,
+            onView: undefined,
         }),
         [item]
     );

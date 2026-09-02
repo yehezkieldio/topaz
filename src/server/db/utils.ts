@@ -25,10 +25,10 @@ export const citext = customType<{ data: string }>({
     dataType() {
         return "citext";
     },
-    toDriver(value: string) {
-        return value;
-    },
     fromDriver(value: unknown) {
         return value as string;
+    },
+    toDriver(value: string) {
+        return value;
     },
 });

@@ -62,7 +62,8 @@
       "performance": {
         "noBarrelFile": "off",
         "noNamespaceImport": "off",
-        "noImgElement": "off"
+        "noImgElement": "off",
+        "noJsxPropsBind": "off"
       },
       "complexity": {
         "noVoid": "off",

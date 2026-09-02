@@ -14,15 +14,15 @@ export const THIRTY_MINUTES = MINUTES_IN_THIRTY_MINUTES * MILLISECONDS_IN_A_MINU
 export const createQueryClient = () =>
     new QueryClient({
         defaultOptions: {
-            queries: {
-                gcTime: FIVE_MINUTES,
-            },
             dehydrate: {
                 serializeData: SuperJSON.serialize,
                 shouldDehydrateQuery: (query) => defaultShouldDehydrateQuery(query) || query.state.status === "pending",
             },
             hydrate: {
                 deserializeData: SuperJSON.deserialize,
+            },
+            queries: {
+                gcTime: FIVE_MINUTES,
             },
         },
     });

@@ -22,10 +22,10 @@ export function getTaxonomyKindDescription(kind?: TaxonomyKind) {
 
 function toSelectedTaxonomyItem(term: { kind?: TaxonomyKind; name: string; publicId: string }): SelectedTaxonomyItem {
     return {
-        value: term.publicId,
-        label: term.name,
-        kind: term.kind,
         description: getTaxonomyKindDescription(term.kind),
+        kind: term.kind,
+        label: term.name,
+        value: term.publicId,
     };
 }
 
@@ -39,11 +39,11 @@ export const useTaxonomySearch = (initialSearch = "", kind?: TaxonomyKind) => {
     const hotTaxonomyQueryOptions = React.useMemo(
         () =>
             trpc.taxonomy.forMultiselect.queryOptions({
-                kind,
-                search: undefined,
-                limit: 25,
-                includeHot: true,
                 hotLimit: 20,
+                includeHot: true,
+                kind,
+                limit: 25,
+                search: undefined,
             }),
         [kind, trpc]
     );
@@ -58,14 +58,14 @@ export const useTaxonomySearch = (initialSearch = "", kind?: TaxonomyKind) => {
         isFetching,
     } = useQuery({
         ...trpc.taxonomy.forMultiselect.queryOptions({
-            kind,
-            search: normalizedDebounced || undefined,
-            limit: 25,
-            includeHot: normalizedDebounced.length === 0,
             hotLimit: 20,
+            includeHot: normalizedDebounced.length === 0,
+            kind,
+            limit: 25,
+            search: normalizedDebounced || undefined,
         }),
-        staleTime: FIVE_MINUTES,
         gcTime: THIRTY_MINUTES,
+        staleTime: FIVE_MINUTES,
     });
 
     const createTermForMultiselect = useMutation(trpc.taxonomy.createForMultiselect.mutationOptions());
@@ -101,14 +101,14 @@ export const useTaxonomySearch = (initialSearch = "", kind?: TaxonomyKind) => {
     }, []);
 
     return {
-        taxonomySearch,
-        debouncedTaxonomySearch: normalizedDebounced,
-        taxonomyOptions,
-        isLoadingTaxonomy: isLoadingTaxonomy || (isFetching && !taxonomyResponse),
         canCreateTaxonomyTerm,
-        isCreatingTaxonomyTerm: createTermMutation.isPending,
-        setTaxonomySearch: setTaxonomySearchNormalized,
         createTaxonomyTerm: handleCreateTerm,
+        debouncedTaxonomySearch: normalizedDebounced,
+        isCreatingTaxonomyTerm: createTermMutation.isPending,
+        isLoadingTaxonomy: isLoadingTaxonomy || (isFetching && !taxonomyResponse),
+        setTaxonomySearch: setTaxonomySearchNormalized,
         taxonomyData: taxonomyResponse?.terms,
+        taxonomyOptions,
+        taxonomySearch,
     };
 };

@@ -6,8 +6,8 @@ import { librarySearchParamsCache } from "#/features/library/search-params.serve
 import { getQueryClient, HydrateClient, trpc } from "#/trpc/server";
 
 export const metadata = {
-    title: "Library | Topaz",
     description: "Browse the Topaz story library.",
+    title: "Library | Topaz",
 };
 
 type LibraryPageProps = {

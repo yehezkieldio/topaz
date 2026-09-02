@@ -7,8 +7,8 @@ import { LibraryStats } from "#/features/library/components/ui/library-stats";
 import { getLibraryStats } from "#/server/db/repositories/library-repository";
 
 export const metadata = {
-    title: "Topaz",
     description: "A curated personal library of fanfiction, webnovels, and online fiction.",
+    title: "Topaz",
 };
 
 export default async function Home() {

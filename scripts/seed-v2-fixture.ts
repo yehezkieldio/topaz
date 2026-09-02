@@ -47,8 +47,8 @@ await scriptDb
     .insert(taxonomyRelations)
     .values({
         fromTermId: directTerm.id,
-        toTermId: inferredTerm.id,
         relation_type: "implies",
+        toTermId: inferredTerm.id,
     })
     .onConflictDoNothing({
         target: [taxonomyRelations.fromTermId, taxonomyRelations.toTermId, taxonomyRelations.relation_type],
@@ -67,7 +67,7 @@ await normalizeFixtureWork(workId);
 
 await scriptDb
     .insert(workTaxonomyAssignments)
-    .values({ workId, termId: directTerm.id })
+    .values({ termId: directTerm.id, workId })
     .onConflictDoNothing({ target: [workTaxonomyAssignments.workId, workTaxonomyAssignments.termId] });
 
 await rebuildFixtureEffectiveTaxonomy(workId);
@@ -89,15 +89,15 @@ async function createFixtureWork(userId: string): Promise<string> {
         const [work] = await tx
             .insert(works)
             .values({
-                title: "A Practical Map of Starlight",
-                sort_title: "a practical map of starlight",
+                content_rating: "general",
                 description:
                     "A compact V2 fixture work for validating library browsing, taxonomy inference, and reading state.",
+                is_nsfw: false,
+                publication_status: "Ongoing",
+                sort_title: "a practical map of starlight",
                 summary:
                     "A compact V2 fixture work for validating library browsing, taxonomy inference, and reading state.",
-                publication_status: "Ongoing",
-                content_rating: "general",
-                is_nsfw: false,
+                title: "A Practical Map of Starlight",
             })
             .returning({ id: works.id });
         if (!work) {
@@ -116,31 +116,31 @@ async function createFixtureWork(userId: string): Promise<string> {
         }
 
         await tx.insert(workContributors).values({
-            workId: work.id,
             contributorId: contributor.id,
-            role: "author",
             display_order: 0,
+            role: "author",
+            workId: work.id,
         });
 
         await tx.insert(workSources).values({
-            workId: work.id,
-            sourcePlatformId: platform.id,
-            url: fixtureUrl,
-            normalized_url: normalizedFixtureUrl,
-            title_on_source: "A Practical Map of Starlight",
             author_on_source: "Ianthe Vale",
             chapter_count: 12,
-            word_count: 48_700,
-            source_status: "Ongoing",
             is_primary: true,
+            normalized_url: normalizedFixtureUrl,
+            source_status: "Ongoing",
+            sourcePlatformId: platform.id,
+            title_on_source: "A Practical Map of Starlight",
+            url: fixtureUrl,
+            word_count: 48_700,
+            workId: work.id,
         });
 
         const [libraryEntry] = await tx
             .insert(libraryEntries)
             .values({
+                status: "Reading",
                 userId,
                 workId: work.id,
-                status: "Reading",
             })
             .returning({ id: libraryEntries.id });
         if (!libraryEntry) {
@@ -148,20 +148,20 @@ async function createFixtureWork(userId: string): Promise<string> {
         }
 
         await tx.insert(readingStates).values({
-            libraryEntryId: libraryEntry.id,
             current_chapter: 4,
-            rating: 4.2,
-            notes: "Fixture note for V2 search and notes filtering.",
             last_read_at: new Date(),
+            libraryEntryId: libraryEntry.id,
+            notes: "Fixture note for V2 search and notes filtering.",
+            rating: 4.2,
         });
 
         await tx.insert(readingEvents).values({
-            libraryEntryId: libraryEntry.id,
             event_type: "added",
-            to_status: "Reading",
+            libraryEntryId: libraryEntry.id,
+            note: "Fixture item created.",
             to_chapter: 4,
             to_rating: 4.2,
-            note: "Fixture item created.",
+            to_status: "Reading",
         });
 
         return work.id;
@@ -206,11 +206,11 @@ async function upsertTaxonomyTerm(input: { kind: TaxonomyKind; name: string }) {
     }
 
     await scriptDb.insert(taxonomyLabels).values({
-        termId: term.id,
-        label: input.name,
-        normalized_label: normalizedName,
-        label_type: "primary",
         is_primary: true,
+        label: input.name,
+        label_type: "primary",
+        normalized_label: normalizedName,
+        termId: term.id,
     });
 
     return term;
@@ -232,11 +232,11 @@ async function rebuildFixtureEffectiveTaxonomy(workId: string) {
         .insert(workTaxonomyEffective)
         .values(
             directAssignments.map((assignment) => ({
-                workId,
-                termId: assignment.termId,
-                sourceTermId: assignment.termId,
-                reason: "direct",
                 depth: 0,
+                reason: "direct",
+                sourceTermId: assignment.termId,
+                termId: assignment.termId,
+                workId,
             }))
         )
         .onConflictDoNothing({ target: [workTaxonomyEffective.workId, workTaxonomyEffective.termId] });
@@ -244,9 +244,9 @@ async function rebuildFixtureEffectiveTaxonomy(workId: string) {
     const directTermIds = directAssignments.map((assignment) => assignment.termId);
     const inferredRelations = await scriptDb
         .select({
+            reason: taxonomyRelations.relation_type,
             sourceTermId: taxonomyRelations.fromTermId,
             termId: taxonomyRelations.toTermId,
-            reason: taxonomyRelations.relation_type,
         })
         .from(taxonomyRelations)
         .where(
@@ -264,11 +264,11 @@ async function rebuildFixtureEffectiveTaxonomy(workId: string) {
         .insert(workTaxonomyEffective)
         .values(
             inferredRelations.map((relation) => ({
-                workId,
-                termId: relation.termId,
-                sourceTermId: relation.sourceTermId,
-                reason: relation.reason,
                 depth: 1,
+                reason: relation.reason,
+                sourceTermId: relation.sourceTermId,
+                termId: relation.termId,
+                workId,
             }))
         )
         .onConflictDoNothing({ target: [workTaxonomyEffective.workId, workTaxonomyEffective.termId] });
@@ -278,9 +278,9 @@ async function normalizeFixtureWork(workId: string) {
     await scriptDb
         .update(works)
         .set({
-            publication_status: "Ongoing",
             content_rating: "general",
             is_nsfw: false,
+            publication_status: "Ongoing",
         })
         .where(eq(works.id, workId));
 

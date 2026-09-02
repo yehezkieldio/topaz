@@ -96,9 +96,9 @@ function LibraryFormProgress({ children }: LibraryFormProgressProps) {
 }
 
 export const LibraryForm = Object.assign(LibraryFormRoot, {
-    Info: LibraryFormInfo,
-    Details: LibraryFormDetails,
     Categories: LibraryFormCategories,
+    Details: LibraryFormDetails,
+    Info: LibraryFormInfo,
     Progress: LibraryFormProgress,
 });
 

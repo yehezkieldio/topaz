@@ -151,9 +151,9 @@ export function MultiSelect({
                     side="bottom"
                     style={{
                         minWidth: "var(--radix-popover-trigger-width)",
-                        WebkitOverflowScrolling: "touch",
-                        touchAction: "pan-y",
                         overflow: "hidden",
+                        touchAction: "pan-y",
+                        WebkitOverflowScrolling: "touch",
                     }}
                 >
                     <Command shouldFilter={false}>
@@ -167,8 +167,8 @@ export function MultiSelect({
                             className="max-h-[200px] touch-pan-y overflow-y-auto overscroll-contain"
                             onWheel={(e) => e.stopPropagation()}
                             style={{
-                                WebkitOverflowScrolling: "touch",
                                 touchAction: "pan-y",
+                                WebkitOverflowScrolling: "touch",
                             }}
                         >
                             {isLoading ? (

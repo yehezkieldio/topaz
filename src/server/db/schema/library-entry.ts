@@ -18,13 +18,13 @@ export const libraryEntryStatusEnum = z.enum([
 export type LibraryEntryStatus = z.infer<typeof libraryEntryStatusEnum>;
 
 export const libraryEntryStatusLabels: Record<LibraryEntryStatus, string> = {
-    NotStarted: "Not Started",
-    Reading: "Reading",
-    Paused: "Paused",
     Completed: "Completed",
     Dropped: "Dropped",
-    PlanToRead: "PlanToRead",
     DroppedAsAbandoned: "Dropped as Abandoned",
+    NotStarted: "Not Started",
+    Paused: "Paused",
+    PlanToRead: "PlanToRead",
+    Reading: "Reading",
 };
 
 export const readingEventTypeEnum = z.enum([
@@ -61,19 +61,19 @@ export const libraryEntries = createTable(
     "library_entry",
     (d) => ({
         ...ids,
-        userId: uuid()
-            .notNull()
-            .references(() => users.id, { onDelete: "cascade" }),
-        workId: uuid()
-            .notNull()
-            .references(() => works.id, { onDelete: "cascade" }),
-        status: d.text().notNull().default("Reading"),
+        added_at: d.timestamp({ mode: "date", withTimezone: true }).notNull().default(sql`CURRENT_TIMESTAMP`),
+        archived_at: d.timestamp({ mode: "date", withTimezone: true }),
         favorite: d.boolean().notNull().default(false),
         priority: d.integer().notNull().default(0),
         private: d.boolean().notNull().default(false),
-        added_at: d.timestamp({ mode: "date", withTimezone: true }).notNull().default(sql`CURRENT_TIMESTAMP`),
-        archived_at: d.timestamp({ mode: "date", withTimezone: true }),
+        status: d.text().notNull().default("Reading"),
+        userId: uuid()
+            .notNull()
+            .references(() => users.id, { onDelete: "cascade" }),
         version: d.integer().notNull().default(0),
+        workId: uuid()
+            .notNull()
+            .references(() => works.id, { onDelete: "cascade" }),
         ...timestamps,
     }),
     (t) => [
@@ -90,17 +90,17 @@ export const readingStates = createTable(
     "reading_state",
     (d) => ({
         ...ids,
+        current_chapter: d.integer().notNull().default(0),
+        current_percent: d.numeric({ mode: "number", precision: 5, scale: 2 }),
+        finished_at: d.timestamp({ mode: "date", withTimezone: true }),
+        last_read_at: d.timestamp({ mode: "date", withTimezone: true }),
         libraryEntryId: uuid()
             .notNull()
             .references(() => libraryEntries.id, { onDelete: "cascade" }),
-        current_chapter: d.integer().notNull().default(0),
-        current_percent: d.numeric({ precision: 5, scale: 2, mode: "number" }),
-        rating: d.numeric({ precision: 2, scale: 1, mode: "number" }),
         notes: d.text(),
-        started_at: d.timestamp({ mode: "date", withTimezone: true }),
-        finished_at: d.timestamp({ mode: "date", withTimezone: true }),
-        last_read_at: d.timestamp({ mode: "date", withTimezone: true }),
+        rating: d.numeric({ mode: "number", precision: 2, scale: 1 }),
         reread_count: d.integer().notNull().default(0),
+        started_at: d.timestamp({ mode: "date", withTimezone: true }),
         version: d.integer().notNull().default(0),
         ...timestamps,
     }),
@@ -123,20 +123,20 @@ export const readingEvents = createTable(
     "reading_event",
     (d) => ({
         ...ids,
+        created_at: d.timestamp({ mode: "date", withTimezone: true }).default(sql`CURRENT_TIMESTAMP`),
+        event_at: d.timestamp({ mode: "date", withTimezone: true }).notNull().default(sql`CURRENT_TIMESTAMP`),
+        event_type: d.text().notNull(),
+        from_chapter: d.integer(),
+        from_rating: d.numeric({ mode: "number", precision: 2, scale: 1 }),
+        from_status: d.text(),
         libraryEntryId: uuid()
             .notNull()
             .references(() => libraryEntries.id, { onDelete: "cascade" }),
-        event_type: d.text().notNull(),
-        from_status: d.text(),
-        to_status: d.text(),
-        from_chapter: d.integer(),
-        to_chapter: d.integer(),
-        from_rating: d.numeric({ precision: 2, scale: 1, mode: "number" }),
-        to_rating: d.numeric({ precision: 2, scale: 1, mode: "number" }),
-        event_at: d.timestamp({ mode: "date", withTimezone: true }).notNull().default(sql`CURRENT_TIMESTAMP`),
-        note: d.text(),
         metadata: jsonb().$type<Record<string, unknown>>().notNull().default({}),
-        created_at: d.timestamp({ mode: "date", withTimezone: true }).default(sql`CURRENT_TIMESTAMP`),
+        note: d.text(),
+        to_chapter: d.integer(),
+        to_rating: d.numeric({ mode: "number", precision: 2, scale: 1 }),
+        to_status: d.text(),
     }),
     (t) => [
         uniqueIndex("reading_event_public_id_uidx").on(t.publicId).concurrently(),

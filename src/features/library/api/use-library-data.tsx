@@ -45,10 +45,10 @@ export function LibraryDataProvider({ children, initialFilters }: LibraryDataPro
             error,
             fetchNextPage,
             hasNextPage,
+            invalidate,
             isFetching,
             isFetchingNextPage,
             isLoading,
-            invalidate,
             meta: {
                 itemCount: allItems.length,
                 status,
@@ -103,16 +103,8 @@ export function useLibraryData(filters: LibrarySearchParams) {
     const { data, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading, isPending } =
         useInfiniteQuery(
             trpc.library.all.infiniteQueryOptions(queryInput, {
-                getNextPageParam: (lastPage) => lastPage.meta.nextCursor,
-                refetchOnWindowFocus: false,
-                refetchOnMount: false,
-                refetchOnReconnect: false,
-                refetchInterval: false,
-                staleTime: FIVE_MINUTES,
                 gcTime: THIRTY_MINUTES,
-                retry: 3,
-                retryDelay: (attemptIndex) => Math.min(RETRY_DELAY_BASE_MS * 2 ** attemptIndex, RETRY_DELAY_MAX_MS),
-                structuralSharing: true,
+                getNextPageParam: (lastPage) => lastPage.meta.nextCursor,
                 notifyOnChangeProps: [
                     "data",
                     "error",
@@ -122,6 +114,14 @@ export function useLibraryData(filters: LibrarySearchParams) {
                     "isLoading",
                     "isPending",
                 ],
+                refetchInterval: false,
+                refetchOnMount: false,
+                refetchOnReconnect: false,
+                refetchOnWindowFocus: false,
+                retry: 3,
+                retryDelay: (attemptIndex) => Math.min(RETRY_DELAY_BASE_MS * 2 ** attemptIndex, RETRY_DELAY_MAX_MS),
+                staleTime: FIVE_MINUTES,
+                structuralSharing: true,
             })
         );
 
@@ -137,9 +137,9 @@ export function useLibraryData(filters: LibrarySearchParams) {
         error,
         fetchNextPage,
         hasNextPage,
+        invalidate,
         isFetching,
         isFetchingNextPage,
         isLoading: isLoading || isPending,
-        invalidate,
     };
 }

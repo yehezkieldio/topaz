@@ -6,8 +6,8 @@ import { Button } from "#/components/ui/button";
 import { AuthShell } from "#/server/auth/components/auth-shell";
 
 export const metadata = {
-    title: "Authentication | Topaz",
     description: "Administrator authentication for Topaz.",
+    title: "Authentication | Topaz",
 };
 
 export default function Authentication() {

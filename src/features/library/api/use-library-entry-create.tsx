@@ -9,10 +9,10 @@ import { workWithLibraryEntrySchema } from "#/server/db/schema";
 import { useTRPC } from "#/trpc/react";
 
 export const createLibraryEntrySchema = workWithLibraryEntrySchema.omit({
-    workPublicId: true,
     libraryEntryPublicId: true,
-    workVersion: true,
     libraryEntryVersion: true,
+    workPublicId: true,
+    workVersion: true,
 });
 
 export type CreateLibraryEntryFormData = z.infer<typeof createLibraryEntrySchema>;
@@ -23,23 +23,23 @@ export function useLibraryEntryCreate({ onClose }: { onClose: () => void }) {
     const [, setSearch] = useSearchQuery();
 
     const form = useForm<CreateLibraryEntryFormData>({
-        resolver: zodResolver(createLibraryEntrySchema),
         defaultValues: {
-            title: "",
             author: "",
-            url: "",
-            source: "ArchiveOfOurOwn",
-            description: "",
             chapter_count: 0,
-            word_count: 0,
-            is_nsfw: false,
-            status: "Ongoing",
-            libraryEntryStatus: "Reading",
             current_chapter: 0,
-            rating: "",
+            description: "",
+            is_nsfw: false,
+            libraryEntryStatus: "Reading",
             notes: "",
+            rating: "",
+            source: "ArchiveOfOurOwn",
+            status: "Ongoing",
             taxonomyTermIds: [],
+            title: "",
+            url: "",
+            word_count: 0,
         },
+        resolver: zodResolver(createLibraryEntrySchema),
     });
 
     const createWorkWithLibraryEntry = useMutation(trpc.work.createWithLibraryEntry.mutationOptions());
@@ -47,20 +47,20 @@ export function useLibraryEntryCreate({ onClose }: { onClose: () => void }) {
     const onSubmit = async (data: CreateLibraryEntryFormData) => {
         try {
             await createWorkWithLibraryEntry.mutateAsync({
-                title: data.title,
                 author: data.author,
-                url: data.url,
-                source: data.source,
-                description: data.description || "",
-                word_count: data.word_count,
                 chapter_count: data.chapter_count,
+                current_chapter: data.current_chapter,
+                description: data.description || "",
                 is_nsfw: data.is_nsfw,
+                libraryEntryStatus: data.libraryEntryStatus,
+                notes: data.notes,
+                rating: data.rating,
+                source: data.source,
                 status: data.status,
                 taxonomyTermIds: data.taxonomyTermIds,
-                libraryEntryStatus: data.libraryEntryStatus,
-                current_chapter: data.current_chapter,
-                rating: data.rating,
-                notes: data.notes,
+                title: data.title,
+                url: data.url,
+                word_count: data.word_count,
             });
 
             onClose();
@@ -79,7 +79,7 @@ export function useLibraryEntryCreate({ onClose }: { onClose: () => void }) {
 
     return {
         form,
-        onSubmit,
         isLoading: createWorkWithLibraryEntry.isPending,
+        onSubmit,
     };
 }

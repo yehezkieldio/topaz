@@ -46,12 +46,12 @@ function createLibraryEntryRowViewModel(item: LibraryItem): LibraryEntryRowViewM
         author: item.sourceAuthor?.trim() || "Unknown author",
         chapterLabel: createChapterLabel(values),
         description: values.hasDescription ? item.workDescription?.trim() || null : null,
+        remainingTermCount,
         sourceLabel: sourceLabels[item.source],
         statusLabel: libraryEntryStatusLabels[item.libraryEntryStatus],
         title: item.workTitle?.trim() || "Untitled work",
-        visibleTerms,
-        remainingTermCount,
         values,
+        visibleTerms,
     };
 }
 

@@ -35,16 +35,16 @@ export const taxonomyKindSeeds = [
 ] satisfies ReadonlyArray<{ key: TaxonomyKind; name: string; sortOrder: number }>;
 
 export const taxonomyKindLabels = {
-    fandom: "Fandom",
     character: "Character",
-    relationship: "Relationship",
+    custom: "Custom",
+    fandom: "Fandom",
+    format: "Format",
     genre: "Genre",
+    relationship: "Relationship",
+    source_category: "Source category",
+    tone: "Tone",
     trope: "Trope",
     warning: "Warning",
-    source_category: "Source category",
-    format: "Format",
-    tone: "Tone",
-    custom: "Custom",
 } satisfies Record<TaxonomyKind, string>;
 
 export const taxonomyRelationTypeEnum = z.enum(["broader", "related", "implies", "conflicts_with", "equivalent_to"]);
@@ -58,11 +58,11 @@ export const taxonomyKinds = createTable(
     "taxonomy_kind",
     (d) => ({
         ...ids,
-        key: d.text().notNull(),
-        name: d.text().notNull(),
+        allows_relations: d.boolean().notNull().default(true),
         description: d.text(),
         is_assignable: d.boolean().notNull().default(true),
-        allows_relations: d.boolean().notNull().default(true),
+        key: d.text().notNull(),
+        name: d.text().notNull(),
         sort_order: d.integer().notNull().default(0),
         ...timestamps,
     }),
@@ -77,16 +77,16 @@ export const taxonomyTerms = createTable(
     "taxonomy_term",
     (d) => ({
         ...ids,
+        description: d.text(),
+        disambiguation: d.text(),
         kindId: uuid()
             .notNull()
             .references(() => taxonomyKinds.id, { onDelete: "restrict" }),
-        slug: d.text().notNull(),
+        mergedIntoId: uuid().references((): AnyPgColumn => taxonomyTerms.id, { onDelete: "set null" }),
         name: citext().notNull(),
         normalized_name: d.text().notNull(),
-        description: d.text(),
-        disambiguation: d.text(),
+        slug: d.text().notNull(),
         status: d.text().notNull().default("active"),
-        mergedIntoId: uuid().references((): AnyPgColumn => taxonomyTerms.id, { onDelete: "set null" }),
         version: d.integer().notNull().default(0),
         ...timestamps,
     }),
@@ -108,14 +108,14 @@ export const taxonomyLabels = createTable(
     "taxonomy_label",
     (d) => ({
         ...ids,
+        is_primary: d.boolean().notNull().default(false),
+        is_searchable: d.boolean().notNull().default(true),
+        label: citext().notNull(),
+        label_type: d.text().notNull().default("alias"),
+        normalized_label: d.text().notNull(),
         termId: uuid()
             .notNull()
             .references(() => taxonomyTerms.id, { onDelete: "cascade" }),
-        label: citext().notNull(),
-        normalized_label: d.text().notNull(),
-        label_type: d.text().notNull().default("alias"),
-        is_primary: d.boolean().notNull().default(false),
-        is_searchable: d.boolean().notNull().default(true),
         ...timestamps,
     }),
     (t) => [
@@ -135,10 +135,10 @@ export const taxonomyRelations = createTable(
         fromTermId: uuid()
             .notNull()
             .references(() => taxonomyTerms.id, { onDelete: "cascade" }),
+        relation_type: d.text().notNull(),
         toTermId: uuid()
             .notNull()
             .references(() => taxonomyTerms.id, { onDelete: "cascade" }),
-        relation_type: d.text().notNull(),
         ...timestamps,
     }),
     (t) => [
@@ -154,13 +154,13 @@ export const taxonomyRelations = createTable(
 export const workTaxonomyAssignments = createTable(
     "work_taxonomy_assignment",
     (d) => ({
-        workId: uuid()
-            .notNull()
-            .references(() => works.id, { onDelete: "cascade" }),
+        created_at: d.timestamp({ mode: "date", withTimezone: true }).default(sql`CURRENT_TIMESTAMP`),
         termId: uuid()
             .notNull()
             .references(() => taxonomyTerms.id, { onDelete: "cascade" }),
-        created_at: d.timestamp({ mode: "date", withTimezone: true }).default(sql`CURRENT_TIMESTAMP`),
+        workId: uuid()
+            .notNull()
+            .references(() => works.id, { onDelete: "cascade" }),
     }),
     (t) => [
         primaryKey({ columns: [t.workId, t.termId] }),
@@ -172,16 +172,16 @@ export const workTaxonomyAssignments = createTable(
 export const workTaxonomyEffective = createTable(
     "work_taxonomy_effective",
     (d) => ({
-        workId: uuid()
-            .notNull()
-            .references(() => works.id, { onDelete: "cascade" }),
+        created_at: d.timestamp({ mode: "date", withTimezone: true }).default(sql`CURRENT_TIMESTAMP`),
+        depth: d.integer().notNull().default(0),
+        reason: d.text().notNull(),
+        sourceTermId: uuid().references(() => taxonomyTerms.id, { onDelete: "cascade" }),
         termId: uuid()
             .notNull()
             .references(() => taxonomyTerms.id, { onDelete: "cascade" }),
-        sourceTermId: uuid().references(() => taxonomyTerms.id, { onDelete: "cascade" }),
-        reason: d.text().notNull(),
-        depth: d.integer().notNull().default(0),
-        created_at: d.timestamp({ mode: "date", withTimezone: true }).default(sql`CURRENT_TIMESTAMP`),
+        workId: uuid()
+            .notNull()
+            .references(() => works.id, { onDelete: "cascade" }),
     }),
     (t) => [
         primaryKey({ columns: [t.workId, t.termId] }),
@@ -198,17 +198,17 @@ export const taxonomyKindsRelations = relations(taxonomyKinds, ({ many }) => ({
 }));
 
 export const taxonomyTermsRelations = relations(taxonomyTerms, ({ one, many }) => ({
+    fromRelations: many(taxonomyRelations, { relationName: "taxonomy_relation_from_relation" }),
     kind: one(taxonomyKinds, {
         fields: [taxonomyTerms.kindId],
         references: [taxonomyKinds.id],
     }),
+    labels: many(taxonomyLabels),
     mergedInto: one(taxonomyTerms, {
         fields: [taxonomyTerms.mergedIntoId],
         references: [taxonomyTerms.id],
         relationName: "taxonomy_term_merge_relation",
     }),
-    labels: many(taxonomyLabels),
-    fromRelations: many(taxonomyRelations, { relationName: "taxonomy_relation_from_relation" }),
     toRelations: many(taxonomyRelations, { relationName: "taxonomy_relation_to_relation" }),
 }));
 
@@ -233,17 +233,17 @@ export const taxonomyRelationsRelations = relations(taxonomyRelations, ({ one })
 }));
 
 export const workTaxonomyAssignmentsRelations = relations(workTaxonomyAssignments, ({ one }) => ({
-    work: one(works, { fields: [workTaxonomyAssignments.workId], references: [works.id] }),
     term: one(taxonomyTerms, { fields: [workTaxonomyAssignments.termId], references: [taxonomyTerms.id] }),
+    work: one(works, { fields: [workTaxonomyAssignments.workId], references: [works.id] }),
 }));
 
 export const workTaxonomyEffectiveRelations = relations(workTaxonomyEffective, ({ one }) => ({
-    work: one(works, { fields: [workTaxonomyEffective.workId], references: [works.id] }),
-    term: one(taxonomyTerms, { fields: [workTaxonomyEffective.termId], references: [taxonomyTerms.id] }),
     sourceTerm: one(taxonomyTerms, {
         fields: [workTaxonomyEffective.sourceTermId],
         references: [taxonomyTerms.id],
     }),
+    term: one(taxonomyTerms, { fields: [workTaxonomyEffective.termId], references: [taxonomyTerms.id] }),
+    work: one(works, { fields: [workTaxonomyEffective.workId], references: [works.id] }),
 }));
 
 export const taxonomyKindCreateSchema = createInsertSchema(taxonomyKinds);

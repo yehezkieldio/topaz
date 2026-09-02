@@ -43,17 +43,31 @@ export const LIBRARY_STATUS_OPTIONS = [
 ] as const satisfies readonly LibraryEntryStatus[];
 
 export const librarySearchParamsParsers = {
+    directTerm: parseAsString.withDefault("").withOptions({
+        clearOnDefault: true,
+        shallow: false,
+    }),
+    effectiveTerm: parseAsString.withDefault("").withOptions({
+        clearOnDefault: true,
+        shallow: false,
+    }),
+    favorite: parseAsStringEnum<"all" | "yes" | "no">(["all", "yes", "no"]).withDefault("all").withOptions({
+        clearOnDefault: true,
+        shallow: false,
+    }),
+    hasNotes: parseAsStringEnum<"all" | "yes" | "no">(["all", "yes", "no"]).withDefault("all").withOptions({
+        clearOnDefault: true,
+        shallow: false,
+    }),
+    isNsfw: parseAsStringEnum<"all" | "yes" | "no">(["all", "yes", "no"]).withDefault("all").withOptions({
+        clearOnDefault: true,
+        shallow: false,
+    }),
     q: parseAsString.withDefault("").withOptions({
         clearOnDefault: true,
         limitUrlUpdates: debounce(LIBRARY_SEARCH_DEBOUNCE_MS),
         shallow: false,
     }),
-    source: parseAsStringEnum<Source | "all">(["all", ...LIBRARY_SOURCE_OPTIONS])
-        .withDefault("all")
-        .withOptions({
-            clearOnDefault: true,
-            shallow: false,
-        }),
     sortBy: parseAsStringEnum<LibrarySortBy>([...LIBRARY_SORT_OPTIONS])
         .withDefault("updatedAt")
         .withOptions({
@@ -64,32 +78,18 @@ export const librarySearchParamsParsers = {
         clearOnDefault: true,
         shallow: false,
     }),
+    source: parseAsStringEnum<Source | "all">(["all", ...LIBRARY_SOURCE_OPTIONS])
+        .withDefault("all")
+        .withOptions({
+            clearOnDefault: true,
+            shallow: false,
+        }),
     status: parseAsStringEnum<LibraryEntryStatus | "all">(["all", ...LIBRARY_STATUS_OPTIONS])
         .withDefault("all")
         .withOptions({
             clearOnDefault: true,
             shallow: false,
         }),
-    favorite: parseAsStringEnum<"all" | "yes" | "no">(["all", "yes", "no"]).withDefault("all").withOptions({
-        clearOnDefault: true,
-        shallow: false,
-    }),
-    isNsfw: parseAsStringEnum<"all" | "yes" | "no">(["all", "yes", "no"]).withDefault("all").withOptions({
-        clearOnDefault: true,
-        shallow: false,
-    }),
-    hasNotes: parseAsStringEnum<"all" | "yes" | "no">(["all", "yes", "no"]).withDefault("all").withOptions({
-        clearOnDefault: true,
-        shallow: false,
-    }),
-    directTerm: parseAsString.withDefault("").withOptions({
-        clearOnDefault: true,
-        shallow: false,
-    }),
-    effectiveTerm: parseAsString.withDefault("").withOptions({
-        clearOnDefault: true,
-        shallow: false,
-    }),
 };
 
 export type LibrarySearchParams = inferParserType<typeof librarySearchParamsParsers>;
@@ -98,16 +98,16 @@ export function createLibraryQueryInput(params: LibrarySearchParams) {
     const search = params.q.trim();
 
     return {
+        directTaxonomyTermIds: params.directTerm ? [params.directTerm] : undefined,
+        effectiveTaxonomyTermIds: params.effectiveTerm ? [params.effectiveTerm] : undefined,
+        favorite: params.favorite === "all" ? undefined : params.favorite === "yes",
+        hasNotes: params.hasNotes === "all" ? undefined : params.hasNotes === "yes",
+        isNsfw: params.isNsfw === "all" ? undefined : params.isNsfw === "yes",
         limit: LIBRARY_PAGE_SIZE,
         search: search || undefined,
         sortBy: params.sortBy,
         sortOrder: params.sortOrder,
         source: params.source === "all" ? undefined : [params.source],
         status: params.status === "all" ? undefined : [params.status],
-        favorite: params.favorite === "all" ? undefined : params.favorite === "yes",
-        isNsfw: params.isNsfw === "all" ? undefined : params.isNsfw === "yes",
-        hasNotes: params.hasNotes === "all" ? undefined : params.hasNotes === "yes",
-        directTaxonomyTermIds: params.directTerm ? [params.directTerm] : undefined,
-        effectiveTaxonomyTermIds: params.effectiveTerm ? [params.effectiveTerm] : undefined,
     };
 }

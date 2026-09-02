@@ -26,16 +26,16 @@ export type SortOption = {
 };
 
 export const SORT_OPTIONS: SortOption[] = [
-    { value: "updatedAt", label: "Date Updated" },
-    { value: "title", label: "Title" },
-    { value: "author", label: "Author" },
-    { value: "status", label: "Reading Status" },
-    { value: "rating", label: "Rating" },
-    { value: "progress", label: "Progress" },
-    { value: "createdAt", label: "Date Added" },
-    { value: "wordCount", label: "Word Count" },
-    { value: "chapterCount", label: "Chapter Count" },
-    { value: "isNsfw", label: "NSFW" },
+    { label: "Date Updated", value: "updatedAt" },
+    { label: "Title", value: "title" },
+    { label: "Author", value: "author" },
+    { label: "Reading Status", value: "status" },
+    { label: "Rating", value: "rating" },
+    { label: "Progress", value: "progress" },
+    { label: "Date Added", value: "createdAt" },
+    { label: "Word Count", value: "wordCount" },
+    { label: "Chapter Count", value: "chapterCount" },
+    { label: "NSFW", value: "isNsfw" },
 ] as const;
 
 export type StatusOption = {
@@ -44,33 +44,33 @@ export type StatusOption = {
 };
 
 export const STATUS_OPTIONS: StatusOption[] = [
-    { value: "all", label: "All" },
-    { value: "Reading", label: libraryEntryStatusLabels.Reading },
-    { value: "NotStarted", label: libraryEntryStatusLabels.NotStarted },
-    { value: "Paused", label: libraryEntryStatusLabels.Paused },
-    { value: "Completed", label: libraryEntryStatusLabels.Completed },
-    { value: "Dropped", label: libraryEntryStatusLabels.Dropped },
+    { label: "All", value: "all" },
+    { label: libraryEntryStatusLabels.Reading, value: "Reading" },
+    { label: libraryEntryStatusLabels.NotStarted, value: "NotStarted" },
+    { label: libraryEntryStatusLabels.Paused, value: "Paused" },
+    { label: libraryEntryStatusLabels.Completed, value: "Completed" },
+    { label: libraryEntryStatusLabels.Dropped, value: "Dropped" },
 ] as const;
 
 const SOURCE_OPTIONS: { value: Source | "all"; label: string }[] = [
-    { value: "all", label: "All Sources" },
-    { value: "ArchiveOfOurOwn", label: sourceLabels.ArchiveOfOurOwn },
-    { value: "FanFictionNet", label: sourceLabels.FanFictionNet },
-    { value: "Wattpad", label: sourceLabels.Wattpad },
-    { value: "SpaceBattles", label: sourceLabels.SpaceBattles },
-    { value: "SufficientVelocity", label: sourceLabels.SufficientVelocity },
-    { value: "QuestionableQuesting", label: sourceLabels.QuestionableQuesting },
-    { value: "RoyalRoad", label: sourceLabels.RoyalRoad },
-    { value: "WebNovel", label: sourceLabels.WebNovel },
-    { value: "ScribbleHub", label: sourceLabels.ScribbleHub },
-    { value: "NovelBin", label: sourceLabels.NovelBin },
-    { value: "Other", label: sourceLabels.Other },
+    { label: "All Sources", value: "all" },
+    { label: sourceLabels.ArchiveOfOurOwn, value: "ArchiveOfOurOwn" },
+    { label: sourceLabels.FanFictionNet, value: "FanFictionNet" },
+    { label: sourceLabels.Wattpad, value: "Wattpad" },
+    { label: sourceLabels.SpaceBattles, value: "SpaceBattles" },
+    { label: sourceLabels.SufficientVelocity, value: "SufficientVelocity" },
+    { label: sourceLabels.QuestionableQuesting, value: "QuestionableQuesting" },
+    { label: sourceLabels.RoyalRoad, value: "RoyalRoad" },
+    { label: sourceLabels.WebNovel, value: "WebNovel" },
+    { label: sourceLabels.ScribbleHub, value: "ScribbleHub" },
+    { label: sourceLabels.NovelBin, value: "NovelBin" },
+    { label: sourceLabels.Other, value: "Other" },
 ] as const;
 
 const TRI_STATE_OPTIONS = [
-    { value: "all", label: "All" },
-    { value: "yes", label: "Yes" },
-    { value: "no", label: "No" },
+    { label: "All", value: "all" },
+    { label: "Yes", value: "yes" },
+    { label: "No", value: "no" },
 ] as const;
 
 type LibraryFilterContentProps = {

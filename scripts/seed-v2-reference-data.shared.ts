@@ -8,18 +8,18 @@ export async function seedV2ReferenceDataForScripts() {
         .insert(sourcePlatforms)
         .values(
             sourcePlatformSeeds.map((seed) => ({
+                base_url: seed.baseUrl,
                 key: seed.key,
                 name: seed.name,
-                base_url: seed.baseUrl,
             }))
         )
         .onConflictDoUpdate({
-            target: sourcePlatforms.key,
             set: {
-                name: sql`excluded.name`,
                 base_url: sql`excluded.base_url`,
                 is_active: true,
+                name: sql`excluded.name`,
             },
+            target: sourcePlatforms.key,
         });
 
     await scriptDb
@@ -32,13 +32,13 @@ export async function seedV2ReferenceDataForScripts() {
             }))
         )
         .onConflictDoUpdate({
-            target: taxonomyKinds.key,
             set: {
+                allows_relations: true,
+                is_assignable: true,
                 name: sql`excluded.name`,
                 sort_order: sql`excluded.sort_order`,
-                is_assignable: true,
-                allows_relations: true,
             },
+            target: taxonomyKinds.key,
         });
 
     return { sourcePlatforms: sourcePlatformSeeds.length, taxonomyKinds: taxonomyKindSeeds.length };

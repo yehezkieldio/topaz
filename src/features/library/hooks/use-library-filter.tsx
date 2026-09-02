@@ -10,21 +10,21 @@ export function useLibraryFilter() {
 
     return useMemo(
         () => ({
-            isPending,
-            status: filters.status,
-            setStatus: (status: LibraryEntryStatus | "all") => setFilters({ status }),
-            source: filters.source,
-            setSource: (source: Source | "all") => setFilters({ source }),
             favorite: filters.favorite,
-            setFavorite: (favorite: "all" | "yes" | "no") => setFilters({ favorite }),
-            isNsfw: filters.isNsfw,
-            setIsNsfw: (isNsfw: "all" | "yes" | "no") => setFilters({ isNsfw }),
             hasNotes: filters.hasNotes,
+            isNsfw: filters.isNsfw,
+            isPending,
+            setFavorite: (favorite: "all" | "yes" | "no") => setFilters({ favorite }),
             setHasNotes: (hasNotes: "all" | "yes" | "no") => setFilters({ hasNotes }),
-            sortBy: filters.sortBy,
+            setIsNsfw: (isNsfw: "all" | "yes" | "no") => setFilters({ isNsfw }),
             setSortBy: (sortBy: LibrarySortBy) => setFilters({ sortBy }),
-            sortOrder: filters.sortOrder,
             setSortOrder: (sortOrder: SortOrder) => setFilters({ sortOrder }),
+            setSource: (source: Source | "all") => setFilters({ source }),
+            setStatus: (status: LibraryEntryStatus | "all") => setFilters({ status }),
+            sortBy: filters.sortBy,
+            sortOrder: filters.sortOrder,
+            source: filters.source,
+            status: filters.status,
         }),
         [filters, isPending, setFilters]
     );

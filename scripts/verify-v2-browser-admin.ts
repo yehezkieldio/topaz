@@ -117,13 +117,13 @@ try {
     }
 
     const token = await encode({
-        secret: authSecret,
         salt: "authjs.session-token",
+        secret: authSecret,
         token: {
-            id: user.id,
-            sub: user.id,
             email: user.email,
+            id: user.id,
             name: user.name,
+            sub: user.id,
         },
     });
 

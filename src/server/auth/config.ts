@@ -22,15 +22,21 @@ const THIRTY_DAYS = 30;
 const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * THIRTY_DAYS;
 
 export const authConfig = {
-    trustHost: isDevelopment,
     adapter: DrizzleAdapter(db, {
-        usersTable: users,
         accountsTable: accounts,
         sessionsTable: sessions,
+        usersTable: users,
         verificationTokensTable: verificationTokens,
     }),
     callbacks: {
         authorized: ({ auth }) => Boolean(auth),
+        async jwt({ token, user }) {
+            if (user) {
+                token.id = user.id;
+                // token.publicId = user.publicId;
+            }
+            return token;
+        },
         session: ({ session, token }) => ({
             ...session,
             user: {
@@ -45,19 +51,12 @@ export const authConfig = {
             }
             return true;
         },
-        async jwt({ token, user }) {
-            if (user) {
-                token.id = user.id;
-                // token.publicId = user.publicId;
-            }
-            return token;
-        },
     },
     pages: {
-        signIn: "/auth",
-        signOut: "/auth",
         error: "/auth/error",
         newUser: undefined,
+        signIn: "/auth",
+        signOut: "/auth",
     },
     providers: [
         DiscordProvider({
@@ -66,7 +65,8 @@ export const authConfig = {
         }),
     ],
     session: {
-        strategy: "jwt",
         maxAge: THIRTY_DAYS_IN_SECONDS, // 30 days
+        strategy: "jwt",
     },
+    trustHost: isDevelopment,
 } satisfies NextAuthConfig;

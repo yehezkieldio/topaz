@@ -24,27 +24,27 @@ export function useLibraryEntryEdit({ item, onCloseAction }: UseLibraryEntryEdit
     const [, setSearch] = useSearchQuery();
 
     const form = useForm<EditLibraryEntryFormData>({
-        resolver: zodResolver(editLibraryEntrySchema),
         defaultValues: {
-            workPublicId: item.workPublicId,
-            libraryEntryPublicId: item.libraryEntryPublicId,
-            workVersion: item.workVersion,
-            libraryEntryVersion: item.libraryEntryVersion,
-            title: item.workTitle || "",
             author: item.sourceAuthor || "",
-            url: item.sourceUrl || "",
-            source: item.source,
-            description: item.workDescription || "",
             chapter_count: item.sourceChapterCount || 0,
-            word_count: item.sourceWordCount || 0,
-            is_nsfw: item.workIsNsfw ?? false,
-            status: item.workStatus,
-            libraryEntryStatus: item.libraryEntryStatus,
             current_chapter: item.currentChapter || 0,
-            rating: item.rating?.toString() ?? "",
+            description: item.workDescription || "",
+            is_nsfw: item.workIsNsfw ?? false,
+            libraryEntryPublicId: item.libraryEntryPublicId,
+            libraryEntryStatus: item.libraryEntryStatus,
+            libraryEntryVersion: item.libraryEntryVersion,
             notes: item.readingNotes || "",
+            rating: item.rating?.toString() ?? "",
+            source: item.source,
+            status: item.workStatus,
             taxonomyTermIds: item.directTaxonomyTerms?.map((term) => term.publicId) || [],
+            title: item.workTitle || "",
+            url: item.sourceUrl || "",
+            word_count: item.sourceWordCount || 0,
+            workPublicId: item.workPublicId,
+            workVersion: item.workVersion,
         },
+        resolver: zodResolver(editLibraryEntrySchema),
     });
 
     const updateLibraryEntryWithRelations = useMutation(trpc.work.updateWithLibraryEntry.mutationOptions());
@@ -52,24 +52,24 @@ export function useLibraryEntryEdit({ item, onCloseAction }: UseLibraryEntryEdit
     const onSubmit = async (data: EditLibraryEntryFormData) => {
         try {
             await updateLibraryEntryWithRelations.mutateAsync({
-                workPublicId: data.workPublicId,
-                libraryEntryPublicId: data.libraryEntryPublicId,
-                workVersion: data.workVersion,
-                libraryEntryVersion: data.libraryEntryVersion,
-                title: data.title,
                 author: data.author,
-                url: data.url,
-                source: data.source,
-                description: data.description || "",
-                word_count: data.word_count,
                 chapter_count: data.chapter_count,
-                is_nsfw: data.is_nsfw,
-                status: data.status,
-                libraryEntryStatus: data.libraryEntryStatus,
                 current_chapter: data.current_chapter,
-                rating: data.rating,
+                description: data.description || "",
+                is_nsfw: data.is_nsfw,
+                libraryEntryPublicId: data.libraryEntryPublicId,
+                libraryEntryStatus: data.libraryEntryStatus,
+                libraryEntryVersion: data.libraryEntryVersion,
                 notes: data.notes,
+                rating: data.rating,
+                source: data.source,
+                status: data.status,
                 taxonomyTermIds: data.taxonomyTermIds,
+                title: data.title,
+                url: data.url,
+                word_count: data.word_count,
+                workPublicId: data.workPublicId,
+                workVersion: data.workVersion,
             });
 
             onCloseAction();
@@ -88,7 +88,7 @@ export function useLibraryEntryEdit({ item, onCloseAction }: UseLibraryEntryEdit
 
     return {
         form,
-        onSubmit,
         isLoading: updateLibraryEntryWithRelations.isPending,
+        onSubmit,
     };
 }

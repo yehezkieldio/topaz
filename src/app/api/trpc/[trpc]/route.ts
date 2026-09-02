@@ -9,16 +9,15 @@ const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 
 const handler = (req: NextRequest) =>
     fetchRequestHandler({
-        endpoint: "/api/trpc",
-        req,
-        router: appRouter,
         createContext: createTRPCContext,
+        endpoint: "/api/trpc",
         onError:
             env.NODE_ENV === "development"
                 ? ({ path, error }) => {
                       console.error(`❌ tRPC failed on ${path ?? "<no-path>"}: ${error.message}`);
                   }
                 : undefined,
+        req,
         responseMeta({ info, errors }) {
             const paths: string[] | undefined = info?.calls.map((call) => call.path);
             const allCacheable = paths?.every((path) => CACHEABLE_QUERY_PATHS.has(path));
@@ -35,6 +34,7 @@ const handler = (req: NextRequest) =>
 
             return {};
         },
+        router: appRouter,
     });
 
 export { handler as GET, handler as POST };

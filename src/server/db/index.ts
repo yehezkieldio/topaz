@@ -23,4 +23,4 @@ if (env.NODE_ENV !== "production") {
     globalForDb.conn = conn;
 }
 
-export const db = drizzle(conn, { schema, casing: "snake_case", logger: false });
+export const db = drizzle(conn, { casing: "snake_case", logger: false, schema });

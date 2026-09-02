@@ -62,12 +62,12 @@ export const LibraryListItem = memo(function LibraryListItem({
             data-index={virtualItem.index}
             key={virtualItem.key}
             style={{
+                height: `${virtualItem.size}px`,
+                left: 0,
                 position: "absolute",
                 top: 0,
-                left: 0,
-                width: "100%",
-                height: `${virtualItem.size}px`,
                 transform: `translateY(${virtualItem.start}px)`,
+                width: "100%",
             }}
         >
             {isLoaderRow ? (

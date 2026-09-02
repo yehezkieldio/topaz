@@ -16,8 +16,8 @@ export const getQueryClient = cache(createQueryClient);
 
 export const trpc = createTRPCOptionsProxy({
     ctx: createTRPCContext,
-    router: appRouter,
     queryClient: getQueryClient,
+    router: appRouter,
 });
 
 export const caller = appRouter.createCaller(createTRPCContext);

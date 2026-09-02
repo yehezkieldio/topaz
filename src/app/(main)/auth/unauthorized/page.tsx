@@ -2,8 +2,8 @@ import { ShieldAlertIcon } from "lucide-react";
 import { AuthShell } from "#/server/auth/components/auth-shell";
 
 export const metadata = {
-    title: "Unauthorized | Topaz",
     description: "Topaz authentication access denied.",
+    title: "Unauthorized | Topaz",
 };
 
 export default function UnauthorizedPage() {

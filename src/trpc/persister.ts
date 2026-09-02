@@ -9,14 +9,14 @@ let persisterSingleton: Persister;
 export const getPersister = () => {
     if (typeof window !== "undefined") {
         persisterSingleton = createAsyncStoragePersister({
+            deserialize: (cachedString) => SuperJSON.parse(cachedString),
             key: "TOPAZ_CACHE",
+            serialize: (client) => SuperJSON.stringify(client),
             storage: {
                 getItem: (key) => get(key, store),
-                setItem: (key, value) => set(key, value, store),
                 removeItem: (key) => del(key, store),
+                setItem: (key, value) => set(key, value, store),
             },
-            serialize: (client) => SuperJSON.stringify(client),
-            deserialize: (cachedString) => SuperJSON.parse(cachedString),
         });
     }
     return persisterSingleton;

@@ -20,44 +20,44 @@ export const sourcePlatformKeys = [
 export type SourcePlatformKey = (typeof sourcePlatformKeys)[number];
 
 export const sourcePlatformSeeds = [
-    { key: "ao3", name: "Archive of Our Own", baseUrl: "https://archiveofourown.org" },
-    { key: "fanfiction_net", name: "FanFiction.Net", baseUrl: "https://www.fanfiction.net" },
-    { key: "wattpad", name: "Wattpad", baseUrl: "https://www.wattpad.com" },
-    { key: "spacebattles", name: "SpaceBattles", baseUrl: "https://forums.spacebattles.com" },
-    { key: "sufficient_velocity", name: "Sufficient Velocity", baseUrl: "https://forums.sufficientvelocity.com" },
-    { key: "questionable_questing", name: "Questionable Questing", baseUrl: "https://forum.questionablequesting.com" },
-    { key: "royal_road", name: "Royal Road", baseUrl: "https://www.royalroad.com" },
-    { key: "webnovel", name: "WebNovel", baseUrl: "https://www.webnovel.com" },
-    { key: "scribble_hub", name: "Scribble Hub", baseUrl: "https://www.scribblehub.com" },
-    { key: "novel_bin", name: "NovelBin", baseUrl: "https://novelbin.me" },
-    { key: "other", name: "Other", baseUrl: null },
+    { baseUrl: "https://archiveofourown.org", key: "ao3", name: "Archive of Our Own" },
+    { baseUrl: "https://www.fanfiction.net", key: "fanfiction_net", name: "FanFiction.Net" },
+    { baseUrl: "https://www.wattpad.com", key: "wattpad", name: "Wattpad" },
+    { baseUrl: "https://forums.spacebattles.com", key: "spacebattles", name: "SpaceBattles" },
+    { baseUrl: "https://forums.sufficientvelocity.com", key: "sufficient_velocity", name: "Sufficient Velocity" },
+    { baseUrl: "https://forum.questionablequesting.com", key: "questionable_questing", name: "Questionable Questing" },
+    { baseUrl: "https://www.royalroad.com", key: "royal_road", name: "Royal Road" },
+    { baseUrl: "https://www.webnovel.com", key: "webnovel", name: "WebNovel" },
+    { baseUrl: "https://www.scribblehub.com", key: "scribble_hub", name: "Scribble Hub" },
+    { baseUrl: "https://novelbin.me", key: "novel_bin", name: "NovelBin" },
+    { baseUrl: null, key: "other", name: "Other" },
 ] satisfies ReadonlyArray<{ baseUrl: string | null; key: SourcePlatformKey; name: string }>;
 
 export const sourceLabels = {
     ArchiveOfOurOwn: "Archive of Our Own",
     FanFictionNet: "FanFiction.Net",
-    Wattpad: "Wattpad",
-    SpaceBattles: "SpaceBattles",
-    SufficientVelocity: "Sufficient Velocity",
-    QuestionableQuesting: "Questionable Questing",
-    RoyalRoad: "Royal Road",
-    WebNovel: "WebNovel",
-    ScribbleHub: "ScribbleHub",
     NovelBin: "NovelBin",
     Other: "Other",
+    QuestionableQuesting: "Questionable Questing",
+    RoyalRoad: "Royal Road",
+    ScribbleHub: "ScribbleHub",
+    SpaceBattles: "SpaceBattles",
+    SufficientVelocity: "Sufficient Velocity",
+    Wattpad: "Wattpad",
+    WebNovel: "WebNovel",
 } as const;
 export const sourceShortLabels = {
     ArchiveOfOurOwn: "AO3",
     FanFictionNet: "FFN",
-    Wattpad: "Wattpad",
-    SpaceBattles: "SB",
-    SufficientVelocity: "SV",
-    QuestionableQuesting: "QQ",
-    RoyalRoad: "RR",
-    WebNovel: "WN",
-    ScribbleHub: "SH",
     NovelBin: "NB",
     Other: "Other",
+    QuestionableQuesting: "QQ",
+    RoyalRoad: "RR",
+    ScribbleHub: "SH",
+    SpaceBattles: "SB",
+    SufficientVelocity: "SV",
+    Wattpad: "Wattpad",
+    WebNovel: "WN",
 } as const;
 export const sourceEnum = z.enum([
     "ArchiveOfOurOwn",
@@ -77,10 +77,10 @@ export type Source = z.infer<typeof sourceEnum>;
 export const workStatusEnum = z.enum(["Ongoing", "Completed", "Hiatus", "Abandoned", "Unknown"]);
 export type WorkStatus = z.infer<typeof workStatusEnum>;
 export const workStatusLabels = {
-    Ongoing: "Ongoing",
+    Abandoned: "Abandoned",
     Completed: "Completed",
     Hiatus: "Hiatus",
-    Abandoned: "Abandoned",
+    Ongoing: "Ongoing",
     Unknown: "Unknown",
 } satisfies Record<WorkStatus, string>;
 
@@ -88,13 +88,13 @@ export const works = createTable(
     "work",
     (d) => ({
         ...ids,
-        title: citext().notNull(),
-        sort_title: d.text().notNull(),
-        description: d.text(),
-        summary: d.text(),
-        publication_status: d.text().notNull().default("Unknown"),
         content_rating: d.text().notNull().default("unknown"),
+        description: d.text(),
         is_nsfw: d.boolean().notNull().default(false),
+        publication_status: d.text().notNull().default("Unknown"),
+        sort_title: d.text().notNull(),
+        summary: d.text(),
+        title: citext().notNull(),
         version: d.integer().notNull().default(0),
         ...timestamps,
     }),
@@ -114,10 +114,10 @@ export const sourcePlatforms = createTable(
     "source_platform",
     (d) => ({
         ...ids,
-        key: d.text().notNull(),
-        name: d.text().notNull(),
         base_url: d.text(),
         is_active: d.boolean().notNull().default(true),
+        key: d.text().notNull(),
+        name: d.text().notNull(),
         ...timestamps,
     }),
     (t) => [
@@ -130,25 +130,25 @@ export const workSources = createTable(
     "work_source",
     (d) => ({
         ...ids,
-        workId: uuid()
-            .notNull()
-            .references(() => works.id, { onDelete: "cascade" }),
+        author_on_source: d.text(),
+        chapter_count: d.integer(),
+        external_id: d.text(),
+        first_published_at: d.timestamp({ mode: "date", withTimezone: true }),
+        is_primary: d.boolean().notNull().default(false),
+        last_checked_at: d.timestamp({ mode: "date", withTimezone: true }),
+        last_updated_at: d.timestamp({ mode: "date", withTimezone: true }),
+        normalized_url: d.text().notNull(),
+        raw_metadata: jsonb().$type<Record<string, unknown>>().notNull().default({}),
+        source_status: d.text().notNull().default("Unknown"),
         sourcePlatformId: uuid()
             .notNull()
             .references(() => sourcePlatforms.id, { onDelete: "restrict" }),
-        url: d.text().notNull(),
-        normalized_url: d.text().notNull(),
-        external_id: d.text(),
         title_on_source: d.text(),
-        author_on_source: d.text(),
-        chapter_count: d.integer(),
+        url: d.text().notNull(),
         word_count: d.integer(),
-        source_status: d.text().notNull().default("Unknown"),
-        first_published_at: d.timestamp({ mode: "date", withTimezone: true }),
-        last_updated_at: d.timestamp({ mode: "date", withTimezone: true }),
-        last_checked_at: d.timestamp({ mode: "date", withTimezone: true }),
-        raw_metadata: jsonb().$type<Record<string, unknown>>().notNull().default({}),
-        is_primary: d.boolean().notNull().default(false),
+        workId: uuid()
+            .notNull()
+            .references(() => works.id, { onDelete: "cascade" }),
         ...timestamps,
     }),
     (t) => [
@@ -161,9 +161,7 @@ export const workSources = createTable(
         index("work_source_work_idx").on(t.workId).concurrently(),
         index("work_source_platform_idx").on(t.sourcePlatformId).concurrently(),
         index("work_source_primary_idx").on(t.workId, t.is_primary).concurrently(),
-        index("work_source_title_on_source_trgm_idx")
-            .using("gin", t.title_on_source.op("gin_trgm_ops"))
-            .concurrently(),
+        index("work_source_title_on_source_trgm_idx").using("gin", t.title_on_source.op("gin_trgm_ops")).concurrently(),
         index("work_source_author_on_source_trgm_idx")
             .using("gin", t.author_on_source.op("gin_trgm_ops"))
             .concurrently(),
@@ -178,9 +176,9 @@ export const contributors = createTable(
     (d) => ({
         ...ids,
         name: citext().notNull(),
-        sort_name: d.text().notNull(),
-        platform_handles: jsonb().$type<Record<string, string>>().notNull().default({}),
         notes: d.text(),
+        platform_handles: jsonb().$type<Record<string, string>>().notNull().default({}),
+        sort_name: d.text().notNull(),
         ...timestamps,
     }),
     (t) => [
@@ -194,15 +192,15 @@ export const contributors = createTable(
 export const workContributors = createTable(
     "work_contributor",
     (d) => ({
-        workId: uuid()
-            .notNull()
-            .references(() => works.id, { onDelete: "cascade" }),
         contributorId: uuid()
             .notNull()
             .references(() => contributors.id, { onDelete: "cascade" }),
-        role: d.text().notNull().default("author"),
-        display_order: d.integer().notNull().default(0),
         created_at: d.timestamp({ mode: "date", withTimezone: true }).default(sql`CURRENT_TIMESTAMP`),
+        display_order: d.integer().notNull().default(0),
+        role: d.text().notNull().default("author"),
+        workId: uuid()
+            .notNull()
+            .references(() => works.id, { onDelete: "cascade" }),
     }),
     (t) => [
         primaryKey({ columns: [t.workId, t.contributorId, t.role] }),
@@ -212,8 +210,8 @@ export const workContributors = createTable(
 );
 
 export const worksRelations = relations(works, ({ many }) => ({
-    sources: many(workSources),
     contributors: many(workContributors),
+    sources: many(workSources),
 }));
 
 export const sourcePlatformsRelations = relations(sourcePlatforms, ({ many }) => ({
@@ -221,11 +219,11 @@ export const sourcePlatformsRelations = relations(sourcePlatforms, ({ many }) =>
 }));
 
 export const workSourcesRelations = relations(workSources, ({ one }) => ({
-    work: one(works, { fields: [workSources.workId], references: [works.id] }),
     sourcePlatform: one(sourcePlatforms, {
         fields: [workSources.sourcePlatformId],
         references: [sourcePlatforms.id],
     }),
+    work: one(works, { fields: [workSources.workId], references: [works.id] }),
 }));
 
 export const contributorsRelations = relations(contributors, ({ many }) => ({
@@ -233,11 +231,11 @@ export const contributorsRelations = relations(contributors, ({ many }) => ({
 }));
 
 export const workContributorsRelations = relations(workContributors, ({ one }) => ({
-    work: one(works, { fields: [workContributors.workId], references: [works.id] }),
     contributor: one(contributors, {
         fields: [workContributors.contributorId],
         references: [contributors.id],
     }),
+    work: one(works, { fields: [workContributors.workId], references: [works.id] }),
 }));
 
 export const workCreateSchema = createInsertSchema(works);
@@ -250,15 +248,12 @@ const MIN_RATING = 0;
 const MAX_RATING = 5;
 
 export const workWithLibraryEntrySchema = z.object({
-    title: z.string().min(1, "Title is required"),
     author: z.string().min(1, "Author is required"),
-    url: z.url("Must be a valid URL"),
-    source: sourceEnum,
-    description: z.string().optional(),
     chapter_count: z.number().min(0),
-    word_count: z.number().min(0),
+    current_chapter: z.number().min(0),
+    description: z.string().optional(),
     is_nsfw: z.boolean(),
-    status: workStatusEnum,
+    libraryEntryPublicId: z.string(),
     libraryEntryStatus: z.enum([
         "NotStarted",
         "Reading",
@@ -268,7 +263,8 @@ export const workWithLibraryEntrySchema = z.object({
         "PlanToRead",
         "DroppedAsAbandoned",
     ]),
-    current_chapter: z.number().min(0),
+    libraryEntryVersion: z.number(),
+    notes: z.string().optional(),
     rating: z
         .string()
         .refine(
@@ -280,11 +276,13 @@ export const workWithLibraryEntrySchema = z.object({
                     ratingRegex.test(val)),
             { message: "Rating must be a number between 0 and 5" }
         ),
-    notes: z.string().optional(),
+    source: sourceEnum,
+    status: workStatusEnum,
     taxonomyTermIds: z.array(z.string()),
+    title: z.string().min(1, "Title is required"),
+    url: z.url("Must be a valid URL"),
+    word_count: z.number().min(0),
     workPublicId: z.string(),
-    libraryEntryPublicId: z.string(),
     workVersion: z.number(),
-    libraryEntryVersion: z.number(),
 });
 export type WorkWithLibraryEntryValues = z.infer<typeof workWithLibraryEntrySchema>;

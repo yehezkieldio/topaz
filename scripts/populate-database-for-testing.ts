@@ -3,14 +3,14 @@ import { parseArgs } from "node:util";
 const { values } = parseArgs({
     options: {
         depopulate: {
-            type: "boolean",
-            short: "d",
             default: false,
+            short: "d",
+            type: "boolean",
         },
         populate: {
-            type: "boolean",
-            short: "p",
             default: false,
+            short: "p",
+            type: "boolean",
         },
     },
 });

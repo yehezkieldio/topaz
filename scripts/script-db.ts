@@ -14,12 +14,12 @@ if (!databaseUrl) {
 export const scriptSql = postgres(databaseUrl, { prepare: false });
 
 export const scriptDb = drizzle(scriptSql, {
+    casing: "snake_case",
+    logger: false,
     schema: {
         ...libraryEntrySchema,
         ...taxonomySchema,
         ...userSchema,
         ...workSchema,
     },
-    casing: "snake_case",
-    logger: false,
 });

@@ -55,20 +55,20 @@ export function LibraryWorkTaxonomyForm<T extends Categories & FieldValues>({
 
         for (const term of initialTaxonomyTerms) {
             map.set(term.publicId, {
-                value: term.publicId,
-                label: term.name,
-                kind: term.kind,
                 description: getTaxonomyKindDescription(term.kind),
+                kind: term.kind,
+                label: term.name,
+                value: term.publicId,
             });
         }
 
         if (taxonomyData) {
             for (const term of taxonomyData) {
                 map.set(term.publicId, {
-                    value: term.publicId,
-                    label: term.name,
-                    kind: term.kind,
                     description: getTaxonomyKindDescription(term.kind),
+                    kind: term.kind,
+                    label: term.name,
+                    value: term.publicId,
                 });
             }
         }
