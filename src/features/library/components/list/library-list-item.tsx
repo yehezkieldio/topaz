@@ -22,7 +22,7 @@ type LibraryListItemProps = {
     onInView?: () => void;
 };
 
-export const LibraryListItem = memo(function LibraryListItem({
+export const LibraryListItem = memo(function LibraryListItemComponent({
     virtualItem,
     item,
     isLoaderRow,
@@ -102,3 +102,4 @@ export const LibraryListItem = memo(function LibraryListItem({
         </div>
     );
 });
+LibraryListItem.displayName = "LibraryListItem";

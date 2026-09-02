@@ -47,7 +47,11 @@ export function LibraryClientProvider({
 const MemoizedLibraryControls = memo(LibraryControls);
 MemoizedLibraryControls.displayName = "MemoizedLibraryControls";
 
-const LibraryListSection = memo(function LibraryListSection({ isAdministratorUser }: { isAdministratorUser: boolean }) {
+const LibraryListSection = memo(function LibraryListSectionComponent({
+    isAdministratorUser,
+}: {
+    isAdministratorUser: boolean;
+}) {
     return (
         <ErrorBoundary FallbackComponent={LibraryErrorFallback}>
             <div className="h-full">
@@ -59,7 +63,7 @@ const LibraryListSection = memo(function LibraryListSection({ isAdministratorUse
 
 LibraryListSection.displayName = "LibraryListSection";
 
-const DesktopLibraryControls = memo(function DesktopLibraryControls({
+const DesktopLibraryControls = memo(function DesktopLibraryControlsComponent({
     isAdministratorUser,
 }: {
     isAdministratorUser: boolean;
@@ -79,7 +83,7 @@ const DesktopLibraryControls = memo(function DesktopLibraryControls({
 
 DesktopLibraryControls.displayName = "DesktopLibraryControls";
 
-const MobileLibraryControls = memo(function MobileLibraryControls({
+const MobileLibraryControls = memo(function MobileLibraryControlsComponent({
     isAdministratorUser,
 }: {
     isAdministratorUser: boolean;

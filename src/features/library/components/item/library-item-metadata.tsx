@@ -36,19 +36,21 @@ function LibraryItemMetadataComponent() {
                         ) : (
                             <>
                                 {totalChapters} chapter{totalChapters === 1 ? "" : "s"}
-                                {isComplete && <span className="ml-1 font-medium text-emerald-600">(Complete)</span>}
+                                {isComplete ? (
+                                    <span className="ml-1 font-medium text-emerald-600">(Complete)</span>
+                                ) : null}
                             </>
                         )}
                     </span>
                 </>
             )}
 
-            {lastUpdated && (
+            {lastUpdated ? (
                 <>
                     <span className="text-muted-foreground/40">•</span>
                     <span>Updated {lastUpdated}</span>
                 </>
-            )}
+            ) : null}
 
             <span className="text-muted-foreground/40">•</span>
             <span>{workStatusLabels[item.workStatus]}</span>

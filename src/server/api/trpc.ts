@@ -28,6 +28,7 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
     transformer: superjson,
 });
 
+// biome-ignore lint/style/useDestructuring: tRPC builder method bound to `t`; matches tRPC's own docs pattern, destructuring risks losing the `this` binding.
 export const createCallerFactory = t.createCallerFactory;
 export const createTRPCRouter = t.router;
 

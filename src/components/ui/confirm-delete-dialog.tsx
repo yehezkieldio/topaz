@@ -52,7 +52,7 @@ export function ConfirmDeleteDialog({
                         disabled={isPending}
                         onClick={onConfirm}
                     >
-                        {isPending ? pendingLabel : confirmLabel}
+                        {`${isPending ? pendingLabel : confirmLabel}`}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

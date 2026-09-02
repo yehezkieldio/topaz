@@ -14,7 +14,7 @@ type LibraryEditSheetProps = {
 export function LibraryEditSheet({ item, children, isOpen, onCloseAction }: LibraryEditSheetProps) {
     return (
         <Sheet onOpenChange={onCloseAction} open={isOpen}>
-            {children && <SheetTrigger asChild>{children}</SheetTrigger>}
+            {children ? <SheetTrigger asChild>{children}</SheetTrigger> : null}
             <SheetContent className="w-full max-w-full p-0 sm:w-xl" side="right">
                 <LibraryEditForm item={item} onCloseAction={onCloseAction} />
             </SheetContent>

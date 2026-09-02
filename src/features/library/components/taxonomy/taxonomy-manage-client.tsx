@@ -111,9 +111,13 @@ export function TaxonomyManageClient() {
     const debouncedSearch = useDebounce(search, DEBOUNCE_DELAY_MS);
     const [offset, setOffset] = React.useState(0);
 
-    React.useEffect(() => {
+    // Reset pagination when filters change, without an Effect: adjust state during render
+    // (React's recommended pattern) instead of a useEffect keyed on values the body never reads.
+    const [previousFilters, setPreviousFilters] = React.useState({ debouncedSearch, kind });
+    if (previousFilters.kind !== kind || previousFilters.debouncedSearch !== debouncedSearch) {
+        setPreviousFilters({ debouncedSearch, kind });
         setOffset(0);
-    }, [kind, debouncedSearch]);
+    }
 
     const listQuery = useQuery({
         ...trpc.taxonomy.list.queryOptions({

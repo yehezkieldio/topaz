@@ -56,7 +56,7 @@ export type LibraryListProps = {
     isAdministratorUser: boolean;
 };
 
-export const LibraryList = memo(function LibraryList({ isAdministratorUser }: LibraryListProps) {
+export const LibraryList = memo(function LibraryListComponent({ isAdministratorUser }: LibraryListProps) {
     const [search] = useSearchQuery();
     const parentRef = useRef<HTMLDivElement>(null);
     const isMobile = useIsMobile();
@@ -179,7 +179,7 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
                 <LoadingSpinner message="Updating library..." />
             )}
 
-            {activeOverlay.item && (
+            {activeOverlay.item ? (
                 <>
                     {activeOverlay.type === "view" && (
                         <LibraryItemViewSheet isOpen item={activeOverlay.item} onClose={closeOverlay} />
@@ -191,7 +191,8 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
                         <LibraryItemDeleteDialog isOpen item={activeOverlay.item} onClose={closeOverlay} />
                     )}
                 </>
-            )}
+            ) : null}
         </div>
     );
 });
+LibraryList.displayName = "LibraryList";

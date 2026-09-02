@@ -60,25 +60,25 @@ function LibraryItemViewSheetComponent({ item, isOpen, onClose }: ViewSheetProps
                                 <LibraryItemMetadata />
                             </div>
 
-                            {hasReadingProgress && (
+                            {hasReadingProgress ? (
                                 <div className="space-y-3">
                                     <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">
                                         Reading Progress
                                     </h3>
                                     <LibraryItemProgress />
                                 </div>
-                            )}
+                            ) : null}
 
-                            {hasTaxonomyTerms && (
+                            {hasTaxonomyTerms ? (
                                 <div className="space-y-3">
                                     <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">
                                         Taxonomy
                                     </h3>
                                     <LibraryItemTags showAllFandoms showAllTags />
                                 </div>
-                            )}
+                            ) : null}
 
-                            {hasDescription && (
+                            {hasDescription ? (
                                 <div className="space-y-3">
                                     <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">
                                         Description
@@ -91,7 +91,7 @@ function LibraryItemViewSheetComponent({ item, isOpen, onClose }: ViewSheetProps
                                             const textarea = el;
                                             if (textarea) {
                                                 textarea.style.height = "0px";
-                                                const scrollHeight = textarea.scrollHeight;
+                                                const { scrollHeight } = textarea;
 
                                                 if (scrollHeight <= 256) {
                                                     textarea.style.cssText += `height: ${scrollHeight}px; overflow: hidden;`;
@@ -104,16 +104,16 @@ function LibraryItemViewSheetComponent({ item, isOpen, onClose }: ViewSheetProps
                                         value={item.workDescription ?? ""}
                                     />
                                 </div>
-                            )}
+                            ) : null}
 
-                            {hasNotes && (
+                            {hasNotes ? (
                                 <div className="space-y-3">
                                     <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">
                                         My Notes
                                     </h3>
                                     <LibraryItemNotes />
                                 </div>
-                            )}
+                            ) : null}
                         </div>
                     </div>
 

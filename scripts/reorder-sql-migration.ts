@@ -45,7 +45,7 @@ async function reorderSqlMigration(inputFilePath: string, outputFilePath: string
     const concurrentIndexes: string[] = [];
     const otherStatements: string[] = [];
 
-    for (let i = 0; i < parts.length; i++) {
+    for (let i = 0; i < parts.length; i += 1) {
         const statementContent = parts[i];
         const fullStatementBlock = statementContent + (i < parts.length - 1 ? "--> statement-breakpoint\n" : "");
         const trimmedStatementForCheck = statementContent.trim().toUpperCase();

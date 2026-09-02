@@ -266,6 +266,7 @@ async function waitForChromeWebSocket() {
     const deadline = Date.now() + 15_000;
     while (Date.now() < deadline) {
         try {
+            // biome-ignore lint/performance/noAwaitInLoops: poll loop, must wait for each attempt before checking the deadline again.
             const response = await fetch(`http://127.0.0.1:${remoteDebuggingPort}/json/list`);
             const pages = (await response.json()) as Array<{ type: string; webSocketDebuggerUrl: string }>;
             const page = pages.find((item) => item.type === "page");
@@ -312,7 +313,8 @@ function sendCdp<T = unknown>(method: string, params?: Record<string, unknown>):
         return Promise.reject(new Error("Chrome WebSocket is not connected"));
     }
 
-    const id = ++nextMessageId;
+    nextMessageId += 1;
+    const id = nextMessageId;
     const message = { id, method, params };
     const promise = new Promise<T>((resolve, reject) => {
         pendingMessages.set(id, {
@@ -341,6 +343,7 @@ async function evaluatePage(expression: string) {
 async function waitForPageCondition(condition: string, timeoutMs = 20_000) {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
+        // biome-ignore lint/performance/noAwaitInLoops: poll loop, must check each attempt before polling again.
         const value = await evaluatePage(`Boolean(document.body && (${condition}))`);
         if (value === true) {
             return;

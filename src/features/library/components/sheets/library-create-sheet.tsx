@@ -26,7 +26,7 @@ export function LibraryCreateSheet() {
             return;
         }
 
-        const target = event.target;
+        const { target } = event;
         const isInInputField =
             target.tagName === "INPUT" ||
             target.tagName === "TEXTAREA" ||

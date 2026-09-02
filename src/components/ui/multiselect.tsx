@@ -178,7 +178,7 @@ export function MultiSelect({
                                     <CommandEmpty>
                                         {inputValue.trim() && shouldShowCreateOption
                                             ? `Create "${inputValue}"`
-                                            : emptyMessage}
+                                            : `${emptyMessage}`}
                                     </CommandEmpty>
                                     <CommandGroup>
                                         {displayOptions.map((option) => {
@@ -206,12 +206,12 @@ export function MultiSelect({
                                                 </CommandItem>
                                             );
                                         })}
-                                        {shouldShowCreateOption && (
+                                        {shouldShowCreateOption ? (
                                             <CommandItem onSelect={handleCreate}>
                                                 <div className="mr-2 size-4" />
                                                 Create "{inputValue}"
                                             </CommandItem>
-                                        )}
+                                        ) : null}
                                     </CommandGroup>
                                 </>
                             )}

@@ -46,7 +46,7 @@ export function LibrarySearchInput() {
                 placeholder="Search the library..."
                 value={draftSearch}
             />
-            {draftSearch && (
+            {draftSearch ? (
                 <Button
                     className="absolute top-1/2 right-1 size-7 -translate-y-1/2 p-0"
                     onClick={handleClearSearch}
@@ -56,7 +56,7 @@ export function LibrarySearchInput() {
                     <XIcon className="size-4" />
                     <span className="sr-only">Clear search</span>
                 </Button>
-            )}
+            ) : null}
         </div>
     );
 }

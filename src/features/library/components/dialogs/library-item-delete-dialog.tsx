@@ -21,7 +21,7 @@ function LibraryItemDeleteDialogComponent({ item, isOpen, onClose, onDelete }: L
     const refetchLibrary = useLibraryRefetch();
 
     const deleteWorkMutation = useMutation(trpc.work.delete.mutationOptions());
-    const isPending = deleteWorkMutation.isPending;
+    const { isPending } = deleteWorkMutation;
 
     const handleDelete = useCallback(async () => {
         try {

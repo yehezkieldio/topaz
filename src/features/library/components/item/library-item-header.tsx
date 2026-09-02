@@ -33,22 +33,22 @@ function LibraryItemHeaderComponent() {
                                 <span>{item.workTitle || "Untitled"}</span>
                             )}
                         </h2>
-                        {sourceUrl && (
+                        {sourceUrl ? (
                             <span className="group/icon relative mt-[2px] hidden items-center sm:flex">
                                 <ExternalLinkIcon className="size-3.5 shrink-0 text-muted-foreground/60 transition-colors duration-150 group-hover/icon:text-white sm:size-4" />
                             </span>
-                        )}
+                        ) : null}
                     </div>
                     <p className="text-muted-foreground text-xs lg:text-sm">
                         by <span>{item.sourceAuthor || "Unknown Author"}</span>
                     </p>
                 </div>
 
-                {isNsfw && (
+                {isNsfw ? (
                     <Badge className="shrink-0 rounded-md text-xs lg:text-sm" variant="destructive">
                         NSFW
                     </Badge>
-                )}
+                ) : null}
                 <Badge className="shrink-0 rounded-md text-xs lg:text-sm" variant="secondary">
                     {libraryEntryStatusLabels[item.libraryEntryStatus]}
                 </Badge>

@@ -71,7 +71,7 @@ function getTermVariant(kind?: string) {
     return kind === "fandom" ? "outline" : "secondary";
 }
 
-export const LibraryEntryRow = memo(function LibraryEntryRow({
+export const LibraryEntryRow = memo(function LibraryEntryRowComponent({
     item,
     isAdministratorUser,
     onView,
@@ -186,6 +186,7 @@ export const LibraryEntryRow = memo(function LibraryEntryRow({
         </article>
     );
 });
+LibraryEntryRow.displayName = "LibraryEntryRow";
 
 function MetadataPill({ icon, label }: { icon: ReactNode; label: string }) {
     return (

@@ -220,7 +220,7 @@ function parseCursor(cursor: string | undefined): CursorData | null {
             (parsed.sortOrder === "asc" || parsed.sortOrder === "desc")
         ) {
             const sortBy = librarySortByEnum.safeParse(parsed.sortBy);
-            const value = parsed.value;
+            const { value } = parsed;
             if (
                 !(
                     sortBy.success &&

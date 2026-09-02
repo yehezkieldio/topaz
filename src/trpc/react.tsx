@@ -55,18 +55,18 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
         })
     );
 
-    const shouldShowDevtools = process.env.NODE_ENV === "development" || process.env.USE_REACTQUERY_DEVTOOLS;
+    const shouldShowDevtools = Boolean(process.env.NODE_ENV === "development" || process.env.USE_REACTQUERY_DEVTOOLS);
 
     return (
         <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
             <TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
                 {props.children}
             </TRPCProvider>
-            {shouldShowDevtools && (
+            {shouldShowDevtools ? (
                 <Suspense fallback={null}>
                     <ReactQueryDevtools initialIsOpen={false} />
                 </Suspense>
-            )}
+            ) : null}
         </PersistQueryClientProvider>
     );
 }

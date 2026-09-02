@@ -15,7 +15,7 @@ type LibraryItemRatingProps = {
     "aria-label"?: string;
 };
 
-export const LibraryItemRating = memo(function LibraryItemRating({
+export const LibraryItemRating = memo(function LibraryItemRatingComponent({
     value,
     onChange,
     readOnly = false,
@@ -127,3 +127,4 @@ export const LibraryItemRating = memo(function LibraryItemRating({
         </div>
     );
 });
+LibraryItemRating.displayName = "LibraryItemRating";

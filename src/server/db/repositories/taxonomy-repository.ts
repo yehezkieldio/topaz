@@ -541,6 +541,7 @@ export async function rebuildEffectiveTaxonomyForWork(database: DatabaseOrTransa
         effectiveRows.set(row.termId, row);
         if (row.depth >= maxDepth) continue;
 
+        // biome-ignore lint/performance/noAwaitInLoops: BFS traversal, each iteration depends on rows discovered by the previous one.
         const relations = await database
             .select({
                 relationType: taxonomyRelations.relation_type,
@@ -661,7 +662,7 @@ export async function createTaxonomyRelation(
     }
 
     return await database.transaction(async (tx) => {
-        const [fromTerm, toTerm] = await Promise.all([
+        const [fromTermRow, toTermRow] = await Promise.all([
             getTermByPublicId(tx, input.fromTermPublicId),
             getTermByPublicId(tx, input.toTermPublicId),
         ]);
@@ -669,9 +670,9 @@ export async function createTaxonomyRelation(
         const [relation] = await tx
             .insert(taxonomyRelations)
             .values({
-                fromTermId: fromTerm.id,
+                fromTermId: fromTermRow.id,
                 relation_type: input.relationType,
-                toTermId: toTerm.id,
+                toTermId: toTermRow.id,
             })
             .onConflictDoUpdate({
                 set: { updated_at: sql`CURRENT_TIMESTAMP` },
@@ -686,10 +687,11 @@ export async function createTaxonomyRelation(
         const affectedWorks = await tx
             .select({ workId: workTaxonomyEffective.workId })
             .from(workTaxonomyEffective)
-            .where(eq(workTaxonomyEffective.termId, fromTerm.id))
+            .where(eq(workTaxonomyEffective.termId, fromTermRow.id))
             .groupBy(workTaxonomyEffective.workId);
 
         for (const affectedWork of affectedWorks) {
+            // biome-ignore lint/performance/noAwaitInLoops: shares this tx's single connection; concurrent queries on one connection aren't safe.
             await rebuildEffectiveTaxonomyForWork(tx, affectedWork.workId);
         }
 
@@ -723,6 +725,7 @@ export async function deleteTaxonomyRelation(database: Database, publicId: strin
             .groupBy(workTaxonomyEffective.workId);
 
         for (const affectedWork of affectedWorks) {
+            // biome-ignore lint/performance/noAwaitInLoops: shares this tx's single connection; concurrent queries on one connection aren't safe.
             await rebuildEffectiveTaxonomyForWork(tx, affectedWork.workId);
         }
 

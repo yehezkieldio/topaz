@@ -61,16 +61,16 @@ const [existingSource] = await scriptDb
     .where(and(eq(sourcePlatforms.key, "ao3"), eq(workSources.normalized_url, normalizedFixtureUrl)))
     .limit(1);
 
-const workId = existingSource?.workId ?? (await createFixtureWork(user.id));
+const fixtureWorkId = existingSource?.workId ?? (await createFixtureWork(user.id));
 
-await normalizeFixtureWork(workId);
+await normalizeFixtureWork(fixtureWorkId);
 
 await scriptDb
     .insert(workTaxonomyAssignments)
-    .values({ termId: directTerm.id, workId })
+    .values({ termId: directTerm.id, workId: fixtureWorkId })
     .onConflictDoNothing({ target: [workTaxonomyAssignments.workId, workTaxonomyAssignments.termId] });
 
-await rebuildFixtureEffectiveTaxonomy(workId);
+await rebuildFixtureEffectiveTaxonomy(fixtureWorkId);
 
 await scriptSql.end();
 
