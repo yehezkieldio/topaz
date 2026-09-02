@@ -16,6 +16,7 @@ import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
 import { Textarea } from "#/components/ui/textarea";
+import { useDialogCloseOnOpenChange } from "#/hooks/use-dialog-close-on-open-change";
 import type { TaxonomyKind } from "#/server/db/schema";
 import { taxonomyKindKeys, taxonomyKindLabels } from "#/server/db/schema";
 import { useTRPC } from "#/trpc/react";
@@ -96,14 +97,7 @@ export function TaxonomyTermFormDialog({ term, isOpen, onCloseAction, defaultKin
         [name, kind, description, isEditing, term, createMutation, updateMutation, invalidate, onCloseAction]
     );
 
-    const handleOpenChange = React.useCallback(
-        (open: boolean) => {
-            if (!open) {
-                onCloseAction();
-            }
-        },
-        [onCloseAction]
-    );
+    const handleOpenChange = useDialogCloseOnOpenChange(onCloseAction);
     const handleNameChange = React.useCallback(
         (event: React.ChangeEvent<HTMLInputElement>) => setName(event.target.value),
         []

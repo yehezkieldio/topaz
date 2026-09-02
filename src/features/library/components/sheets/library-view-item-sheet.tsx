@@ -19,7 +19,7 @@ import { LibraryItemMetadata } from "#/features/library/components/item/library-
 import { LibraryItemNotes } from "#/features/library/components/item/library-item-notes";
 import { LibraryItemProgress } from "#/features/library/components/item/library-item-progress";
 import { LibraryItemTags } from "#/features/library/components/item/library-item-tags";
-import { type LibraryItem, useLibraryItemValues } from "#/features/library/hooks/use-library-item";
+import { getLibraryItemValues, type LibraryItem } from "#/features/library/hooks/use-library-item";
 
 export type ViewSheetProps = {
     item: LibraryItem;
@@ -28,7 +28,7 @@ export type ViewSheetProps = {
 };
 
 function LibraryItemViewSheetComponent({ item, isOpen, onClose }: ViewSheetProps) {
-    const { hasDescription, hasNotes, hasValidUrl, hasTaxonomyTerms, hasReadingProgress } = useLibraryItemValues(item);
+    const { hasDescription, hasNotes, hasValidUrl, hasTaxonomyTerms, hasReadingProgress } = getLibraryItemValues(item);
 
     const contextValue = useMemo(
         () => ({

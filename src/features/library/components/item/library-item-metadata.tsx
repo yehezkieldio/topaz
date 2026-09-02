@@ -2,14 +2,14 @@
 
 import { memo } from "react";
 import { useLibraryItemContext } from "#/features/library/components/item/library-item-context";
-import { useLibraryItemValues } from "#/features/library/hooks/use-library-item";
+import { getLibraryItemValues } from "#/features/library/hooks/use-library-item";
 import { useIsMobile } from "#/hooks/use-mobile";
 import { sourceLabels, sourceShortLabels, workStatusLabels } from "#/server/db/schema";
 
 function LibraryItemMetadataComponent() {
     const { item } = useLibraryItemContext();
     const { hasWordCount, wordCount, totalChapters, hasCurrentChapterOnly, currentChapter, isComplete, lastUpdated } =
-        useLibraryItemValues(item);
+        getLibraryItemValues(item);
     const isMobile = useIsMobile();
 
     return (

@@ -1,15 +1,17 @@
 import "server-only";
 
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { cacheLife, cacheTag } from "next/cache";
+import { normalizeSearchText } from "#/lib/utils";
 import { backendCacheTags } from "#/server/backend/cache/tags";
 import { db } from "#/server/db";
-import { rebuildEffectiveTaxonomyForWork } from "#/server/db/repositories/library-repository";
 import {
+    type TaxonomyEffectiveReason,
     type TaxonomyKind,
     type TaxonomyRelationType,
+    taxonomyEffectiveReasonEnum,
     taxonomyKindEnum,
     taxonomyKinds,
     taxonomyLabels,
@@ -80,10 +82,6 @@ type TaxonomyMultiselectInput = TaxonomySearchInput & {
     hotLimit: number;
     limit: number;
 };
-
-function normalizeTaxonomyText(name: string) {
-    return name.trim().toLowerCase().replace(/\s+/g, " ");
-}
 
 function slugifyTaxonomyName(name: string) {
     const slug = name
@@ -195,7 +193,7 @@ export async function searchTaxonomyTerms(
     cacheTag(backendCacheTags.taxonomySearch);
     cacheLife("minutes");
 
-    const normalizedTerm = normalizeTaxonomyText(input.search ?? "");
+    const normalizedTerm = normalizeSearchText(input.search ?? "");
     const similarityExpr = sql<number>`similarity(LOWER(${taxonomyLabels.label}), ${normalizedTerm})`;
     const maxSimilarityExpr = sql<number>`MAX(${similarityExpr})`;
     const minSimilarity = normalizedTerm.length < 4 ? 0.1 : 0.2;
@@ -249,38 +247,41 @@ export async function listTaxonomyTerms(input: {
         : undefined;
     const whereClause = and(kindPredicate(input.kind), searchClause);
 
-    const [rows, [{ total } = { total: 0 }]] = await Promise.all([
-        db
-            .select({
-                assignmentCount: sql<number>`count(${workTaxonomyAssignments.workId})::int`,
-                description: taxonomyTerms.description,
-                kind: taxonomyKinds.key,
-                name: taxonomyTerms.name,
-                publicId: taxonomyTerms.publicId,
-                slug: taxonomyTerms.slug,
-            })
-            .from(taxonomyTerms)
-            .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
-            .leftJoin(workTaxonomyAssignments, eq(workTaxonomyAssignments.termId, taxonomyTerms.id))
-            .where(whereClause)
-            .groupBy(
-                taxonomyTerms.id,
-                taxonomyTerms.publicId,
-                taxonomyTerms.name,
-                taxonomyTerms.slug,
-                taxonomyTerms.description,
-                taxonomyKinds.key,
-                taxonomyKinds.sort_order
-            )
-            .orderBy(asc(taxonomyKinds.sort_order), asc(taxonomyTerms.name))
-            .limit(input.limit)
-            .offset(input.offset),
-        db
-            .select({ total: sql<number>`count(*)::int` })
-            .from(taxonomyTerms)
-            .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
-            .where(whereClause),
-    ]);
+    // A single query with a `count(*) over()` window replaces the previous parallel
+    // page-query + count-query pair: the window function counts every term matching
+    // whereClause (computed pre-LIMIT, over the grouped rows) in the same pass, avoiding
+    // a duplicate join+scan. Trade-off: if `rows` comes back empty (paged past the end of
+    // a shrinking result set), `total` falls back to 0 rather than the real count — the
+    // admin UI only reaches that offset via its own previously-fetched `total`, so this is
+    // a rare, self-correcting edge case rather than a normal navigation path.
+    const rows = await db
+        .select({
+            assignmentCount: sql<number>`count(${workTaxonomyAssignments.workId})::int`,
+            description: taxonomyTerms.description,
+            kind: taxonomyKinds.key,
+            name: taxonomyTerms.name,
+            publicId: taxonomyTerms.publicId,
+            slug: taxonomyTerms.slug,
+            total: sql<number>`count(*) over()::int`,
+        })
+        .from(taxonomyTerms)
+        .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
+        .leftJoin(workTaxonomyAssignments, eq(workTaxonomyAssignments.termId, taxonomyTerms.id))
+        .where(whereClause)
+        .groupBy(
+            taxonomyTerms.id,
+            taxonomyTerms.publicId,
+            taxonomyTerms.name,
+            taxonomyTerms.slug,
+            taxonomyTerms.description,
+            taxonomyKinds.key,
+            taxonomyKinds.sort_order
+        )
+        .orderBy(asc(taxonomyKinds.sort_order), asc(taxonomyTerms.name))
+        .limit(input.limit)
+        .offset(input.offset);
+
+    const total = rows[0]?.total ?? 0;
 
     return {
         terms: rows.map((row) => ({
@@ -309,7 +310,7 @@ export async function getTaxonomyMultiselect(input: TaxonomyMultiselectInput): P
         return { canCreate: false, searchTerm: null, terms: [] };
     }
 
-    const normalizedTerm = normalizeTaxonomyText(term);
+    const normalizedTerm = normalizeSearchText(term);
     const [searchResults, exactMatch] = await Promise.all([
         searchTaxonomyTerms({ kind: input.kind, limit: input.limit, search: term }),
         findTaxonomyTermByExactLabel(db, { kind: input.kind, normalizedText: normalizedTerm }),
@@ -327,7 +328,7 @@ export async function createTaxonomyTerm(
     input: { description?: string | null; kind: TaxonomyKind; name: string; slug?: string }
 ) {
     const name = input.name.trim();
-    const normalizedName = normalizeTaxonomyText(name);
+    const normalizedName = normalizeSearchText(name);
     const slug = input.slug?.trim() || slugifyTaxonomyName(name);
     const kindId = await getKindId(database, input.kind);
 
@@ -405,7 +406,7 @@ export async function updateTaxonomyTerm(
         const nextKind = updateData.kind ?? currentKind;
         const nextKindId = updateData.kind ? await getKindId(tx, updateData.kind) : existingTerm.kindId;
         const nextName = updateData.name?.trim();
-        const nextNormalizedName = nextName ? normalizeTaxonomyText(nextName) : undefined;
+        const nextNormalizedName = nextName ? normalizeSearchText(nextName) : undefined;
         const nextSlug = updateData.slug?.trim() || (nextName ? slugifyTaxonomyName(nextName) : undefined);
 
         if (nextNormalizedName) {
@@ -468,7 +469,7 @@ export async function createTaxonomyTermForMultiselect(
     input: { kind: TaxonomyKind; name: string }
 ) {
     const name = input.name.trim();
-    const normalizedName = normalizeTaxonomyText(name);
+    const normalizedName = normalizeSearchText(name);
     const existingTerm = await findTaxonomyTermByExactLabel(database, {
         kind: input.kind,
         normalizedText: normalizedName,
@@ -506,6 +507,106 @@ async function getTermByPublicId(database: DatabaseOrTransaction, publicId: stri
         ...term,
         kind: taxonomyKindEnum.parse(term.kind),
     };
+}
+
+export async function rebuildEffectiveTaxonomyForWork(database: DatabaseOrTransaction, workId: string, maxDepth = 4) {
+    const directAssignments = await database
+        .select({ termId: workTaxonomyAssignments.termId })
+        .from(workTaxonomyAssignments)
+        .where(eq(workTaxonomyAssignments.workId, workId));
+
+    await database.delete(workTaxonomyEffective).where(eq(workTaxonomyEffective.workId, workId));
+
+    type EffectiveRow = {
+        depth: number;
+        reason: TaxonomyEffectiveReason;
+        sourceTermId: string | null;
+        termId: string;
+        workId: string;
+    };
+
+    const effectiveRows = new Map<string, EffectiveRow>();
+    const queue: EffectiveRow[] = directAssignments.map((assignment) => ({
+        depth: 0,
+        reason: "direct",
+        sourceTermId: assignment.termId,
+        termId: assignment.termId,
+        workId,
+    }));
+
+    while (queue.length > 0) {
+        const row = queue.shift();
+        if (!row || effectiveRows.has(row.termId)) continue;
+
+        effectiveRows.set(row.termId, row);
+        if (row.depth >= maxDepth) continue;
+
+        const relations = await database
+            .select({
+                relationType: taxonomyRelations.relation_type,
+                toTermId: taxonomyRelations.toTermId,
+            })
+            .from(taxonomyRelations)
+            .where(
+                and(
+                    eq(taxonomyRelations.fromTermId, row.termId),
+                    inArray(taxonomyRelations.relation_type, ["implies", "broader", "equivalent_to"])
+                )
+            );
+
+        for (const relation of relations) {
+            if (effectiveRows.has(relation.toTermId)) continue;
+            queue.push({
+                depth: row.depth + 1,
+                reason: taxonomyEffectiveReasonEnum.parse(relation.relationType),
+                sourceTermId: row.termId,
+                termId: relation.toTermId,
+                workId,
+            });
+        }
+    }
+
+    const rows = [...effectiveRows.values()];
+    if (rows.length > 0) {
+        await database
+            .insert(workTaxonomyEffective)
+            .values(rows)
+            .onConflictDoNothing({ target: [workTaxonomyEffective.workId, workTaxonomyEffective.termId] });
+    }
+
+    return rows;
+}
+
+export async function assignTaxonomyTermsToWork(
+    database: DatabaseOrTransaction,
+    input: { termPublicIds: string[]; workId: string }
+) {
+    const uniquePublicIds = [...new Set(input.termPublicIds)];
+    await database.delete(workTaxonomyAssignments).where(eq(workTaxonomyAssignments.workId, input.workId));
+
+    if (uniquePublicIds.length === 0) {
+        await rebuildEffectiveTaxonomyForWork(database, input.workId);
+        return [];
+    }
+
+    const termRows = await database
+        .select({ id: taxonomyTerms.id, publicId: taxonomyTerms.publicId })
+        .from(taxonomyTerms)
+        .where(inArray(taxonomyTerms.publicId, uniquePublicIds));
+
+    if (termRows.length !== uniquePublicIds.length) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "One or more taxonomy terms were not found" });
+    }
+
+    await database.insert(workTaxonomyAssignments).values(
+        termRows.map((term) => ({
+            termId: term.id,
+            workId: input.workId,
+        }))
+    );
+    await rebuildEffectiveTaxonomyForWork(database, input.workId);
+
+    return termRows;
 }
 
 export async function listTaxonomyRelations(database: Database, input: { termPublicId?: string } = {}) {

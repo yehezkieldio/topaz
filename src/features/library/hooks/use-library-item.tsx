@@ -1,4 +1,4 @@
-import { estimateWordCount, formatDate } from "#/lib/utils";
+import { estimateWordCount, formatDate, MAX_PROGRESS_PERCENTAGE } from "#/lib/utils";
 import type { RouterOutputs } from "#/trpc/react";
 
 export type LibraryItem = RouterOutputs["library"]["all"]["data"][number];
@@ -23,15 +23,13 @@ export type LibraryItemValues = {
     libraryEntryVersion: number;
 };
 
-const PROGRESS_PERCENTAGE_MAX = 100;
-
 export function getLibraryItemValues(item: LibraryItem): LibraryItemValues {
     const totalChapters = item.sourceChapterCount || 0;
     const currentChapter = Math.max(0, item.currentChapter || 0);
     const hasValidChapterData = totalChapters > 0 && currentChapter > 0;
     const hasCurrentChapterOnly = totalChapters === 0 && currentChapter > 0;
     const progressPercentage = hasValidChapterData
-        ? Math.round((currentChapter / totalChapters) * PROGRESS_PERCENTAGE_MAX)
+        ? Math.round((currentChapter / totalChapters) * MAX_PROGRESS_PERCENTAGE)
         : 0;
     const isComplete = item.workStatus === "Completed";
     const hasWordCount = (item.sourceWordCount ?? 0) > 0;
@@ -49,26 +47,22 @@ export function getLibraryItemValues(item: LibraryItem): LibraryItemValues {
     const libraryEntryVersion = item.libraryEntryVersion ?? 0;
 
     return {
-        totalChapters,
         currentChapter,
-        hasValidChapterData,
         hasCurrentChapterOnly,
-        progressPercentage,
-        isComplete,
-        hasWordCount,
-        wordCount,
-        hasValidUrl,
-        hasNotes,
         hasDescription,
-        lastUpdated,
-        isNsfw,
-        hasTaxonomyTerms,
+        hasNotes,
         hasReadingProgress,
-        workVersion,
+        hasTaxonomyTerms,
+        hasValidChapterData,
+        hasValidUrl,
+        hasWordCount,
+        isComplete,
+        isNsfw,
+        lastUpdated,
         libraryEntryVersion,
+        progressPercentage,
+        totalChapters,
+        wordCount,
+        workVersion,
     };
-}
-
-export function useLibraryItemValues(item: LibraryItem): LibraryItemValues {
-    return getLibraryItemValues(item);
 }

@@ -1,9 +1,12 @@
 import "server-only";
 
+import { hostnameMatchesDomain, normalizeHostname } from "#/lib/utils";
 import { type WorkStatus, workStatusEnum } from "#/server/db/schema/work";
 
 const FETCH_TIMEOUT_MS = 10_000;
-const OPENGRAPH_FETCH_BYTE_LIMIT = 500_000;
+// OG/meta tags live in <head>; 128KB comfortably covers even bloated heads (inline
+// critical CSS, analytics snippets) without buffering hundreds of KB of body we never read.
+const OPENGRAPH_FETCH_BYTE_LIMIT = 128_000;
 const FICHUB_EPUB_ENDPOINT = "https://fichub.net/api/v0/epub";
 
 // FanFiction.net (and sibling FictionPress) sit behind Cloudflare's bot-challenge, so a direct
@@ -19,15 +22,9 @@ const CHALLENGE_PAGE_MARKERS = [
     "verify you are human",
 ];
 
-const WWW_PREFIX_REGEX = /^www\./;
-
 function isFicHubOnlyHost(url: string): boolean {
-    try {
-        const hostname = new URL(url).hostname.replace(WWW_PREFIX_REGEX, "").toLowerCase();
-        return FICHUB_ONLY_HOSTNAMES.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
-    } catch {
-        return false;
-    }
+    const hostname = normalizeHostname(url);
+    return hostname !== null && FICHUB_ONLY_HOSTNAMES.some((domain) => hostnameMatchesDomain(hostname, domain));
 }
 
 function looksLikeChallengePage(html: string): boolean {
@@ -142,21 +139,25 @@ async function fetchFromFicHub(url: string): Promise<FetchedWorkMetadata | null>
     };
 }
 
-const OG_TITLE_PATTERNS = [
-    /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i,
-    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i,
-    /<title[^>]*>([^<]+)<\/title>/i,
-];
+const REGEX_SPECIAL_CHARS_REGEX = /[.*+?^${}()|[\]\\]/g;
+
+/** Meta tags can carry their attributes in either order, so match both. */
+function metaContentPatterns(attr: "property" | "name", key: string): RegExp[] {
+    const escapedKey = key.replace(REGEX_SPECIAL_CHARS_REGEX, "\\$&");
+    return [
+        new RegExp(`<meta[^>]+${attr}=["']${escapedKey}["'][^>]+content=["']([^"']+)["']`, "i"),
+        new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+${attr}=["']${escapedKey}["']`, "i"),
+    ];
+}
+
+const OG_TITLE_PATTERNS = [...metaContentPatterns("property", "og:title"), /<title[^>]*>([^<]+)<\/title>/i];
 const OG_DESCRIPTION_PATTERNS = [
-    /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i,
-    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i,
-    /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i,
-    /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i,
+    ...metaContentPatterns("property", "og:description"),
+    ...metaContentPatterns("name", "description"),
 ];
 const OG_AUTHOR_PATTERNS = [
-    /<meta[^>]+name=["']author["'][^>]+content=["']([^"']+)["']/i,
-    /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']author["']/i,
-    /<meta[^>]+property=["']article:author["'][^>]+content=["']([^"']+)["']/i,
+    ...metaContentPatterns("name", "author"),
+    ...metaContentPatterns("property", "article:author"),
 ];
 
 function extractMetaContent(html: string, patterns: RegExp[]): string | undefined {

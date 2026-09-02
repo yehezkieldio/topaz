@@ -2,11 +2,11 @@
 
 import { memo } from "react";
 import { useLibraryItemContext } from "#/features/library/components/item/library-item-context";
-import { useLibraryItemValues } from "#/features/library/hooks/use-library-item";
+import { getLibraryItemValues } from "#/features/library/hooks/use-library-item";
 
 function LibraryItemNotesComponent() {
     const { item } = useLibraryItemContext();
-    const { hasNotes } = useLibraryItemValues(item);
+    const { hasNotes } = getLibraryItemValues(item);
 
     if (!hasNotes) {
         return null;

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
 import type { SelectedTaxonomyItem } from "#/features/library/api/use-taxonomy-search";
 import { LibraryTaxonomyMultiselect } from "#/features/library/components/ui/library-taxonomy-multiselect";
+import { useDialogCloseOnOpenChange } from "#/hooks/use-dialog-close-on-open-change";
 import type { TaxonomyRelationSummary } from "#/server/db/repositories/taxonomy-repository";
 import type { TaxonomyKind, TaxonomyRelationType } from "#/server/db/schema";
 import { taxonomyKindLabels, taxonomyRelationTypeEnum } from "#/server/db/schema";
@@ -145,14 +146,7 @@ export function TaxonomyTermRelationsDialog({ term, isOpen, onCloseAction }: Tax
         [deleteRelationMutation, invalidateRelated]
     );
 
-    const handleOpenChange = React.useCallback(
-        (open: boolean) => {
-            if (!open) {
-                onCloseAction();
-            }
-        },
-        [onCloseAction]
-    );
+    const handleOpenChange = useDialogCloseOnOpenChange(onCloseAction);
     const handleRelationTypeChange = React.useCallback(
         (value: string) => setRelationType(value as TaxonomyRelationType),
         []

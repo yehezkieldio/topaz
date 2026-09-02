@@ -18,6 +18,5 @@ export async function invalidateTaxonomyReadModels() {
 }
 
 export async function invalidateAllBackendReadModels() {
-    await invalidateLibraryReadModels();
-    await invalidateTaxonomyReadModels();
+    await Promise.all([invalidateLibraryReadModels(), invalidateTaxonomyReadModels()]);
 }

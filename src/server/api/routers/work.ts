@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { adminProcedure, createTRPCRouter } from "#/server/api/trpc";
-import { invalidateLibraryReadModels, invalidateTaxonomyReadModels } from "#/server/backend/cache/tags";
+import { invalidateAllBackendReadModels } from "#/server/backend/cache/tags";
 import { fetchWorkMetadata } from "#/server/backend/metadata/work-metadata";
 import { createLibraryItem, deleteWork, updateLibraryItem } from "#/server/db/repositories/library-repository";
 import { workWithLibraryEntrySchema } from "#/server/db/schema/work";
@@ -35,14 +35,12 @@ export const workRouter = createTRPCRouter({
                 workStatus: input.status,
             });
 
-            await invalidateLibraryReadModels();
-            await invalidateTaxonomyReadModels();
+            await invalidateAllBackendReadModels();
             return created;
         }),
     delete: adminProcedure.input(z.object({ publicId: z.string().min(1) })).mutation(async ({ ctx, input }) => {
         const deleted = await deleteWork(ctx.db, input.publicId);
-        await invalidateLibraryReadModels();
-        await invalidateTaxonomyReadModels();
+        await invalidateAllBackendReadModels();
         return deleted;
     }),
     fetchMetadata: adminProcedure.input(z.object({ url: z.url() })).mutation(async ({ input }) => {
@@ -79,8 +77,7 @@ export const workRouter = createTRPCRouter({
             workVersion: input.workVersion,
         });
 
-        await invalidateLibraryReadModels();
-        await invalidateTaxonomyReadModels();
+        await invalidateAllBackendReadModels();
         return updated;
     }),
 });

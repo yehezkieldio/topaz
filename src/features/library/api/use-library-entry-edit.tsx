@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import type z from "zod/v4";
 import { useLibraryRefetch } from "#/features/library/api/use-library-data";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
-import { useSearchQuery } from "#/features/library/hooks/use-search-query";
+import { useSearchQuery } from "#/features/library/hooks/use-library-query-state";
 import { workWithLibraryEntrySchema } from "#/server/db/schema";
 import { useTRPC } from "#/trpc/react";
 

@@ -12,10 +12,6 @@ type LibraryDataStatus = "pending" | "error" | "empty" | "ready";
 
 type LibraryDataContextValue = {
     allItems: LibraryItem[];
-    actions: {
-        fetchNextPage: () => Promise<unknown>;
-        invalidate: () => Promise<void>;
-    };
     error: unknown;
     fetchNextPage: () => Promise<unknown>;
     hasNextPage: boolean;
@@ -46,10 +42,6 @@ export function LibraryDataProvider({ children, initialFilters }: LibraryDataPro
     const contextValue = useMemo(
         () => ({
             allItems,
-            actions: {
-                fetchNextPage,
-                invalidate,
-            },
             error,
             fetchNextPage,
             hasNextPage,

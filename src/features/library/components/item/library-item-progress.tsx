@@ -2,14 +2,13 @@
 
 import { memo } from "react";
 import { useLibraryItemContext } from "#/features/library/components/item/library-item-context";
-import { useLibraryItemValues } from "#/features/library/hooks/use-library-item";
-
-const MAX_PROGRESS_PERCENTAGE = 100;
+import { getLibraryItemValues } from "#/features/library/hooks/use-library-item";
+import { MAX_PROGRESS_PERCENTAGE } from "#/lib/utils";
 
 function LibraryItemProgressComponent() {
     const { item } = useLibraryItemContext();
     const { hasValidChapterData, hasCurrentChapterOnly, totalChapters, currentChapter, progressPercentage } =
-        useLibraryItemValues(item);
+        getLibraryItemValues(item);
 
     if (hasValidChapterData) {
         return (

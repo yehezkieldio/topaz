@@ -5,12 +5,12 @@ import Link from "next/link";
 import { memo } from "react";
 import { Badge } from "#/components/ui/badge";
 import { useLibraryItemContext } from "#/features/library/components/item/library-item-context";
-import { useLibraryItemValues } from "#/features/library/hooks/use-library-item";
+import { getLibraryItemValues } from "#/features/library/hooks/use-library-item";
 import { libraryEntryStatusLabels } from "#/server/db/schema";
 
 function LibraryItemHeaderComponent() {
     const { item } = useLibraryItemContext();
-    const { hasValidUrl, isNsfw } = useLibraryItemValues(item);
+    const { hasValidUrl, isNsfw } = getLibraryItemValues(item);
     const sourceUrl = hasValidUrl && item.sourceUrl ? item.sourceUrl : undefined;
 
     return (

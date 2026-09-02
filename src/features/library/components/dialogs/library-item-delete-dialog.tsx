@@ -3,16 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { memo, useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "#/components/ui/alert-dialog";
+import { ConfirmDeleteDialog } from "#/components/ui/confirm-delete-dialog";
 import { useLibraryRefetch } from "#/features/library/api/use-library-data";
 import { LibraryItemProvider } from "#/features/library/components/item/library-item-context";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
@@ -60,29 +51,21 @@ function LibraryItemDeleteDialogComponent({ item, isOpen, onClose, onDelete }: L
 
     return (
         <LibraryItemProvider value={contextValue}>
-            <AlertDialog onOpenChange={onClose} open={isOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the work "
-                            {item.workTitle || "Untitled"}" and its library, source, reading, and taxonomy rows.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isPending} onClick={onClose}>
-                            Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            disabled={isPending}
-                            onClick={handleDelete}
-                        >
-                            {isPending ? "Deleting..." : "Delete Work"}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDeleteDialog
+                confirmLabel="Delete Work"
+                description={
+                    <>
+                        This action cannot be undone. This will permanently delete the work "
+                        {item.workTitle || "Untitled"}" and its library, source, reading, and taxonomy rows.
+                    </>
+                }
+                isOpen={isOpen}
+                isPending={isPending}
+                onClose={onClose}
+                onConfirm={handleDelete}
+                pendingLabel="Deleting..."
+                title="Are you absolutely sure?"
+            />
         </LibraryItemProvider>
     );
 }

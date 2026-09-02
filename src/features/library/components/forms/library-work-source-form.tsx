@@ -3,7 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { ClipboardIcon, LoaderCircleIcon, WandSparklesIcon } from "lucide-react";
 import * as React from "react";
-import type { Control, Path, UseFormGetValues, UseFormSetValue } from "react-hook-form";
+import type { Control, Path } from "react-hook-form";
 import { useFormContext } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
@@ -107,26 +107,17 @@ const METADATA_PROVIDER_LABELS = {
     opengraph: "the page's metadata",
 } as const;
 
-function useWorkMetadataFetch<T extends WorkSourceFields>() {
+function useWorkMetadataFetch() {
     const trpc = useTRPC();
-    const formContext = useFormContext<T>();
+    // This hook only ever reads/writes fields declared directly on WorkSourceFields, so it's
+    // typed against that concrete shape rather than the generic `T extends WorkSourceFields`
+    // the surrounding component is parameterized over — react-hook-form can correlate
+    // Path/PathValue per field normally once T is concrete, avoiding the cast that a generic
+    // `useFormContext<T>()` would otherwise need here.
+    const { setValue, getValues } = useFormContext<WorkSourceFields>();
     const lastFetchedUrlRef = React.useRef<string | null>(null);
 
     const fetchMetadataMutation = useMutation(trpc.work.fetchMetadata.mutationOptions());
-
-    // WORKAROUND: react-hook-form's Path<T>/PathValue<T, K> can't be correlated per-field when
-    // T is only known through the `T extends WorkSourceFields` bound (T itself is never concrete
-    // inside this generic hook) — every distinct call site collapses to the union of all paths,
-    // so per-key inference fails even though each field below is declared directly on
-    // WorkSourceFields. Narrowing setValue/getValues to that base shape is sound for these calls
-    // specifically, since any T satisfying the bound has these exact fields with these exact
-    // types. Root cause is a known bounded-polymorphism gap in react-hook-form's typing
-    // (https://github.com/react-hook-form/react-hook-form/issues/6679), not something fixable
-    // from this call site.
-    const { setValue, getValues } = formContext as unknown as {
-        setValue: UseFormSetValue<WorkSourceFields>;
-        getValues: UseFormGetValues<WorkSourceFields>;
-    };
 
     const setFieldIfEmpty = React.useCallback(
         <K extends keyof WorkSourceFields>(name: K, value: WorkSourceFields[K] | undefined) => {
@@ -136,9 +127,10 @@ function useWorkMetadataFetch<T extends WorkSourceFields>() {
             if (getValues(name)) {
                 return;
             }
-            // These are always shallow (non-dotted) keys of WorkSourceFields, so the runtime
-            // shape matches exactly — see the WORKAROUND note above for why RHF's mapped
-            // conditional type can't confirm that statically here.
+            // WORKAROUND: react-hook-form can't statically prove PathValue<WorkSourceFields, K>
+            // equals WorkSourceFields[K] for a generic K, even though it always does for this
+            // flat, non-dotted shape. Isolated to this one call — everything else here is
+            // properly typed against the concrete WorkSourceFields shape.
             setValue(name, value as never, { shouldDirty: true });
         },
         [getValues, setValue]
@@ -206,7 +198,7 @@ export function LibraryWorkSourceFieldsForm<T extends WorkSourceFields>({
         throw new Error("LibraryWorkSourceFieldsForm requires either control prop or compound component context");
     }
 
-    const { fetchMetadataForUrl, isFetchingMetadata } = useWorkMetadataFetch<T>();
+    const { fetchMetadataForUrl, isFetchingMetadata } = useWorkMetadataFetch();
     const { autoDetectSource, handlePasteFromClipboard } = useWorkSourceHandlers(
         sourceOnChangeRef,
         fetchMetadataForUrl

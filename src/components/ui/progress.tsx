@@ -3,9 +3,7 @@
 import * as ProgressPrimitive from "@radix-ui/react-progress";
 import type * as React from "react";
 
-import { cn } from "#/lib/utils";
-
-const MAX_PROGRESS_PERCENTAGE = 100;
+import { cn, MAX_PROGRESS_PERCENTAGE } from "#/lib/utils";
 
 function Progress({ className, value, ...props }: React.ComponentProps<typeof ProgressPrimitive.Root>) {
     return (

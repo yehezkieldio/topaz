@@ -19,7 +19,8 @@
       "!build",
       "!bun.lock",
       "!drizzle",
-      "!.agents"
+      "!.agents",
+      "!.claude"
     ]
   },
   "formatter": {

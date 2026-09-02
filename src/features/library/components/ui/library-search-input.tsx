@@ -4,7 +4,7 @@ import { SearchIcon, XIcon } from "lucide-react";
 import * as React from "react";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
-import { useSearchQuery } from "#/features/library/hooks/use-search-query";
+import { useSearchQuery } from "#/features/library/hooks/use-library-query-state";
 import { useDebounce } from "#/hooks/use-debounce";
 import { DEBOUNCE_DELAY_MS } from "#/lib/utils";
 

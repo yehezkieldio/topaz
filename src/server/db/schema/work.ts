@@ -104,6 +104,9 @@ export const works = createTable(
         index("work_publication_status_idx").on(t.publication_status).concurrently(),
         index("work_created_at_idx").on(t.created_at).concurrently(),
         index("work_updated_at_idx").on(t.updated_at).concurrently(),
+        index("work_title_trgm_idx").using("gin", t.title.op("gin_trgm_ops")).concurrently(),
+        index("work_description_trgm_idx").using("gin", t.description.op("gin_trgm_ops")).concurrently(),
+        index("work_summary_trgm_idx").using("gin", t.summary.op("gin_trgm_ops")).concurrently(),
     ]
 );
 
@@ -158,6 +161,12 @@ export const workSources = createTable(
         index("work_source_work_idx").on(t.workId).concurrently(),
         index("work_source_platform_idx").on(t.sourcePlatformId).concurrently(),
         index("work_source_primary_idx").on(t.workId, t.is_primary).concurrently(),
+        index("work_source_title_on_source_trgm_idx")
+            .using("gin", t.title_on_source.op("gin_trgm_ops"))
+            .concurrently(),
+        index("work_source_author_on_source_trgm_idx")
+            .using("gin", t.author_on_source.op("gin_trgm_ops"))
+            .concurrently(),
         check("work_source_chapter_count_nonnegative", sql`${t.chapter_count} IS NULL OR ${t.chapter_count} >= 0`),
         check("work_source_word_count_nonnegative", sql`${t.word_count} IS NULL OR ${t.word_count} >= 0`),
         check("work_source_raw_metadata_object", sql`jsonb_typeof(${t.raw_metadata}) = 'object'`),

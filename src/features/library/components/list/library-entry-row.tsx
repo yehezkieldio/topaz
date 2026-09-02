@@ -11,11 +11,10 @@ import {
     type LibraryItem,
     type LibraryItemValues,
 } from "#/features/library/hooks/use-library-item";
-import { cn } from "#/lib/utils";
+import { cn, MAX_PROGRESS_PERCENTAGE } from "#/lib/utils";
 import { libraryEntryStatusLabels, sourceLabels } from "#/server/db/schema";
 
 const MAX_VISIBLE_TERMS = 4;
-const MAX_PROGRESS_PERCENTAGE = 100;
 
 type LibraryEntryRowProps = {
     item: LibraryItem;

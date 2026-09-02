@@ -1,7 +1,7 @@
 import { z } from "zod/v4";
 import { publicIdSchema } from "#/server/api/schemas/common";
 import { adminProcedure, createTRPCRouter } from "#/server/api/trpc";
-import { invalidateLibraryReadModels, invalidateTaxonomyReadModels } from "#/server/backend/cache/tags";
+import { invalidateAllBackendReadModels, invalidateTaxonomyReadModels } from "#/server/backend/cache/tags";
 import {
     createTaxonomyRelation,
     createTaxonomyTerm,
@@ -63,20 +63,17 @@ export const taxonomyRouter = createTRPCRouter({
         )
         .mutation(async ({ ctx, input }) => {
             const relation = await createTaxonomyRelation(ctx.db, input);
-            await invalidateLibraryReadModels();
-            await invalidateTaxonomyReadModels();
+            await invalidateAllBackendReadModels();
             return relation;
         }),
     delete: adminProcedure.input(z.object({ publicId: publicIdSchema })).mutation(async ({ ctx, input }) => {
         const deletedTerm = await deleteTaxonomyTerm(ctx.db, input.publicId);
-        await invalidateLibraryReadModels();
-        await invalidateTaxonomyReadModels();
+        await invalidateAllBackendReadModels();
         return deletedTerm;
     }),
     deleteRelation: adminProcedure.input(z.object({ publicId: publicIdSchema })).mutation(async ({ ctx, input }) => {
         const relation = await deleteTaxonomyRelation(ctx.db, input.publicId);
-        await invalidateLibraryReadModels();
-        await invalidateTaxonomyReadModels();
+        await invalidateAllBackendReadModels();
         return relation;
     }),
     forMultiselect: adminProcedure

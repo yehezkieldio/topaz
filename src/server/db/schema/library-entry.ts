@@ -108,6 +108,7 @@ export const readingStates = createTable(
         uniqueIndex("reading_state_public_id_uidx").on(t.publicId).concurrently(),
         uniqueIndex("reading_state_library_entry_uidx").on(t.libraryEntryId).concurrently(),
         index("reading_state_library_entry_idx").on(t.libraryEntryId).concurrently(),
+        index("reading_state_notes_trgm_idx").using("gin", t.notes.op("gin_trgm_ops")).concurrently(),
         check("reading_state_rating_range", sql`${t.rating} IS NULL OR (${t.rating} >= 0 AND ${t.rating} <= 5)`),
         check(
             "reading_state_current_percent_range",

@@ -2,8 +2,7 @@
 
 import { MinusIcon, PlusIcon } from "lucide-react";
 import { Button } from "#/components/ui/button";
-
-const MAX_PROGRESS_PERCENTAGE = 100;
+import { MAX_PROGRESS_PERCENTAGE } from "#/lib/utils";
 
 type ProgressControlsProps = {
     currentChapter: number;

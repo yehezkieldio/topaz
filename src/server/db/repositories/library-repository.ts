@@ -1,10 +1,12 @@
 import "server-only";
 
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, inArray, type SQL, sql } from "drizzle-orm";
+import { type AnyColumn, and, asc, desc, eq, inArray, type SQL, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
+import { normalizeSearchText } from "#/lib/utils";
 import { backendCacheTags } from "#/server/backend/cache/tags";
 import { db } from "#/server/db";
+import { assignTaxonomyTermsToWork } from "#/server/db/repositories/taxonomy-repository";
 import {
     type LibraryEntryStatus,
     type LibrarySortBy,
@@ -16,14 +18,11 @@ import {
     readingStates,
 } from "#/server/db/schema/library-entry";
 import {
-    type TaxonomyEffectiveReason,
     type TaxonomyKind,
-    taxonomyEffectiveReasonEnum,
     taxonomyKindEnum,
     taxonomyKindSeeds,
     taxonomyKinds,
     taxonomyLabels,
-    taxonomyRelations,
     taxonomyTerms,
     workTaxonomyAssignments,
     workTaxonomyEffective,
@@ -151,29 +150,29 @@ type CursorData = {
 const sourcePlatformKeyBySource: Record<Source, string> = {
     ArchiveOfOurOwn: "ao3",
     FanFictionNet: "fanfiction_net",
-    Wattpad: "wattpad",
-    SpaceBattles: "spacebattles",
-    SufficientVelocity: "sufficient_velocity",
-    QuestionableQuesting: "questionable_questing",
-    RoyalRoad: "royal_road",
-    WebNovel: "webnovel",
-    ScribbleHub: "scribble_hub",
     NovelBin: "novel_bin",
     Other: "other",
+    QuestionableQuesting: "questionable_questing",
+    RoyalRoad: "royal_road",
+    ScribbleHub: "scribble_hub",
+    SpaceBattles: "spacebattles",
+    SufficientVelocity: "sufficient_velocity",
+    Wattpad: "wattpad",
+    WebNovel: "webnovel",
 };
 
 const sourceBySourcePlatformKey: Record<string, Source> = {
     ao3: "ArchiveOfOurOwn",
     fanfiction_net: "FanFictionNet",
-    wattpad: "Wattpad",
-    spacebattles: "SpaceBattles",
-    sufficient_velocity: "SufficientVelocity",
-    questionable_questing: "QuestionableQuesting",
-    royal_road: "RoyalRoad",
-    webnovel: "WebNovel",
-    scribble_hub: "ScribbleHub",
     novel_bin: "NovelBin",
     other: "Other",
+    questionable_questing: "QuestionableQuesting",
+    royal_road: "RoyalRoad",
+    scribble_hub: "ScribbleHub",
+    spacebattles: "SpaceBattles",
+    sufficient_velocity: "SufficientVelocity",
+    wattpad: "Wattpad",
+    webnovel: "WebNovel",
 };
 
 function sanitizeSearchInput(search: string): string {
@@ -184,12 +183,8 @@ function sanitizeSearchInput(search: string): string {
         .slice(0, MAX_SEARCH_LENGTH);
 }
 
-function normalizeText(value: string): string {
-    return value.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
 function sortTitle(title: string): string {
-    return normalizeText(title).replace(LEADING_ARTICLE_REGEX, "");
+    return normalizeSearchText(title).replace(LEADING_ARTICLE_REGEX, "");
 }
 
 function normalizeUrl(url: string): string {
@@ -252,57 +247,32 @@ function parseCursor(cursor: string | undefined): CursorData | null {
     return null;
 }
 
+const SORT_COLUMNS_BY_SORT_BY = {
+    author: workSources.author_on_source,
+    chapterCount: workSources.chapter_count,
+    createdAt: libraryEntries.created_at,
+    isNsfw: works.is_nsfw,
+    progress: readingStates.current_chapter,
+    rating: readingStates.rating,
+    status: libraryEntries.status,
+    title: works.sort_title,
+    updatedAt: libraryEntries.updated_at,
+    wordCount: workSources.word_count,
+} as const satisfies Record<LibrarySortBy, AnyColumn>;
+
+function sortColumn(sortBy: LibrarySortBy) {
+    return SORT_COLUMNS_BY_SORT_BY[sortBy];
+}
+
 function sortExpression(sortBy: LibrarySortBy): SQL {
-    switch (sortBy) {
-        case "title":
-            return sql`${works.sort_title}`;
-        case "author":
-            return sql`${workSources.author_on_source}`;
-        case "status":
-            return sql`${libraryEntries.status}`;
-        case "rating":
-            return sql`${readingStates.rating}`;
-        case "progress":
-            return sql`${readingStates.current_chapter}`;
-        case "createdAt":
-            return sql`${libraryEntries.created_at}`;
-        case "wordCount":
-            return sql`${workSources.word_count}`;
-        case "chapterCount":
-            return sql`${workSources.chapter_count}`;
-        case "isNsfw":
-            return sql`${works.is_nsfw}`;
-        default:
-            return sql`${libraryEntries.updated_at}`;
-    }
+    return sql`${sortColumn(sortBy)}`;
 }
 
 function createOrderByClause(sortBy: LibrarySortBy, sortOrder: "asc" | "desc"): SQL[] {
     const direction = sortOrder === "asc" ? asc : desc;
     const tiebreaker = direction(libraryEntries.publicId);
 
-    switch (sortBy) {
-        case "title":
-            return [direction(works.sort_title), tiebreaker];
-        case "author":
-            return [direction(workSources.author_on_source), tiebreaker];
-        case "status":
-            return [direction(libraryEntries.status), tiebreaker];
-        case "rating":
-            return [direction(readingStates.rating), tiebreaker];
-        case "progress":
-            return [direction(readingStates.current_chapter), tiebreaker];
-        case "createdAt":
-            return [direction(libraryEntries.created_at), tiebreaker];
-        case "wordCount":
-            return [direction(workSources.word_count), tiebreaker];
-        case "chapterCount":
-            return [direction(workSources.chapter_count), tiebreaker];
-        case "isNsfw":
-            return [direction(works.is_nsfw), tiebreaker];
-        default:
-            return [direction(libraryEntries.updated_at), tiebreaker];
-    }
+    return [direction(sortColumn(sortBy)), tiebreaker];
 }
 
 function isNullableSort(sortBy: LibrarySortBy): boolean {
@@ -507,40 +477,40 @@ export async function seedV2ReferenceData(database: Database) {
         .insert(sourcePlatforms)
         .values(
             sourcePlatformSeeds.map((seed) => ({
-                key: seed.key,
-                name: seed.name,
                 base_url: seed.baseUrl,
                 is_active: true,
+                key: seed.key,
+                name: seed.name,
             }))
         )
         .onConflictDoUpdate({
-            target: sourcePlatforms.key,
             set: {
-                name: sql`excluded.name`,
                 base_url: sql`excluded.base_url`,
                 is_active: sql`excluded.is_active`,
+                name: sql`excluded.name`,
             },
+            target: sourcePlatforms.key,
         });
 
     await database
         .insert(taxonomyKinds)
         .values(
             taxonomyKindSeeds.map((seed) => ({
+                allows_relations: true,
+                is_assignable: true,
                 key: seed.key,
                 name: seed.name,
                 sort_order: seed.sortOrder,
-                is_assignable: true,
-                allows_relations: true,
             }))
         )
         .onConflictDoUpdate({
-            target: taxonomyKinds.key,
             set: {
+                allows_relations: sql`excluded.allows_relations`,
+                is_assignable: sql`excluded.is_assignable`,
                 name: sql`excluded.name`,
                 sort_order: sql`excluded.sort_order`,
-                is_assignable: sql`excluded.is_assignable`,
-                allows_relations: sql`excluded.allows_relations`,
             },
+            target: taxonomyKinds.key,
         });
 
     return { sourcePlatforms: sourcePlatformSeeds.length, taxonomyKinds: taxonomyKindSeeds.length };
@@ -595,106 +565,6 @@ async function assertSourceUrlAvailable(
     }
 }
 
-export async function rebuildEffectiveTaxonomyForWork(database: DatabaseOrTransaction, workId: string, maxDepth = 4) {
-    const directAssignments = await database
-        .select({ termId: workTaxonomyAssignments.termId })
-        .from(workTaxonomyAssignments)
-        .where(eq(workTaxonomyAssignments.workId, workId));
-
-    await database.delete(workTaxonomyEffective).where(eq(workTaxonomyEffective.workId, workId));
-
-    type EffectiveRow = {
-        depth: number;
-        reason: TaxonomyEffectiveReason;
-        sourceTermId: string | null;
-        termId: string;
-        workId: string;
-    };
-
-    const effectiveRows = new Map<string, EffectiveRow>();
-    const queue: EffectiveRow[] = directAssignments.map((assignment) => ({
-        workId,
-        termId: assignment.termId,
-        sourceTermId: assignment.termId,
-        reason: "direct",
-        depth: 0,
-    }));
-
-    while (queue.length > 0) {
-        const row = queue.shift();
-        if (!row || effectiveRows.has(row.termId)) continue;
-
-        effectiveRows.set(row.termId, row);
-        if (row.depth >= maxDepth) continue;
-
-        const relations = await database
-            .select({
-                toTermId: taxonomyRelations.toTermId,
-                relationType: taxonomyRelations.relation_type,
-            })
-            .from(taxonomyRelations)
-            .where(
-                and(
-                    eq(taxonomyRelations.fromTermId, row.termId),
-                    inArray(taxonomyRelations.relation_type, ["implies", "broader", "equivalent_to"])
-                )
-            );
-
-        for (const relation of relations) {
-            if (effectiveRows.has(relation.toTermId)) continue;
-            queue.push({
-                workId,
-                termId: relation.toTermId,
-                sourceTermId: row.termId,
-                reason: taxonomyEffectiveReasonEnum.parse(relation.relationType),
-                depth: row.depth + 1,
-            });
-        }
-    }
-
-    const rows = [...effectiveRows.values()];
-    if (rows.length > 0) {
-        await database
-            .insert(workTaxonomyEffective)
-            .values(rows)
-            .onConflictDoNothing({ target: [workTaxonomyEffective.workId, workTaxonomyEffective.termId] });
-    }
-
-    return rows;
-}
-
-export async function assignTaxonomyTermsToWork(
-    database: DatabaseOrTransaction,
-    input: { termPublicIds: string[]; workId: string }
-) {
-    const uniquePublicIds = [...new Set(input.termPublicIds)];
-    await database.delete(workTaxonomyAssignments).where(eq(workTaxonomyAssignments.workId, input.workId));
-
-    if (uniquePublicIds.length === 0) {
-        await rebuildEffectiveTaxonomyForWork(database, input.workId);
-        return [];
-    }
-
-    const termRows = await database
-        .select({ id: taxonomyTerms.id, publicId: taxonomyTerms.publicId })
-        .from(taxonomyTerms)
-        .where(inArray(taxonomyTerms.publicId, uniquePublicIds));
-
-    if (termRows.length !== uniquePublicIds.length) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "One or more taxonomy terms were not found" });
-    }
-
-    await database.insert(workTaxonomyAssignments).values(
-        termRows.map((term) => ({
-            workId: input.workId,
-            termId: term.id,
-        }))
-    );
-    await rebuildEffectiveTaxonomyForWork(database, input.workId);
-
-    return termRows;
-}
-
 export async function createOrLinkContributor(
     database: DatabaseOrTransaction,
     input: { name: string; replaceExistingRole?: boolean; role?: string; workId: string }
@@ -704,7 +574,7 @@ export async function createOrLinkContributor(
         throw new TRPCError({ code: "BAD_REQUEST", message: "Contributor name is required" });
     }
 
-    const normalizedName = normalizeText(name);
+    const normalizedName = normalizeSearchText(name);
     const role = input.role ?? "author";
     const [existingContributor] = await database
         .select({ id: contributors.id, publicId: contributors.publicId })
@@ -734,10 +604,10 @@ export async function createOrLinkContributor(
     await database
         .insert(workContributors)
         .values({
-            workId: input.workId,
             contributorId: contributor.id,
-            role,
             display_order: 0,
+            role,
+            workId: input.workId,
         })
         .onConflictDoNothing();
 
@@ -748,18 +618,18 @@ export async function createLibraryItem(database: Database, input: CreateLibrary
     return await database.transaction(async (tx) => {
         const sourcePlatformId = await getSourcePlatformId(tx, input.source);
         const normalizedUrl = normalizeUrl(input.url);
-        await assertSourceUrlAvailable(tx, { sourcePlatformId, normalizedUrl });
+        await assertSourceUrlAvailable(tx, { normalizedUrl, sourcePlatformId });
 
         const [newWork] = await tx
             .insert(works)
             .values({
-                title: input.title.trim(),
-                sort_title: sortTitle(input.title),
-                description: input.description ?? null,
-                summary: input.summary ?? null,
-                publication_status: input.workStatus,
                 content_rating: input.contentRating ?? "unknown",
+                description: input.description ?? null,
                 is_nsfw: input.isNsfw,
+                publication_status: input.workStatus,
+                sort_title: sortTitle(input.title),
+                summary: input.summary ?? null,
+                title: input.title.trim(),
             })
             .returning({ id: works.id, publicId: works.publicId });
 
@@ -768,27 +638,27 @@ export async function createLibraryItem(database: Database, input: CreateLibrary
         }
 
         await tx.insert(workSources).values({
-            workId: newWork.id,
-            sourcePlatformId,
-            url: input.url,
-            normalized_url: normalizedUrl,
-            external_id: input.externalId ?? null,
-            title_on_source: input.title,
             author_on_source: input.author,
             chapter_count: input.chapterCount ?? null,
-            word_count: input.wordCount ?? null,
-            source_status: input.workStatus,
+            external_id: input.externalId ?? null,
             is_primary: true,
+            normalized_url: normalizedUrl,
+            source_status: input.workStatus,
+            sourcePlatformId,
+            title_on_source: input.title,
+            url: input.url,
+            word_count: input.wordCount ?? null,
+            workId: newWork.id,
         });
 
-        await createOrLinkContributor(tx, { workId: newWork.id, name: input.author });
+        await createOrLinkContributor(tx, { name: input.author, workId: newWork.id });
 
         const [newLibraryEntry] = await tx
             .insert(libraryEntries)
             .values({
+                status: input.status,
                 userId: input.userId,
                 workId: newWork.id,
-                status: input.status,
             })
             .returning({ id: libraryEntries.id, publicId: libraryEntries.publicId });
 
@@ -799,10 +669,10 @@ export async function createLibraryItem(database: Database, input: CreateLibrary
         const [newReadingState] = await tx
             .insert(readingStates)
             .values({
-                libraryEntryId: newLibraryEntry.id,
                 current_chapter: input.currentChapter ?? 0,
-                rating: input.rating ?? null,
+                libraryEntryId: newLibraryEntry.id,
                 notes: input.notes ?? null,
+                rating: input.rating ?? null,
             })
             .returning({ id: readingStates.id, publicId: readingStates.publicId });
 
@@ -811,24 +681,24 @@ export async function createLibraryItem(database: Database, input: CreateLibrary
         }
 
         await tx.insert(readingEvents).values({
-            libraryEntryId: newLibraryEntry.id,
             event_type: "added" satisfies ReadingEventType,
-            to_status: input.status,
+            libraryEntryId: newLibraryEntry.id,
+            metadata: {},
+            note: input.notes ?? null,
             to_chapter: input.currentChapter ?? 0,
             to_rating: input.rating ?? null,
-            note: input.notes ?? null,
-            metadata: {},
+            to_status: input.status,
         });
 
         await assignTaxonomyTermsToWork(tx, {
-            workId: newWork.id,
             termPublicIds: input.taxonomyTermPublicIds ?? [],
+            workId: newWork.id,
         });
 
         return {
-            work: newWork,
             libraryEntry: newLibraryEntry,
             readingState: newReadingState,
+            work: newWork,
         };
     });
 }
@@ -837,12 +707,12 @@ export async function updateLibraryItem(database: Database, input: UpdateLibrary
     return await database.transaction(async (tx) => {
         const [existing] = await tx
             .select({
-                workId: works.id,
                 libraryEntryId: libraryEntries.id,
-                previousStatus: libraryEntries.status,
                 previousChapter: readingStates.current_chapter,
-                previousRating: readingStates.rating,
                 previousNotes: readingStates.notes,
+                previousRating: readingStates.rating,
+                previousStatus: libraryEntries.status,
+                workId: works.id,
             })
             .from(libraryEntries)
             .innerJoin(works, eq(works.id, libraryEntries.workId))
@@ -887,13 +757,13 @@ export async function updateLibraryItem(database: Database, input: UpdateLibrary
         await tx
             .update(works)
             .set({
-                title: input.title.trim(),
-                sort_title: sortTitle(input.title),
-                description: input.description ?? null,
-                summary: input.summary ?? null,
-                publication_status: input.workStatus,
                 content_rating: input.contentRating ?? "unknown",
+                description: input.description ?? null,
                 is_nsfw: input.isNsfw,
+                publication_status: input.workStatus,
+                sort_title: sortTitle(input.title),
+                summary: input.summary ?? null,
+                title: input.title.trim(),
                 version: sql`${works.version} + 1`,
             })
             .where(eq(works.id, existing.workId));
@@ -901,27 +771,27 @@ export async function updateLibraryItem(database: Database, input: UpdateLibrary
         const sourcePlatformId = await getSourcePlatformId(tx, input.source);
         const normalizedUrl = normalizeUrl(input.url);
         await assertSourceUrlAvailable(tx, {
-            sourcePlatformId,
             normalizedUrl,
+            sourcePlatformId,
             workIdToExclude: existing.workId,
         });
 
         await tx
             .update(workSources)
             .set({
-                sourcePlatformId,
-                url: input.url,
-                normalized_url: normalizedUrl,
-                external_id: input.externalId ?? null,
-                title_on_source: input.title,
                 author_on_source: input.author,
                 chapter_count: input.chapterCount ?? null,
-                word_count: input.wordCount ?? null,
+                external_id: input.externalId ?? null,
+                normalized_url: normalizedUrl,
                 source_status: input.workStatus,
+                sourcePlatformId,
+                title_on_source: input.title,
+                url: input.url,
+                word_count: input.wordCount ?? null,
             })
             .where(and(eq(workSources.workId, existing.workId), eq(workSources.is_primary, true)));
 
-        await createOrLinkContributor(tx, { workId: existing.workId, name: input.author, replaceExistingRole: true });
+        await createOrLinkContributor(tx, { name: input.author, replaceExistingRole: true, workId: existing.workId });
 
         await tx
             .update(libraryEntries)
@@ -935,8 +805,8 @@ export async function updateLibraryItem(database: Database, input: UpdateLibrary
             .update(readingStates)
             .set({
                 current_chapter: input.currentChapter ?? 0,
-                rating: input.rating ?? null,
                 notes: input.notes ?? null,
+                rating: input.rating ?? null,
                 version: sql`${readingStates.version} + 1`,
             })
             .where(eq(readingStates.libraryEntryId, existing.libraryEntryId));
@@ -965,25 +835,25 @@ export async function updateLibraryItem(database: Database, input: UpdateLibrary
             existing.previousNotes !== (input.notes ?? null)
         ) {
             await tx.insert(readingEvents).values({
-                libraryEntryId: existing.libraryEntryId,
                 event_type: eventType satisfies ReadingEventType,
-                from_status: existing.previousStatus,
-                to_status: input.status,
                 from_chapter: existing.previousChapter,
-                to_chapter: input.currentChapter ?? 0,
                 from_rating: existing.previousRating,
-                to_rating: input.rating ?? null,
-                note: input.notes ?? null,
+                from_status: existing.previousStatus,
+                libraryEntryId: existing.libraryEntryId,
                 metadata: {},
+                note: input.notes ?? null,
+                to_chapter: input.currentChapter ?? 0,
+                to_rating: input.rating ?? null,
+                to_status: input.status,
             });
         }
 
         await assignTaxonomyTermsToWork(tx, {
-            workId: existing.workId,
             termPublicIds: input.taxonomyTermPublicIds ?? [],
+            workId: existing.workId,
         });
 
-        return { workPublicId: input.workPublicId, libraryEntryPublicId: input.libraryEntryPublicId };
+        return { libraryEntryPublicId: input.libraryEntryPublicId, workPublicId: input.workPublicId };
     });
 }
 
@@ -1023,28 +893,28 @@ export async function listLibraryEntries(database: Database, input: LibraryQuery
 
     const rows = await database
         .select({
-            libraryEntryPublicId: libraryEntries.publicId,
-            workPublicId: works.publicId,
-            workTitle: works.title,
-            sourceAuthor: workSources.author_on_source,
             contributorNames: sql<
                 string[]
             >`COALESCE(array_remove(array_agg(DISTINCT ${contributors.name}), NULL), ARRAY[]::text[])`,
-            libraryEntryStatus: libraryEntries.status,
+            createdAt: libraryEntries.created_at,
             currentChapter: readingStates.current_chapter,
+            libraryEntryPublicId: libraryEntries.publicId,
+            libraryEntryStatus: libraryEntries.status,
+            libraryEntryVersion: libraryEntries.version,
             rating: readingStates.rating,
-            workStatus: works.publication_status,
-            updatedAt: libraryEntries.updated_at,
+            readingNotes: readingStates.notes,
+            sourceAuthor: workSources.author_on_source,
+            sourceChapterCount: workSources.chapter_count,
             sourcePlatformKey: sourcePlatforms.key,
             sourceUrl: workSources.url,
-            sourceChapterCount: workSources.chapter_count,
             sourceWordCount: workSources.word_count,
-            workIsNsfw: works.is_nsfw,
+            updatedAt: libraryEntries.updated_at,
             workDescription: works.description,
-            readingNotes: readingStates.notes,
-            createdAt: libraryEntries.created_at,
+            workIsNsfw: works.is_nsfw,
+            workPublicId: works.publicId,
+            workStatus: works.publication_status,
+            workTitle: works.title,
             workVersion: works.version,
-            libraryEntryVersion: libraryEntries.version,
         })
         .from(libraryEntries)
         .innerJoin(works, eq(works.id, libraryEntries.workId))
@@ -1081,21 +951,35 @@ export async function listLibraryEntries(database: Database, input: LibraryQuery
     const hasNextPage = rows.length > effectiveLimit;
     const items = hasNextPage ? rows.slice(0, effectiveLimit) : rows;
     const workPublicIds = items.map((item) => item.workPublicId);
-    const taxonomyRows =
+    const [taxonomyRows, directTaxonomyRows] =
         workPublicIds.length > 0
-            ? await database
-                  .select({
-                      workPublicId: works.publicId,
-                      publicId: taxonomyTerms.publicId,
-                      name: taxonomyTerms.name,
-                      kind: taxonomyKinds.key,
-                  })
-                  .from(workTaxonomyEffective)
-                  .innerJoin(works, eq(works.id, workTaxonomyEffective.workId))
-                  .innerJoin(taxonomyTerms, eq(taxonomyTerms.id, workTaxonomyEffective.termId))
-                  .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
-                  .where(inArray(works.publicId, workPublicIds))
-            : [];
+            ? await Promise.all([
+                  database
+                      .select({
+                          kind: taxonomyKinds.key,
+                          name: taxonomyTerms.name,
+                          publicId: taxonomyTerms.publicId,
+                          workPublicId: works.publicId,
+                      })
+                      .from(workTaxonomyEffective)
+                      .innerJoin(works, eq(works.id, workTaxonomyEffective.workId))
+                      .innerJoin(taxonomyTerms, eq(taxonomyTerms.id, workTaxonomyEffective.termId))
+                      .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
+                      .where(inArray(works.publicId, workPublicIds)),
+                  database
+                      .select({
+                          kind: taxonomyKinds.key,
+                          name: taxonomyTerms.name,
+                          publicId: taxonomyTerms.publicId,
+                          workPublicId: works.publicId,
+                      })
+                      .from(workTaxonomyAssignments)
+                      .innerJoin(works, eq(works.id, workTaxonomyAssignments.workId))
+                      .innerJoin(taxonomyTerms, eq(taxonomyTerms.id, workTaxonomyAssignments.termId))
+                      .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
+                      .where(inArray(works.publicId, workPublicIds)),
+              ])
+            : [[], []];
 
     const taxonomyByWork = new Map<string, LibraryTaxonomyTerm[]>();
     for (const taxonomyRow of taxonomyRows) {
@@ -1107,22 +991,6 @@ export async function listLibraryEntries(database: Database, input: LibraryQuery
         });
         taxonomyByWork.set(taxonomyRow.workPublicId, terms);
     }
-
-    const directTaxonomyRows =
-        workPublicIds.length > 0
-            ? await database
-                  .select({
-                      workPublicId: works.publicId,
-                      publicId: taxonomyTerms.publicId,
-                      name: taxonomyTerms.name,
-                      kind: taxonomyKinds.key,
-                  })
-                  .from(workTaxonomyAssignments)
-                  .innerJoin(works, eq(works.id, workTaxonomyAssignments.workId))
-                  .innerJoin(taxonomyTerms, eq(taxonomyTerms.id, workTaxonomyAssignments.termId))
-                  .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
-                  .where(inArray(works.publicId, workPublicIds))
-            : [];
 
     const directTaxonomyByWork = new Map<string, LibraryTaxonomyTerm[]>();
     for (const taxonomyRow of directTaxonomyRows) {
@@ -1139,28 +1007,28 @@ export async function listLibraryEntries(database: Database, input: LibraryQuery
 
     return {
         data: items.map((item) => ({
-            libraryEntryPublicId: item.libraryEntryPublicId,
-            workPublicId: item.workPublicId,
-            workTitle: item.workTitle,
-            sourceAuthor: item.sourceAuthor ?? item.contributorNames.at(0) ?? "Unknown",
             contributorNames: item.contributorNames,
-            libraryEntryStatus: libraryEntryStatusEnum.parse(item.libraryEntryStatus),
-            currentChapter: item.currentChapter ?? 0,
-            rating: item.rating ?? 0,
-            workStatus: workStatusEnum.parse(item.workStatus),
-            updatedAt: item.updatedAt ?? new Date(0),
-            directTaxonomyTerms: directTaxonomyByWork.get(item.workPublicId) ?? [],
-            taxonomyTerms: taxonomyByWork.get(item.workPublicId) ?? [],
-            source: sourceBySourcePlatformKey[item.sourcePlatformKey ?? "other"] ?? "Other",
-            sourceUrl: item.sourceUrl ?? undefined,
-            sourceChapterCount: item.sourceChapterCount ?? undefined,
-            sourceWordCount: item.sourceWordCount ?? undefined,
-            workIsNsfw: item.workIsNsfw,
-            workDescription: item.workDescription,
-            readingNotes: item.readingNotes,
             createdAt: item.createdAt ?? undefined,
-            workVersion: item.workVersion,
+            currentChapter: item.currentChapter ?? 0,
+            directTaxonomyTerms: directTaxonomyByWork.get(item.workPublicId) ?? [],
+            libraryEntryPublicId: item.libraryEntryPublicId,
+            libraryEntryStatus: libraryEntryStatusEnum.parse(item.libraryEntryStatus),
             libraryEntryVersion: item.libraryEntryVersion,
+            rating: item.rating ?? 0,
+            readingNotes: item.readingNotes,
+            source: sourceBySourcePlatformKey[item.sourcePlatformKey ?? "other"] ?? "Other",
+            sourceAuthor: item.sourceAuthor ?? item.contributorNames.at(0) ?? "Unknown",
+            sourceChapterCount: item.sourceChapterCount ?? undefined,
+            sourceUrl: item.sourceUrl ?? undefined,
+            sourceWordCount: item.sourceWordCount ?? undefined,
+            taxonomyTerms: taxonomyByWork.get(item.workPublicId) ?? [],
+            updatedAt: item.updatedAt ?? new Date(0),
+            workDescription: item.workDescription,
+            workIsNsfw: item.workIsNsfw,
+            workPublicId: item.workPublicId,
+            workStatus: workStatusEnum.parse(item.workStatus),
+            workTitle: item.workTitle,
+            workVersion: item.workVersion,
         })),
         meta: {
             hasNextPage,
@@ -1186,14 +1054,14 @@ export async function getLibraryStats() {
     const [stats, taxonomyStats] = await Promise.all([
         db
             .select({
-                workCount: sql<number>`COUNT(DISTINCT ${works.id})`,
-                completed: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Completed' THEN 1 END)`,
-                paused: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Paused' THEN 1 END)`,
-                dropped: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Dropped' THEN 1 END)`,
-                reading: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Reading' THEN 1 END)`,
                 averageRating: sql<number>`COALESCE(AVG(${readingStates.rating}), 0)`,
+                completed: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Completed' THEN 1 END)`,
+                dropped: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Dropped' THEN 1 END)`,
+                paused: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Paused' THEN 1 END)`,
+                reading: sql<number>`COUNT(CASE WHEN ${libraryEntries.status} = 'Reading' THEN 1 END)`,
                 totalChaptersRead: sql<number>`COALESCE(SUM(${readingStates.current_chapter}), 0)`,
                 totalWordsRead: sql<number>`COALESCE(SUM(${workSources.word_count}), 0)`,
+                workCount: sql<number>`COUNT(DISTINCT ${works.id})`,
             })
             .from(libraryEntries)
             .innerJoin(works, eq(works.id, libraryEntries.workId))

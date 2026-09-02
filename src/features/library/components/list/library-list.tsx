@@ -10,7 +10,7 @@ import { EmptyState } from "#/features/library/components/states/empty-state";
 import { ErrorState } from "#/features/library/components/states/error-state";
 import { LoadingSpinner } from "#/features/library/components/states/loading-spinner";
 import type { LibraryItem as LibraryItemType } from "#/features/library/hooks/use-library-item";
-import { useSearchQuery } from "#/features/library/hooks/use-search-query";
+import { useSearchQuery } from "#/features/library/hooks/use-library-query-state";
 import { useIsMobile } from "#/hooks/use-mobile";
 
 const LibraryEditSheet = dynamic(
@@ -65,8 +65,8 @@ export const LibraryList = memo(function LibraryList({ isAdministratorUser }: Li
 
     const itemHeight = isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_ITEM_HEIGHT;
 
-    const { actions, allItems, error, hasNextPage, isFetching, isFetchingNextPage, meta } = useLibraryDataContext();
-    const { fetchNextPage } = actions;
+    const { allItems, error, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, meta } =
+        useLibraryDataContext();
 
     const estimateSize = useCallback(
         (index: number) => (index >= allItems.length ? LOADER_ROW_HEIGHT : itemHeight),

@@ -109,7 +109,6 @@ export const useTaxonomySearch = (initialSearch = "", kind?: TaxonomyKind) => {
         isCreatingTaxonomyTerm: createTermMutation.isPending,
         setTaxonomySearch: setTaxonomySearchNormalized,
         createTaxonomyTerm: handleCreateTerm,
-        hotTaxonomyData: taxonomyResponse?.terms,
         taxonomyData: taxonomyResponse?.terms,
     };
 };
