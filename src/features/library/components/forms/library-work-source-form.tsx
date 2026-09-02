@@ -1,8 +1,10 @@
 "use client";
 
-import { ClipboardIcon } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { ClipboardIcon, LoaderCircleIcon, WandSparklesIcon } from "lucide-react";
 import * as React from "react";
 import type { Control, Path } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "#/components/ui/form";
@@ -12,6 +14,7 @@ import { Textarea } from "#/components/ui/textarea";
 import { useLibraryFormContext } from "#/features/library/components/forms/library-form";
 import { detectSourceFromUrl, isValidUrl } from "#/lib/utils";
 import { type Source, sourceEnum, sourceLabels } from "#/server/db/schema";
+import { useTRPC } from "#/trpc/react";
 
 type WorkSourceFields = {
     title: string;
@@ -19,6 +22,9 @@ type WorkSourceFields = {
     url: string;
     source: Source;
     description?: string;
+    word_count?: number;
+    chapter_count?: number;
+    status?: string;
 };
 
 type LibraryWorkSourceFieldsFormProps<T extends WorkSourceFields> = {
@@ -38,7 +44,10 @@ function cleanSingleLinePaste(text: string) {
     return text.replace(/\s+/g, " ").trim();
 }
 
-function useWorkSourceHandlers(sourceOnChangeRef: React.MutableRefObject<((value: Source) => void) | null>) {
+function useWorkSourceHandlers(
+    sourceOnChangeRef: React.MutableRefObject<((value: Source) => void) | null>,
+    onUrlProvided?: (url: string) => void
+) {
     const autoDetectSource = React.useCallback(
         (url: string) => {
             if (!isValidUrl(url)) return;
@@ -55,8 +64,10 @@ function useWorkSourceHandlers(sourceOnChangeRef: React.MutableRefObject<((value
                     toast.success(`Detected source: ${sourceLabels[detectedSource]}`);
                 }
             }
+
+            onUrlProvided?.(url);
         },
-        [sourceOnChangeRef]
+        [sourceOnChangeRef, onUrlProvided]
     );
 
     const handlePasteFromClipboard = React.useCallback(
@@ -91,6 +102,84 @@ function useWorkSourceHandlers(sourceOnChangeRef: React.MutableRefObject<((value
     return { autoDetectSource, handlePasteFromClipboard };
 }
 
+const METADATA_PROVIDER_LABELS = {
+    fichub: "FicHub",
+    opengraph: "the page's metadata",
+} as const;
+
+type LooseFieldSetter = (name: string, value: unknown, options?: { shouldDirty?: boolean }) => void;
+
+function useWorkMetadataFetch<T extends WorkSourceFields>() {
+    const trpc = useTRPC();
+    const { setValue, getValues } = useFormContext<T>();
+    const setFieldValue = setValue as unknown as LooseFieldSetter;
+    const lastFetchedUrlRef = React.useRef<string | null>(null);
+
+    const fetchMetadataMutation = useMutation(trpc.work.fetchMetadata.mutationOptions());
+
+    const applyFetchedMetadata = React.useCallback(
+        (metadata: {
+            title?: string;
+            author?: string;
+            description?: string;
+            status?: string;
+            wordCount?: number;
+            chapterCount?: number;
+            provider: "fichub" | "opengraph";
+        }) => {
+            const values = getValues();
+
+            if (metadata.title && !values.title) {
+                setFieldValue("title", metadata.title, { shouldDirty: true });
+            }
+            if (metadata.author && !values.author) {
+                setFieldValue("author", metadata.author, { shouldDirty: true });
+            }
+            if (metadata.description && !values.description) {
+                setFieldValue("description", metadata.description, { shouldDirty: true });
+            }
+            if (metadata.status && !values.status) {
+                setFieldValue("status", metadata.status, { shouldDirty: true });
+            }
+            if (metadata.wordCount && !values.word_count) {
+                setFieldValue("word_count", metadata.wordCount, { shouldDirty: true });
+            }
+            if (metadata.chapterCount && !values.chapter_count) {
+                setFieldValue("chapter_count", metadata.chapterCount, { shouldDirty: true });
+            }
+
+            toast.success(`Fetched story info from ${METADATA_PROVIDER_LABELS[metadata.provider]}.`);
+        },
+        [getValues, setValue]
+    );
+
+    const fetchMetadataForUrl = React.useCallback(
+        (url: string, options: { force?: boolean } = {}) => {
+            if (!isValidUrl(url) || fetchMetadataMutation.isPending) {
+                return;
+            }
+            if (!options.force && lastFetchedUrlRef.current === url) {
+                return;
+            }
+
+            lastFetchedUrlRef.current = url;
+            fetchMetadataMutation.mutate(
+                { url },
+                {
+                    onError: (error) => {
+                        lastFetchedUrlRef.current = null;
+                        toast.error(error instanceof Error ? error.message : "Failed to fetch story info.");
+                    },
+                    onSuccess: applyFetchedMetadata,
+                }
+            );
+        },
+        [fetchMetadataMutation, applyFetchedMetadata]
+    );
+
+    return { fetchMetadataForUrl, isFetchingMetadata: fetchMetadataMutation.isPending };
+}
+
 export function LibraryWorkSourceFieldsForm<T extends WorkSourceFields>({
     control: propControl,
 }: LibraryWorkSourceFieldsFormProps<T>) {
@@ -104,7 +193,18 @@ export function LibraryWorkSourceFieldsForm<T extends WorkSourceFields>({
         throw new Error("LibraryWorkSourceFieldsForm requires either control prop or compound component context");
     }
 
-    const { autoDetectSource, handlePasteFromClipboard } = useWorkSourceHandlers(sourceOnChangeRef);
+    const { fetchMetadataForUrl, isFetchingMetadata } = useWorkMetadataFetch<T>();
+    const { autoDetectSource, handlePasteFromClipboard } = useWorkSourceHandlers(
+        sourceOnChangeRef,
+        fetchMetadataForUrl
+    );
+
+    const handleUrlBlur = React.useCallback(
+        (event: React.FocusEvent<HTMLInputElement>) => {
+            fetchMetadataForUrl(event.currentTarget.value);
+        },
+        [fetchMetadataForUrl]
+    );
 
     const formFields = (
         <>
@@ -178,9 +278,13 @@ export function LibraryWorkSourceFieldsForm<T extends WorkSourceFields>({
                             <FormControl>
                                 <div className="relative">
                                     <Input
-                                        className="w-full rounded-md pr-9"
+                                        className="w-full rounded-md pr-16"
                                         placeholder="https://..."
                                         {...field}
+                                        onBlur={(e) => {
+                                            field.onBlur();
+                                            handleUrlBlur(e);
+                                        }}
                                         onPaste={(e) => {
                                             e.preventDefault();
                                             const pasteText = cleanSingleLinePaste(e.clipboardData.getData("text"));
@@ -190,16 +294,36 @@ export function LibraryWorkSourceFieldsForm<T extends WorkSourceFields>({
                                             insertTextAtSelection(e.currentTarget, pasteText, field.onChange);
                                         }}
                                     />
-                                    <Button
-                                        className="absolute top-1/2 right-1 size-7 -translate-y-1/2 p-0 sm:hidden"
-                                        onClick={() => handlePasteFromClipboard(field.onChange)}
-                                        size="sm"
-                                        type="button"
-                                        variant="ghost"
-                                    >
-                                        <ClipboardIcon className="size-4" />
-                                        <span className="sr-only">Paste from clipboard</span>
-                                    </Button>
+                                    <div className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-0.5">
+                                        <Button
+                                            className="size-7 p-0"
+                                            disabled={isFetchingMetadata || !isValidUrl(String(field.value ?? ""))}
+                                            onClick={() =>
+                                                fetchMetadataForUrl(String(field.value ?? ""), { force: true })
+                                            }
+                                            size="sm"
+                                            title="Fetch story info from URL"
+                                            type="button"
+                                            variant="ghost"
+                                        >
+                                            {isFetchingMetadata ? (
+                                                <LoaderCircleIcon className="size-4 animate-spin" />
+                                            ) : (
+                                                <WandSparklesIcon className="size-4" />
+                                            )}
+                                            <span className="sr-only">Fetch story info</span>
+                                        </Button>
+                                        <Button
+                                            className="size-7 p-0 sm:hidden"
+                                            onClick={() => handlePasteFromClipboard(field.onChange)}
+                                            size="sm"
+                                            type="button"
+                                            variant="ghost"
+                                        >
+                                            <ClipboardIcon className="size-4" />
+                                            <span className="sr-only">Paste from clipboard</span>
+                                        </Button>
+                                    </div>
                                 </div>
                             </FormControl>
                             <FormMessage />
@@ -216,7 +340,7 @@ export function LibraryWorkSourceFieldsForm<T extends WorkSourceFields>({
                         return (
                             <FormItem className="w-full">
                                 <FormLabel>Source</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value as Source}>
                                     <FormControl>
                                         <SelectTrigger className="w-full rounded-md">
                                             <SelectValue className="truncate" placeholder="Select source" />
