@@ -36,11 +36,25 @@ export const MULTISELECT_LIMIT_DEFAULT = 10;
 export const HOT_LIMIT_MIN = 1;
 export const HOT_LIMIT_MAX = 20;
 export const HOT_LIMIT_DEFAULT = 8;
+export const LIST_LIMIT_MIN = 1;
+export const LIST_LIMIT_MAX = 100;
+export const LIST_LIMIT_DEFAULT = 50;
 
 export type TaxonomyTermSummary = {
     kind: TaxonomyKind;
     name: string;
     publicId: string;
+};
+
+export type TaxonomyTermListRow = TaxonomyTermSummary & {
+    slug: string;
+    description: string | null;
+    assignmentCount: number;
+};
+
+export type TaxonomyTermListResult = {
+    terms: TaxonomyTermListRow[];
+    total: number;
 };
 
 export type TaxonomyRelationSummary = {
@@ -116,9 +130,9 @@ async function findTaxonomyTermByExactLabel(
     const [term] = await database
         .select({
             id: taxonomyTerms.id,
-            publicId: taxonomyTerms.publicId,
-            name: taxonomyTerms.name,
             kind: taxonomyKinds.key,
+            name: taxonomyTerms.name,
+            publicId: taxonomyTerms.publicId,
         })
         .from(taxonomyTerms)
         .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
@@ -145,9 +159,9 @@ export async function getHotTaxonomyTerms(
 
     const rows = await db
         .select({
-            publicId: taxonomyTerms.publicId,
-            name: taxonomyTerms.name,
             kind: taxonomyKinds.key,
+            name: taxonomyTerms.name,
+            publicId: taxonomyTerms.publicId,
         })
         .from(taxonomyTerms)
         .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
@@ -168,9 +182,9 @@ export async function getHotTaxonomyTerms(
         .limit(input.limit ?? HOT_LIMIT_DEFAULT);
 
     return rows.map((row) => ({
-        publicId: row.publicId,
-        name: row.name,
         kind: taxonomyKindEnum.parse(row.kind),
+        name: row.name,
+        publicId: row.publicId,
     }));
 }
 
@@ -195,9 +209,9 @@ export async function searchTaxonomyTerms(
 
     const rows = await db
         .select({
-            publicId: taxonomyTerms.publicId,
-            name: taxonomyTerms.name,
             kind: taxonomyKinds.key,
+            name: taxonomyTerms.name,
+            publicId: taxonomyTerms.publicId,
         })
         .from(taxonomyTerms)
         .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
@@ -214,36 +228,94 @@ export async function searchTaxonomyTerms(
         .limit(input.limit ?? MULTISELECT_LIMIT_DEFAULT);
 
     return rows.map((row) => ({
-        publicId: row.publicId,
-        name: row.name,
         kind: taxonomyKindEnum.parse(row.kind),
+        name: row.name,
+        publicId: row.publicId,
     }));
+}
+
+export async function listTaxonomyTerms(input: {
+    kind?: TaxonomyKind;
+    search?: string;
+    limit: number;
+    offset: number;
+}): Promise<TaxonomyTermListResult> {
+    const trimmedSearch = input.search?.trim();
+    const searchClause = trimmedSearch
+        ? sql`(${taxonomyTerms.normalized_name} ILIKE ${`%${normalizeTaxonomyText(trimmedSearch)}%`} OR ${taxonomyTerms.slug} ILIKE ${`%${trimmedSearch}%`})`
+        : undefined;
+    const whereClause = and(kindPredicate(input.kind), searchClause);
+
+    const [rows, [{ total } = { total: 0 }]] = await Promise.all([
+        db
+            .select({
+                assignmentCount: sql<number>`count(${workTaxonomyAssignments.workId})::int`,
+                description: taxonomyTerms.description,
+                kind: taxonomyKinds.key,
+                name: taxonomyTerms.name,
+                publicId: taxonomyTerms.publicId,
+                slug: taxonomyTerms.slug,
+            })
+            .from(taxonomyTerms)
+            .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
+            .leftJoin(workTaxonomyAssignments, eq(workTaxonomyAssignments.termId, taxonomyTerms.id))
+            .where(whereClause)
+            .groupBy(
+                taxonomyTerms.id,
+                taxonomyTerms.publicId,
+                taxonomyTerms.name,
+                taxonomyTerms.slug,
+                taxonomyTerms.description,
+                taxonomyKinds.key,
+                taxonomyKinds.sort_order
+            )
+            .orderBy(asc(taxonomyKinds.sort_order), asc(taxonomyTerms.name))
+            .limit(input.limit)
+            .offset(input.offset),
+        db
+            .select({ total: sql<number>`count(*)::int` })
+            .from(taxonomyTerms)
+            .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
+            .where(whereClause),
+    ]);
+
+    return {
+        terms: rows.map((row) => ({
+            assignmentCount: row.assignmentCount,
+            description: row.description,
+            kind: taxonomyKindEnum.parse(row.kind),
+            name: row.name,
+            publicId: row.publicId,
+            slug: row.slug,
+        })),
+        total,
+    };
 }
 
 export async function getTaxonomyMultiselect(input: TaxonomyMultiselectInput): Promise<TaxonomyMultiselectResult> {
     const term = input.search?.trim();
     if (!term && input.includeHot) {
         return {
-            terms: await getHotTaxonomyTerms({ kind: input.kind, limit: input.hotLimit }),
             canCreate: false,
             searchTerm: null,
+            terms: await getHotTaxonomyTerms({ kind: input.kind, limit: input.hotLimit }),
         };
     }
 
     if (!term) {
-        return { terms: [], canCreate: false, searchTerm: null };
+        return { canCreate: false, searchTerm: null, terms: [] };
     }
 
     const normalizedTerm = normalizeTaxonomyText(term);
     const [searchResults, exactMatch] = await Promise.all([
-        searchTaxonomyTerms({ kind: input.kind, search: term, limit: input.limit }),
+        searchTaxonomyTerms({ kind: input.kind, limit: input.limit, search: term }),
         findTaxonomyTermByExactLabel(db, { kind: input.kind, normalizedText: normalizedTerm }),
     ]);
 
     return {
-        terms: searchResults,
         canCreate: !exactMatch,
         searchTerm: term,
+        terms: searchResults,
     };
 }
 
@@ -269,18 +341,18 @@ export async function createTaxonomyTerm(
         const [newTerm] = await tx
             .insert(taxonomyTerms)
             .values({
+                description: input.description ?? null,
                 kindId,
                 name,
                 normalized_name: normalizedName,
                 slug,
-                description: input.description ?? null,
                 status: "active",
             })
             .returning({
                 id: taxonomyTerms.id,
-                publicId: taxonomyTerms.publicId,
                 kindId: taxonomyTerms.kindId,
                 name: taxonomyTerms.name,
+                publicId: taxonomyTerms.publicId,
             });
 
         if (!newTerm) {
@@ -288,18 +360,18 @@ export async function createTaxonomyTerm(
         }
 
         await tx.insert(taxonomyLabels).values({
-            termId: newTerm.id,
-            label: name,
-            normalized_label: normalizedName,
-            label_type: "primary",
             is_primary: true,
+            label: name,
+            label_type: "primary",
+            normalized_label: normalizedName,
+            termId: newTerm.id,
         });
 
         return {
             id: newTerm.id,
-            publicId: newTerm.publicId,
             kind: input.kind,
             name: newTerm.name,
+            publicId: newTerm.publicId,
         };
     });
 }
@@ -314,8 +386,8 @@ export async function updateTaxonomyTerm(
         const [existingTerm] = await tx
             .select({
                 id: taxonomyTerms.id,
-                kindId: taxonomyTerms.kindId,
                 kind: taxonomyKinds.key,
+                kindId: taxonomyTerms.kindId,
             })
             .from(taxonomyTerms)
             .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
@@ -335,9 +407,9 @@ export async function updateTaxonomyTerm(
 
         if (nextNormalizedName) {
             const conflictingTerm = await findTaxonomyTermByExactLabel(tx, {
+                excludePublicId: publicId,
                 kind: nextKind,
                 normalizedText: nextNormalizedName,
-                excludePublicId: publicId,
             });
 
             if (conflictingTerm) {
@@ -361,8 +433,8 @@ export async function updateTaxonomyTerm(
             .where(eq(taxonomyTerms.publicId, publicId))
             .returning({
                 id: taxonomyTerms.id,
-                publicId: taxonomyTerms.publicId,
                 name: taxonomyTerms.name,
+                publicId: taxonomyTerms.publicId,
             });
 
         if (!updatedTerm) {
@@ -381,9 +453,9 @@ export async function updateTaxonomyTerm(
 
         return {
             id: updatedTerm.id,
-            publicId: updatedTerm.publicId,
             kind: nextKind,
             name: updatedTerm.name,
+            publicId: updatedTerm.publicId,
         };
     });
 }
@@ -414,9 +486,9 @@ async function getTermByPublicId(database: DatabaseOrTransaction, publicId: stri
     const [term] = await database
         .select({
             id: taxonomyTerms.id,
-            publicId: taxonomyTerms.publicId,
-            name: taxonomyTerms.name,
             kind: taxonomyKinds.key,
+            name: taxonomyTerms.name,
+            publicId: taxonomyTerms.publicId,
         })
         .from(taxonomyTerms)
         .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
@@ -441,14 +513,14 @@ export async function listTaxonomyRelations(database: Database, input: { termPub
 
     const rows = await database
         .select({
+            fromTermKind: fromKind.key,
+            fromTermName: fromTerm.name,
+            fromTermPublicId: fromTerm.publicId,
             publicId: taxonomyRelations.publicId,
             relationType: taxonomyRelations.relation_type,
-            fromTermPublicId: fromTerm.publicId,
-            fromTermName: fromTerm.name,
-            fromTermKind: fromKind.key,
-            toTermPublicId: toTerm.publicId,
-            toTermName: toTerm.name,
             toTermKind: toKind.key,
+            toTermName: toTerm.name,
+            toTermPublicId: toTerm.publicId,
         })
         .from(taxonomyRelations)
         .innerJoin(fromTerm, eq(fromTerm.id, taxonomyRelations.fromTermId))
@@ -460,17 +532,17 @@ export async function listTaxonomyRelations(database: Database, input: { termPub
 
     return rows.map(
         (row): TaxonomyRelationSummary => ({
+            fromTerm: {
+                kind: taxonomyKindEnum.parse(row.fromTermKind),
+                name: row.fromTermName,
+                publicId: row.fromTermPublicId,
+            },
             publicId: row.publicId,
             relationType: taxonomyRelationTypeEnum.parse(row.relationType),
-            fromTerm: {
-                publicId: row.fromTermPublicId,
-                name: row.fromTermName,
-                kind: taxonomyKindEnum.parse(row.fromTermKind),
-            },
             toTerm: {
-                publicId: row.toTermPublicId,
-                name: row.toTermName,
                 kind: taxonomyKindEnum.parse(row.toTermKind),
+                name: row.toTermName,
+                publicId: row.toTermPublicId,
             },
         })
     );
@@ -494,12 +566,12 @@ export async function createTaxonomyRelation(
             .insert(taxonomyRelations)
             .values({
                 fromTermId: fromTerm.id,
-                toTermId: toTerm.id,
                 relation_type: input.relationType,
+                toTermId: toTerm.id,
             })
             .onConflictDoUpdate({
-                target: [taxonomyRelations.fromTermId, taxonomyRelations.toTermId, taxonomyRelations.relation_type],
                 set: { updated_at: sql`CURRENT_TIMESTAMP` },
+                target: [taxonomyRelations.fromTermId, taxonomyRelations.toTermId, taxonomyRelations.relation_type],
             })
             .returning({
                 id: taxonomyRelations.id,
@@ -518,9 +590,9 @@ export async function createTaxonomyRelation(
         }
 
         return {
+            affectedWorkIds: affectedWorks.map((work) => work.workId),
             publicId: relation?.publicId,
             relationType: relation ? taxonomyRelationTypeEnum.parse(relation.relationType) : input.relationType,
-            affectedWorkIds: affectedWorks.map((work) => work.workId),
         };
     });
 }
@@ -531,8 +603,8 @@ export async function deleteTaxonomyRelation(database: Database, publicId: strin
             .delete(taxonomyRelations)
             .where(eq(taxonomyRelations.publicId, publicId))
             .returning({
-                id: taxonomyRelations.id,
                 fromTermId: taxonomyRelations.fromTermId,
+                id: taxonomyRelations.id,
                 publicId: taxonomyRelations.publicId,
             });
 
@@ -551,8 +623,8 @@ export async function deleteTaxonomyRelation(database: Database, publicId: strin
         }
 
         return {
-            publicId: relation.publicId,
             affectedWorkIds: affectedWorks.map((work) => work.workId),
+            publicId: relation.publicId,
         };
     });
 }

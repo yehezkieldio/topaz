@@ -12,7 +12,11 @@ import {
     HOT_LIMIT_DEFAULT,
     HOT_LIMIT_MAX,
     HOT_LIMIT_MIN,
+    LIST_LIMIT_DEFAULT,
+    LIST_LIMIT_MAX,
+    LIST_LIMIT_MIN,
     listTaxonomyRelations,
+    listTaxonomyTerms,
     MULTISELECT_LIMIT_DEFAULT,
     MULTISELECT_LIMIT_MAX,
     MULTISELECT_LIMIT_MIN,
@@ -23,34 +27,13 @@ import {
 import { taxonomyKindEnum, taxonomyRelationTypeEnum } from "#/server/db/schema/taxonomy";
 
 export const taxonomyRouter = createTRPCRouter({
-    delete: adminProcedure.input(z.object({ publicId: publicIdSchema })).mutation(async ({ ctx, input }) => {
-        const deletedTerm = await deleteTaxonomyTerm(ctx.db, input.publicId);
-        await invalidateLibraryReadModels();
-        await invalidateTaxonomyReadModels();
-        return deletedTerm;
-    }),
-    update: adminProcedure
-        .input(
-            z.object({
-                publicId: publicIdSchema,
-                kind: taxonomyKindEnum.optional(),
-                name: z.string().min(1).max(255).optional(),
-                slug: z.string().min(1).max(255).optional(),
-                description: z.string().nullable().optional(),
-            })
-        )
-        .mutation(async ({ ctx, input }) => {
-            const updatedTerm = await updateTaxonomyTerm(ctx.db, input);
-            await invalidateTaxonomyReadModels();
-            return updatedTerm;
-        }),
     create: adminProcedure
         .input(
             z.object({
+                description: z.string().nullable().optional(),
                 kind: taxonomyKindEnum,
                 name: z.string().min(1).max(255),
                 slug: z.string().min(1).max(255).optional(),
-                description: z.string().nullable().optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -58,21 +41,6 @@ export const taxonomyRouter = createTRPCRouter({
             await invalidateTaxonomyReadModels();
             return newTerm;
         }),
-    forMultiselect: adminProcedure
-        .input(
-            z.object({
-                kind: taxonomyKindEnum.optional(),
-                search: z.string().optional(),
-                limit: z
-                    .number()
-                    .min(MULTISELECT_LIMIT_MIN)
-                    .max(MULTISELECT_LIMIT_MAX)
-                    .default(MULTISELECT_LIMIT_DEFAULT),
-                includeHot: z.boolean().default(true),
-                hotLimit: z.number().min(HOT_LIMIT_MIN).max(HOT_LIMIT_MAX).default(HOT_LIMIT_DEFAULT),
-            })
-        )
-        .query(async ({ input }) => await getTaxonomyMultiselect(input)),
     createForMultiselect: adminProcedure
         .input(
             z.object({
@@ -85,9 +53,6 @@ export const taxonomyRouter = createTRPCRouter({
             await invalidateTaxonomyReadModels();
             return term;
         }),
-    relations: adminProcedure
-        .input(z.object({ termPublicId: publicIdSchema.optional() }).optional())
-        .query(async ({ ctx, input }) => await listTaxonomyRelations(ctx.db, input ?? {})),
     createRelation: adminProcedure
         .input(
             z.object({
@@ -102,10 +67,59 @@ export const taxonomyRouter = createTRPCRouter({
             await invalidateTaxonomyReadModels();
             return relation;
         }),
+    delete: adminProcedure.input(z.object({ publicId: publicIdSchema })).mutation(async ({ ctx, input }) => {
+        const deletedTerm = await deleteTaxonomyTerm(ctx.db, input.publicId);
+        await invalidateLibraryReadModels();
+        await invalidateTaxonomyReadModels();
+        return deletedTerm;
+    }),
     deleteRelation: adminProcedure.input(z.object({ publicId: publicIdSchema })).mutation(async ({ ctx, input }) => {
         const relation = await deleteTaxonomyRelation(ctx.db, input.publicId);
         await invalidateLibraryReadModels();
         await invalidateTaxonomyReadModels();
         return relation;
     }),
+    forMultiselect: adminProcedure
+        .input(
+            z.object({
+                hotLimit: z.number().min(HOT_LIMIT_MIN).max(HOT_LIMIT_MAX).default(HOT_LIMIT_DEFAULT),
+                includeHot: z.boolean().default(true),
+                kind: taxonomyKindEnum.optional(),
+                limit: z
+                    .number()
+                    .min(MULTISELECT_LIMIT_MIN)
+                    .max(MULTISELECT_LIMIT_MAX)
+                    .default(MULTISELECT_LIMIT_DEFAULT),
+                search: z.string().optional(),
+            })
+        )
+        .query(async ({ input }) => await getTaxonomyMultiselect(input)),
+    list: adminProcedure
+        .input(
+            z.object({
+                kind: taxonomyKindEnum.optional(),
+                limit: z.number().min(LIST_LIMIT_MIN).max(LIST_LIMIT_MAX).default(LIST_LIMIT_DEFAULT),
+                offset: z.number().min(0).default(0),
+                search: z.string().optional(),
+            })
+        )
+        .query(async ({ input }) => await listTaxonomyTerms(input)),
+    relations: adminProcedure
+        .input(z.object({ termPublicId: publicIdSchema.optional() }).optional())
+        .query(async ({ ctx, input }) => await listTaxonomyRelations(ctx.db, input ?? {})),
+    update: adminProcedure
+        .input(
+            z.object({
+                description: z.string().nullable().optional(),
+                kind: taxonomyKindEnum.optional(),
+                name: z.string().min(1).max(255).optional(),
+                publicId: publicIdSchema,
+                slug: z.string().min(1).max(255).optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const updatedTerm = await updateTaxonomyTerm(ctx.db, input);
+            await invalidateTaxonomyReadModels();
+            return updatedTerm;
+        }),
 });
