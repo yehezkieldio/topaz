@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Refinement Discipline"
+  short_description: "Refactor only when the code earns it"
+  default_prompt: "Use $code-refinement-discipline to run a behavior-preserving refactor pass with clear scope, evidence, and verification."
