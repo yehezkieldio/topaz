@@ -28,6 +28,7 @@ type MultiSelectProps = {
     className?: string;
     disableClientFilter?: boolean;
     keepOpenOnSelect?: boolean;
+    createSlot?: React.ReactNode;
 };
 
 export function MultiSelect({
@@ -44,6 +45,7 @@ export function MultiSelect({
     className,
     disableClientFilter = false,
     keepOpenOnSelect = false,
+    createSlot,
 }: MultiSelectProps) {
     const inputRef = React.useRef<HTMLInputElement>(null);
     const [open, setOpen] = React.useState(false);
@@ -175,6 +177,9 @@ export function MultiSelect({
                                 <CommandEmpty>Loading…</CommandEmpty>
                             ) : (
                                 <>
+                                    {shouldShowCreateOption && createSlot ? (
+                                        <div className="border-b p-2">{createSlot}</div>
+                                    ) : null}
                                     <CommandEmpty>
                                         {inputValue.trim() && shouldShowCreateOption
                                             ? `Create "${inputValue}"`

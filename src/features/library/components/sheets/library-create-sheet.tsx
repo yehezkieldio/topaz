@@ -4,11 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "#/components/ui/button";
 import { Sheet, SheetContent } from "#/components/ui/sheet";
 import { LibraryCreateForm } from "#/features/library/components/forms/library-create-form";
+import type { FormCloseGuardHandle } from "#/hooks/use-form-close-guard";
 
 export function LibraryCreateSheet() {
     const [isOpen, setIsOpen] = useState(false);
     const isOpenRef = useRef(isOpen);
     const handleKeyDownRef = useRef<(event: KeyboardEvent) => void>(() => {});
+    const formRef = useRef<FormCloseGuardHandle>(null);
 
     useEffect(() => {
         isOpenRef.current = isOpen;
@@ -56,7 +58,11 @@ export function LibraryCreateSheet() {
     }, []);
 
     const handleOpenChange = useCallback((open: boolean) => {
-        setIsOpen(open);
+        if (open) {
+            setIsOpen(true);
+            return;
+        }
+        formRef.current?.requestClose();
     }, []);
 
     const handleClose = useCallback(() => {
@@ -75,7 +81,7 @@ export function LibraryCreateSheet() {
 
             <Sheet onOpenChange={handleOpenChange} open={isOpen}>
                 <SheetContent className="w-full max-w-full p-0 sm:w-xl" side="right">
-                    <LibraryCreateForm onClose={handleClose} />
+                    <LibraryCreateForm onClose={handleClose} ref={formRef} />
                 </SheetContent>
             </Sheet>
         </>

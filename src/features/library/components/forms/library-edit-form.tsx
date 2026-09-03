@@ -1,7 +1,9 @@
 "use client";
 
+import type * as React from "react";
 import { useWatch } from "react-hook-form";
 import { Button } from "#/components/ui/button";
+import { DiscardChangesDialog } from "#/components/ui/discard-changes-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "#/components/ui/form";
 import { ProgressControls } from "#/components/ui/progress-controls";
 import { SheetClose, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "#/components/ui/sheet";
@@ -12,16 +14,23 @@ import { LibraryWorkDetailsFieldsForm } from "#/features/library/components/form
 import { LibraryWorkSourceFieldsForm } from "#/features/library/components/forms/library-work-source-form";
 import { LibraryWorkTaxonomyForm } from "#/features/library/components/forms/library-work-taxonomy-form";
 import type { LibraryItem } from "#/features/library/hooks/use-library-item";
+import { type FormCloseGuardHandle, useFormCloseGuard } from "#/hooks/use-form-close-guard";
 import { useIsMobile } from "#/hooks/use-mobile";
 
 type LibraryEditFormProps = {
     item: LibraryItem;
     onCloseAction: () => void;
+    ref?: React.Ref<FormCloseGuardHandle>;
 };
 
-export function LibraryEditForm({ item, onCloseAction }: LibraryEditFormProps) {
+export function LibraryEditForm({ item, onCloseAction, ref }: LibraryEditFormProps) {
     const { form, onSubmit, isLoading } = useLibraryEntryEdit({ item, onCloseAction });
     const isMobile = useIsMobile();
+    const { isDirty } = form.formState;
+    const { cancelDiscard, confirmDiscard, isConfirmOpen } = useFormCloseGuard(
+        { isDirty, onClose: onCloseAction },
+        ref
+    );
 
     const [currentChapter = 0, totalChapters = 0] = useWatch({
         control: form.control,
@@ -104,12 +113,13 @@ export function LibraryEditForm({ item, onCloseAction }: LibraryEditFormProps) {
                         {isLoading ? "Updating..." : "Update Entry"}
                     </Button>
                     <SheetClose asChild>
-                        <Button disabled={isLoading} onClick={onCloseAction} type="button" variant="outline">
+                        <Button disabled={isLoading} type="button" variant="outline">
                             Cancel
                         </Button>
                     </SheetClose>
                 </SheetFooter>
             </form>
+            <DiscardChangesDialog isOpen={isConfirmOpen} onCancel={cancelDiscard} onConfirm={confirmDiscard} />
         </Form>
     );
 }

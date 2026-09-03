@@ -26,6 +26,7 @@ type LibraryWorkTaxonomyFormProps<T extends Categories & FieldValues> = {
     control?: Control<T>;
     taxonomyTermsField?: Path<T>;
     initialTaxonomyTerms?: InitialTaxonomyTerm[];
+    onTermCreatedAction?: (term: SelectedTaxonomyItem) => void;
 };
 
 const EMPTY_INITIAL_TAXONOMY_TERMS: InitialTaxonomyTerm[] = [];
@@ -38,6 +39,7 @@ export function LibraryWorkTaxonomyForm<T extends Categories & FieldValues>({
     control: propControl,
     taxonomyTermsField = "taxonomyTermIds" as Path<T>,
     initialTaxonomyTerms = EMPTY_INITIAL_TAXONOMY_TERMS,
+    onTermCreatedAction,
 }: LibraryWorkTaxonomyFormProps<T>) {
     const context = useLibraryFormContext<T>();
     const isInCompoundContext = context !== null;
@@ -102,6 +104,7 @@ export function LibraryWorkTaxonomyForm<T extends Categories & FieldValues>({
                     <FormLabel>Taxonomy</FormLabel>
                     <FormControl>
                         <LibraryTaxonomyMultiselect
+                            onTermCreatedAction={onTermCreatedAction}
                             onTermsChangeAction={(terms: SelectedTaxonomyItem[]) => {
                                 handleTermsChange(terms);
                                 field.onChange(terms.map((term) => term.value));

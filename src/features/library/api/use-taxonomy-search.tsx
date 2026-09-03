@@ -15,6 +15,10 @@ export type SelectedTaxonomyItem = {
     description?: string;
 };
 
+export type CreatedTaxonomyItem = SelectedTaxonomyItem & {
+    wasCreated: boolean;
+};
+
 export function getTaxonomyKindDescription(kind?: TaxonomyKind) {
     const parsedKind = taxonomyKindEnum.safeParse(kind);
     return parsedKind.success ? taxonomyKindLabels[parsedKind.data] : undefined;
@@ -71,9 +75,9 @@ export const useTaxonomySearch = (initialSearch = "", kind?: TaxonomyKind) => {
     const createTermForMultiselect = useMutation(trpc.taxonomy.createForMultiselect.mutationOptions());
 
     const createTermMutation = useMutation({
-        mutationFn: async (name: string) => {
+        mutationFn: async ({ name, kind: kindOverride }: { name: string; kind?: TaxonomyKind }) => {
             const trimmed = name.trim();
-            return await createTermForMultiselect.mutateAsync({ kind: kind ?? "trope", name: trimmed });
+            return await createTermForMultiselect.mutateAsync({ kind: kindOverride ?? kind ?? "trope", name: trimmed });
         },
         onSuccess: () => {
             queryClient.invalidateQueries(trpc.taxonomy.forMultiselect.queryFilter());
@@ -85,12 +89,17 @@ export const useTaxonomySearch = (initialSearch = "", kind?: TaxonomyKind) => {
         [taxonomyResponse?.terms]
     );
 
+    const similarTaxonomyTerms = React.useMemo<SelectedTaxonomyItem[]>(
+        () => (taxonomyResponse?.similarTerms ?? []).map(toSelectedTaxonomyItem),
+        [taxonomyResponse?.similarTerms]
+    );
+
     const canCreateTaxonomyTerm = taxonomyResponse?.canCreate ?? false;
 
     const handleCreateTerm = React.useCallback(
-        async (name: string): Promise<SelectedTaxonomyItem> => {
-            const newTerm = await createTermMutation.mutateAsync(name);
-            return toSelectedTaxonomyItem(newTerm);
+        async (name: string, kindOverride?: TaxonomyKind): Promise<CreatedTaxonomyItem> => {
+            const newTerm = await createTermMutation.mutateAsync({ kind: kindOverride, name });
+            return { ...toSelectedTaxonomyItem(newTerm), wasCreated: newTerm.wasCreated };
         },
         [createTermMutation]
     );
@@ -107,6 +116,7 @@ export const useTaxonomySearch = (initialSearch = "", kind?: TaxonomyKind) => {
         isCreatingTaxonomyTerm: createTermMutation.isPending,
         isLoadingTaxonomy: isLoadingTaxonomy || (isFetching && !taxonomyResponse),
         setTaxonomySearch: setTaxonomySearchNormalized,
+        similarTaxonomyTerms,
         taxonomyData: taxonomyResponse?.terms,
         taxonomyOptions,
         taxonomySearch,

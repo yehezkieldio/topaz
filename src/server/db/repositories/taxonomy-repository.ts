@@ -70,7 +70,11 @@ export type TaxonomyMultiselectResult = {
     canCreate: boolean;
     searchTerm: string | null;
     terms: TaxonomyTermSummary[];
+    similarTerms: TaxonomyTermSummary[];
 };
+
+export const SIMILAR_TERMS_MIN_SIMILARITY = 0.3;
+export const SIMILAR_TERMS_LIMIT = 3;
 
 type TaxonomySearchInput = {
     kind?: TaxonomyKind;
@@ -296,18 +300,58 @@ export async function listTaxonomyTerms(input: {
     };
 }
 
+async function findSimilarTaxonomyTerms(
+    database: DatabaseOrTransaction,
+    input: { kind?: TaxonomyKind; normalizedText: string; limit?: number }
+): Promise<TaxonomyTermSummary[]> {
+    const similarityExpr = sql<number>`similarity(LOWER(${taxonomyLabels.label}), ${input.normalizedText})`;
+    const maxSimilarityExpr = sql<number>`MAX(${similarityExpr})`;
+    const whereClause = and(
+        kindPredicate(input.kind),
+        sql`${taxonomyLabels.normalized_label} != ${input.normalizedText}`,
+        sql`${similarityExpr} >= ${SIMILAR_TERMS_MIN_SIMILARITY}`
+    );
+
+    const rows = await database
+        .select({
+            kind: taxonomyKinds.key,
+            name: taxonomyTerms.name,
+            publicId: taxonomyTerms.publicId,
+        })
+        .from(taxonomyTerms)
+        .innerJoin(taxonomyKinds, eq(taxonomyKinds.id, taxonomyTerms.kindId))
+        .innerJoin(taxonomyLabels, eq(taxonomyLabels.termId, taxonomyTerms.id))
+        .where(whereClause)
+        .groupBy(
+            taxonomyTerms.id,
+            taxonomyTerms.publicId,
+            taxonomyTerms.name,
+            taxonomyKinds.key,
+            taxonomyKinds.sort_order
+        )
+        .orderBy(desc(maxSimilarityExpr), asc(taxonomyKinds.sort_order), asc(taxonomyTerms.name))
+        .limit(input.limit ?? SIMILAR_TERMS_LIMIT);
+
+    return rows.map((row) => ({
+        kind: taxonomyKindEnum.parse(row.kind),
+        name: row.name,
+        publicId: row.publicId,
+    }));
+}
+
 export async function getTaxonomyMultiselect(input: TaxonomyMultiselectInput): Promise<TaxonomyMultiselectResult> {
     const term = input.search?.trim();
     if (!term && input.includeHot) {
         return {
             canCreate: false,
             searchTerm: null,
+            similarTerms: [],
             terms: await getHotTaxonomyTerms({ kind: input.kind, limit: input.hotLimit }),
         };
     }
 
     if (!term) {
-        return { canCreate: false, searchTerm: null, terms: [] };
+        return { canCreate: false, searchTerm: null, similarTerms: [], terms: [] };
     }
 
     const normalizedTerm = normalizeSearchText(term);
@@ -316,9 +360,14 @@ export async function getTaxonomyMultiselect(input: TaxonomyMultiselectInput): P
         findTaxonomyTermByExactLabel(db, { kind: input.kind, normalizedText: normalizedTerm }),
     ]);
 
+    const similarTerms = exactMatch
+        ? []
+        : await findSimilarTaxonomyTerms(db, { kind: input.kind, normalizedText: normalizedTerm });
+
     return {
         canCreate: !exactMatch,
         searchTerm: term,
+        similarTerms,
         terms: searchResults,
     };
 }
@@ -476,14 +525,16 @@ export async function createTaxonomyTermForMultiselect(
     });
 
     if (existingTerm) {
-        return existingTerm;
+        return { ...existingTerm, wasCreated: false as const };
     }
 
-    return await createTaxonomyTerm(database, {
+    const newTerm = await createTaxonomyTerm(database, {
         kind: input.kind,
         name,
         slug: slugifyTaxonomyName(name),
     });
+
+    return { ...newTerm, wasCreated: true as const };
 }
 
 async function getTermByPublicId(database: DatabaseOrTransaction, publicId: string) {
