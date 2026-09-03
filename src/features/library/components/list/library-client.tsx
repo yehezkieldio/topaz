@@ -9,13 +9,11 @@ import { ErrorState } from "#/features/library/components/states/error-state";
 import { LibraryControls } from "#/features/library/components/ui/library-controls";
 import type { LibrarySearchParams } from "#/features/library/search-params";
 
-export function LibraryClientProvider({
-    initialFilters,
-    isAdministratorUser,
-}: {
-    initialFilters: LibrarySearchParams;
-    isAdministratorUser: boolean;
-}) {
+/**
+ * Purely decorative, data-independent layout: renders synchronously so it
+ * commits as part of the static shell instead of waiting on auth/data reads.
+ */
+export function LibraryShell({ children }: { children: React.ReactNode }) {
     return (
         <div className="relative min-h-dvh overflow-hidden bg-background">
             <div
@@ -27,20 +25,30 @@ export function LibraryClientProvider({
             >
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-size-[40px_40px] opacity-[0.15]" />
             </div>
-            <div className="relative z-10">
-                <LibraryDataProvider initialFilters={initialFilters}>
-                    <div className="flex min-h-screen flex-col">
-                        <DesktopLibraryControls isAdministratorUser={isAdministratorUser} />
-
-                        <div className="min-h-0 flex-1 grow overflow-hidden p-1 pb-20 sm:p-2 sm:pb-2">
-                            <LibraryListSection isAdministratorUser={isAdministratorUser} />
-                        </div>
-
-                        <MobileLibraryControls isAdministratorUser={isAdministratorUser} />
-                    </div>
-                </LibraryDataProvider>
-            </div>
+            <div className="relative z-10">{children}</div>
         </div>
+    );
+}
+
+export function LibraryClientProvider({
+    initialFilters,
+    isAdministratorUser,
+}: {
+    initialFilters: LibrarySearchParams;
+    isAdministratorUser: boolean;
+}) {
+    return (
+        <LibraryDataProvider initialFilters={initialFilters}>
+            <div className="flex min-h-screen flex-col">
+                <DesktopLibraryControls isAdministratorUser={isAdministratorUser} />
+
+                <div className="min-h-0 flex-1 grow overflow-hidden p-1 pb-20 sm:p-2 sm:pb-2">
+                    <LibraryListSection isAdministratorUser={isAdministratorUser} />
+                </div>
+
+                <MobileLibraryControls isAdministratorUser={isAdministratorUser} />
+            </div>
+        </LibraryDataProvider>
     );
 }
 

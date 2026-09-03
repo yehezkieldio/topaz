@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { AuthUserGate } from "#/components/auth-user-gate";
-import { LibraryClientProvider } from "#/features/library/components/list/library-client";
+import { LibraryClientProvider, LibraryShell } from "#/features/library/components/list/library-client";
+import { LibraryPageSkeleton } from "#/features/library/components/skeletons/library-page-skeleton";
 import { createLibraryQueryInput, type LibrarySearchParams } from "#/features/library/search-params";
 import { librarySearchParamsCache } from "#/features/library/search-params.server";
 import { getQueryClient, HydrateClient, trpc } from "#/trpc/server";
@@ -16,9 +17,11 @@ type LibraryPageProps = {
 
 export default function Library({ searchParams }: LibraryPageProps) {
     return (
-        <Suspense fallback={<div>Loading library…</div>}>
-            <LibraryServerData searchParams={searchParams} />
-        </Suspense>
+        <LibraryShell>
+            <Suspense fallback={<LibraryPageSkeleton />}>
+                <LibraryServerData searchParams={searchParams} />
+            </Suspense>
+        </LibraryShell>
     );
 }
 
