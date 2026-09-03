@@ -5,7 +5,7 @@
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",
       "skillPath": "skills/taste-skill/SKILL.md",
-      "computedHash": "9d1e82c5c409d2b0247245a005bc0f7e4447c0999b78dcea60f568c1ba4a6694"
+      "computedHash": "6d838b246d0e35d0b53f4f23f98ba7a1dd561937e64f7d0c7553b0928e376c3e"
     },
     "full-output-enforcement": {
       "source": "Leonxlnx/taste-skill",
@@ -19,23 +19,11 @@
       "skillPath": "skills/gpt-tasteskill/SKILL.md",
       "computedHash": "cc8f0c601d8240a124e1d11634351a2be7b8a72fd807c75e5b6bf7afcd5ddee0"
     },
-    "next-best-practices": {
-      "source": "vercel-labs/next-skills",
-      "sourceType": "github",
-      "skillPath": "skills/next-best-practices/SKILL.md",
-      "computedHash": "f4678aef4ffc10a5ea64a91e57abe5a5081af813b06d58d565caf3e8ef56e26c"
-    },
-    "next-cache-components": {
-      "source": "vercel-labs/next-skills",
-      "sourceType": "github",
-      "skillPath": "skills/next-cache-components/SKILL.md",
-      "computedHash": "f835d8226c28abf012cc013928e2627c8a7a046de61127ef229be1711bd1f255"
-    },
     "nuqs": {
       "source": "pproenca/dot-skills",
       "sourceType": "github",
       "skillPath": "skills/.curated/nuqs/SKILL.md",
-      "computedHash": "08885b05c0c440a8e29623677c89b5ab14e97b00321c9ed6321ca0fe03b2a507"
+      "computedHash": "5811f3b4c6f981aa75647ffb879d6e98429535ff830df219a04f4c9a884658a6"
     },
     "postgresql-optimization": {
       "source": "github/awesome-copilot",
@@ -47,7 +35,7 @@
       "source": "pproenca/dot-skills",
       "sourceType": "github",
       "skillPath": "skills/.curated/react-hook-form/SKILL.md",
-      "computedHash": "b87e85d79d5a097cf90c52d01f02f5d3800049bf9b7a383a31721b044ebba1b0"
+      "computedHash": "e9881245bb3f993f93c9fce336ca7a517ce39864aa46c95d04238fc5ebc4e4d1"
     },
     "tanstack-query-best-practices": {
       "source": "deckardger/tanstack-agent-skills",
@@ -77,7 +65,7 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "skillPath": "plugins/javascript-typescript/skills/typescript-advanced-types/SKILL.md",
-      "computedHash": "3a3be8c925f96ac4e1280db28a01677e7ca5197f3792de2bbf35ab3bb324b6dd"
+      "computedHash": "8cbf2bf600f392d7260e476e3202932a876e2281cda3b15a8b6a5a43f383252d"
     },
     "vercel-composition-patterns": {
       "source": "vercel-labs/agent-skills",
@@ -95,7 +83,7 @@
       "source": "pproenca/dot-skills",
       "sourceType": "github",
       "skillPath": "skills/.curated/zod/SKILL.md",
-      "computedHash": "5de14d461c31c85426b7edb42672f1e52e7ebdd7532696e36734fe5610666396"
+      "computedHash": "c69b5133b65643317236707f2cd3e521b4fc6e5ee5fd6c6c00cf62a37dfd0144"
     }
   }
 }
