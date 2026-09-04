@@ -31,15 +31,6 @@ const globalSetup = async () => {
       },
     ])
     .onConflictDoNothing();
-
-  // Each worker thread imports src/server/db/client.ts, which opens its own
-  // pooled postgres connection that vitest has no way to close on its own --
-  // leaving the process hanging after the run. Global teardown closes it.
-  return async () => {
-    const { default: postgres } = await import("postgres");
-    const conn = postgres(process.env.DATABASE_URL as string, { max: 1 });
-    await conn.end({ timeout: 1 });
-  };
 };
 
 export default globalSetup;
