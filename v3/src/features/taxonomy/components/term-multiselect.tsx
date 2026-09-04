@@ -4,6 +4,7 @@ import { XIcon } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { TermChipMenu } from "@/features/taxonomy/components/term-chip-menu";
 import { useOptionPicker } from "@/features/taxonomy/hooks/use-option-picker";
 import type { OptionPickerOption } from "@/features/taxonomy/hooks/use-option-picker";
 import { useOutsideClick } from "@/hooks/use-outside-click";
@@ -68,6 +69,7 @@ export const TermMultiselect = ({
             variant="secondary"
           >
             {option.label}
+            <TermChipMenu termId={option.id} termLabel={option.label} />
             <button
               aria-label={`Remove ${option.label}`}
               onClick={() => deselect(option.id)}

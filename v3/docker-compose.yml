@@ -10,7 +10,8 @@ services:
       - "5432:5432"
     volumes:
       - topaz_postgres_data:/var/lib/postgresql/data
-      - ./docker/init-extensions.sql:/docker-entrypoint-initdb.d/init-extensions.sql:ro
+      - ./docker/init-extensions.sql:/docker-entrypoint-initdb.d/01-extensions.sql:ro
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/02-test-db.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U topaz -d topaz"]
       interval: 5s

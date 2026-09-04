@@ -26,6 +26,20 @@ export default defineConfig({
       },
     },
     {
+      // Effective-taxonomy rebuild is a bounded BFS: each depth's query
+      // filters on the *previous* depth's frontier, and every query runs
+      // against the same transaction connection -- there is no independent
+      // work to hand to Promise.all, awaiting sequentially is the algorithm.
+      files: [
+        "src/features/taxonomy/server/repository/effective-taxonomy.ts",
+        "src/features/taxonomy/server/repository/merge.ts",
+        "src/features/taxonomy/server/actions.ts",
+      ],
+      rules: {
+        "eslint/no-await-in-loop": "off",
+      },
+    },
+    {
       // Vendored shadcn/ui primitives (`bunx shadcn add ...`), left in the
       // upstream `function X()` shape so a future `shadcn add --overwrite`
       // stays a clean diff -- these are never hand-authored against this

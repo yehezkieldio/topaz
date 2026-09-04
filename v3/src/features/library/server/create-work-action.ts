@@ -12,6 +12,11 @@ import {
   workFormOpts,
   workFormSchema,
 } from "@/features/library/forms/work-form/shared-code";
+import {
+  libraryListTag,
+  libraryStatsTag,
+} from "@/features/library/server/cache-tags";
+import { rebuildEffectiveTaxonomyForWork } from "@/features/taxonomy/server/repository/effective-taxonomy";
 import { requireAdmin } from "@/server/auth/require-admin";
 import { db } from "@/server/db/client";
 import {
@@ -136,6 +141,7 @@ export const createWorkAction = async (
             workId: createdWork.id,
           }))
         );
+        await rebuildEffectiveTaxonomyForWork(tx, createdWork.id);
       }
     }
 
@@ -149,6 +155,8 @@ export const createWorkAction = async (
   });
 
   revalidateTag(`work:${workPublicId}`, "max");
+  revalidateTag(libraryStatsTag, "max");
+  revalidateTag(libraryListTag, "max");
 
   // Shaped as a ServerFormState (values/errors/errorMap) so it stays
   // assignable to mergeForm's second argument on the client, with

@@ -11,6 +11,10 @@ import {
 } from "@/features/library/components/library-results";
 import { LibrarySearch } from "@/features/library/components/library-search";
 import { LibraryShell } from "@/features/library/components/library-shell";
+import {
+  LibraryStats,
+  LibraryStatsSkeleton,
+} from "@/features/library/components/library-stats";
 import { LibraryQueryProvider } from "@/features/library/providers/library-query-provider";
 
 const LibraryPage = ({
@@ -32,6 +36,12 @@ const LibraryPage = ({
             </Suspense>
           </div>
         </div>
+      </div>
+
+      <div className="mx-auto w-full max-w-5xl p-4">
+        <Suspense fallback={<LibraryStatsSkeleton />}>
+          <LibraryStats />
+        </Suspense>
       </div>
 
       <div className="mx-auto w-full max-w-5xl p-4">

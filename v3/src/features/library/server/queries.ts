@@ -16,7 +16,12 @@ import {
 } from "@/server/query/paginate";
 import { sanitizeSearchText } from "@/server/query/search-text";
 
-import { libraryEntryTag, readingStateTag, workTag } from "./cache-tags";
+import {
+  libraryEntryTag,
+  libraryListTag,
+  readingStateTag,
+  workTag,
+} from "./cache-tags";
 
 /**
  * `updatedAt` is a plain ISO string, not a Date -- this row shape crosses
@@ -137,9 +142,12 @@ const fetchLibraryList = async ({
     workTag(row.workPublicId),
     readingStateTag(row.libraryEntryPublicId),
   ]);
-  if (tags.length > 0) {
-    cacheTag(...tags);
-  }
+  // libraryListTag is a page-shape tag, not an entity tag -- a newly created
+  // work has no library-entry:{id}/work:{id} tag on this cache entry yet
+  // (those didn't exist when this page was cached), so per-row tagging alone
+  // can never invalidate a list on creation. Same deliberate-broadness
+  // rationale as library-stats in 02_stack/03_caching_and_streaming.md.
+  cacheTag(libraryListTag, ...tags);
 
   return paginateRows(mappedRows, pageSize, {
     getId: (row) => row.libraryEntryPublicId,

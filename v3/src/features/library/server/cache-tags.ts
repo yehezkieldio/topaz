@@ -3,3 +3,5 @@ export const libraryEntryTag = (publicId: string) =>
 export const workTag = (publicId: string) => `work:${publicId}`;
 export const readingStateTag = (libraryEntryPublicId: string) =>
   `reading-state:${libraryEntryPublicId}`;
+export const libraryStatsTag = "library-stats";
+export const libraryListTag = "library-list";

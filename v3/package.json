@@ -14,7 +14,13 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "bun run src/server/db/seed.ts"
+    "db:seed": "bun run src/server/db/seed.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "verify:auth-roles": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/verify-auth-roles.ts",
+    "verify:authoring-flow": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/verify-authoring-flow.ts",
+    "verify": "bun run verify:auth-roles && bun run verify:authoring-flow"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^3.3.0",
@@ -45,11 +51,13 @@
   },
   "devDependencies": {
     "@better-auth/cli": "^1.4.21",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@typescript/native-preview": "^7.0.0-dev.20260707.2",
+    "@vitejs/plugin-react": "^6.1.1",
     "babel-plugin-react-compiler": "1.0.0",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
@@ -57,7 +65,8 @@
     "oxlint": "^1.81.0",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "ultracite": "^7.10.8"
+    "ultracite": "^7.10.8",
+    "vitest": "^5.0.0"
   },
   "packageManager": "bun@1.4.1",
   "ignoreScripts": [

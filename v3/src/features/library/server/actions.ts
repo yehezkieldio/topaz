@@ -8,7 +8,11 @@ import { db } from "@/server/db/client";
 import { libraryEntry, readingState } from "@/server/db/schema";
 import type { MutationResult } from "@/server/query/mutation-result";
 
-import { libraryEntryTag, readingStateTag } from "./cache-tags";
+import {
+  libraryEntryTag,
+  libraryStatsTag,
+  readingStateTag,
+} from "./cache-tags";
 
 type LibraryEntryStatus = (typeof libraryEntry.status.enumValues)[number];
 
@@ -52,6 +56,7 @@ export const toggleFavoriteAction = async (
 
   if (result.status === "success") {
     revalidateTag(libraryEntryTag(libraryEntryPublicId), "max");
+    revalidateTag(libraryStatsTag, "max");
   }
 
   return result;
@@ -95,6 +100,7 @@ export const updateStatusAction = async (
 
   if (result.status === "success") {
     revalidateTag(libraryEntryTag(libraryEntryPublicId), "max");
+    revalidateTag(libraryStatsTag, "max");
   }
 
   return result;

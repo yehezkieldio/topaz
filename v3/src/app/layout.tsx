@@ -1,34 +1,35 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { Archivo, Geist_Mono, Public_Sans } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 import { ThemeProvider } from "./theme-provider";
 
 import "./globals.css";
 
-const geistSans = Geist({
+const sans = Public_Sans({
   subsets: ["latin"],
-  variable: "--font-geist-sans",
+  variable: "--font-public-sans",
 });
 
-const geistMono = Geist_Mono({
+const display = Archivo({
+  subsets: ["latin"],
+  variable: "--font-archivo",
+});
+
+const mono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
 });
 
-const playfairDisplay = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair-display",
-});
-
 export const metadata: Metadata = {
-  description: "A single-user, self-hosted reading tracker.",
-  title: "Topaz",
+  description:
+    "Yehezkiel Dio Sinolungan -- software engineer, and a self-hosted reading tracker.",
+  title: "Yehezkiel Dio Sinolungan",
 };
 
 const RootLayout = ({ children }: LayoutProps<"/">) => (
   <html
-    className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} h-full antialiased`}
+    className={`${sans.variable} ${display.variable} ${mono.variable} h-full antialiased`}
     lang="en"
     suppressHydrationWarning
   >

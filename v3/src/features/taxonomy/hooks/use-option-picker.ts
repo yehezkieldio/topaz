@@ -16,12 +16,14 @@ const MIN_QUERY_LENGTH = 2;
  */
 export const useOptionPicker = ({
   initialSelected = [],
+  mode = "multi",
   onSelectionChange,
   search,
 }: {
   initialSelected?: OptionPickerOption[];
   search: (query: string) => Promise<OptionPickerOption[]>;
   onSelectionChange?: (selected: OptionPickerOption[]) => void;
+  mode?: "single" | "multi";
 }) => {
   const [selected, setSelected] = useState<
     ReadonlyMap<string, OptionPickerOption>
@@ -70,7 +72,10 @@ export const useOptionPicker = ({
   // must stay free of side effects. Compute the next map first, then commit
   // both state updates as separate top-level statements.
   const select = (option: OptionPickerOption) => {
-    const next = new Map([...selected, [option.id, option]]);
+    const next: Map<string, OptionPickerOption> =
+      mode === "single"
+        ? new Map([[option.id, option]])
+        : new Map([...selected, [option.id, option]]);
     setSelected(next);
     onSelectionChange?.([...next.values()]);
   };

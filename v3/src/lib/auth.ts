@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { admin as adminPlugin } from "better-auth/plugins";
+import { admin as adminPlugin, bearer } from "better-auth/plugins";
 
 import { ac, admin, user as userRole } from "@/auth/permissions";
 import { env } from "@/lib/env";
@@ -25,7 +25,7 @@ export const auth = betterAuth({
       },
     },
   },
-  plugins: [adminPlugin({ ac, roles: { admin, user: userRole } })],
+  plugins: [adminPlugin({ ac, roles: { admin, user: userRole } }), bearer()],
   secret: env.BETTER_AUTH_SECRET,
   socialProviders: {
     discord: {
