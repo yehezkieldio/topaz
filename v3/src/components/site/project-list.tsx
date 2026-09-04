@@ -1,4 +1,5 @@
-import { ExternalLinkIcon } from "lucide-react";
+import { ExternalLinkIcon, FileTextIcon } from "lucide-react";
+import Link from "next/link";
 
 import {
   ContentList,
@@ -7,7 +8,10 @@ import {
   ContentTitleLink,
   EmptyLine,
 } from "@/components/site/content-primitives";
-import type { ProjectLink, ProjectListItem } from "@/lib/projects-data";
+import type { getProjects } from "@/lib/projects";
+
+type ProjectListItem = ReturnType<typeof getProjects>[number];
+type ProjectLink = ProjectListItem["links"][number];
 
 const getProjectLinkLabel = (link: ProjectLink) => {
   if (link.kind === "github") {
@@ -22,6 +26,14 @@ const getProjectLinkLabel = (link: ProjectLink) => {
 };
 
 const ProjectTitle = ({ project }: { project: ProjectListItem }) => {
+  if (project.hasNote) {
+    return (
+      <ContentTitleLink href={`/projects/${project.slug}`}>
+        {project.title}
+      </ContentTitleLink>
+    );
+  }
+
   const href = project.links[0]?.href;
 
   if (!href) {
@@ -70,7 +82,7 @@ const ProjectRow = ({
     </div>
 
     <p className="text-muted-foreground max-w-xl text-[13.5px] leading-[1.55] tracking-normal sm:text-sm sm:leading-6">
-      {project.description}
+      {project.description ?? ""}
     </p>
 
     <div className="flex items-center justify-between gap-3 pt-1 sm:gap-4">
@@ -78,6 +90,22 @@ const ProjectRow = ({
         <ContentTags tags={project.tags} />
       </div>
       <p className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-[11px] leading-5 tracking-normal sm:text-xs">
+        {project.hasNote ? (
+          <Link
+            className="motion-link group text-foreground/82 hover:text-foreground inline-flex items-center gap-1.5 font-medium transition-colors duration-200 ease-(--ease-ui)"
+            href={`/projects/${project.slug}`}
+          >
+            <FileTextIcon
+              aria-hidden="true"
+              className="text-muted-foreground/80 size-3.5"
+            />
+            <span>Case Study</span>
+            <ExternalLinkIcon
+              aria-hidden="true"
+              className="text-muted-foreground/70 group-hover:text-foreground/90 size-3 transition-colors duration-200 ease-(--ease-ui)"
+            />
+          </Link>
+        ) : null}
         {project.links.map((link) => (
           <ProjectActionLink key={`${link.kind}:${link.href}`} link={link} />
         ))}

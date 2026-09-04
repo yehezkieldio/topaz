@@ -41,6 +41,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# fumadocs-mdx
+/.source/
+
 # testing
 e2e/.bearer-token
 playwright-report/
