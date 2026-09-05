@@ -8,6 +8,7 @@ import { eq, inArray } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
 
 import {
+  deriveSortTitle,
   normalizeRawWorkFormData,
   workFormOpts,
   workFormSchema,
@@ -24,29 +25,48 @@ import { db } from "@/server/db/client";
 import {
   contributor,
   libraryEntry,
+  readingState,
   sourcePlatform,
   taxonomyTerm,
   work,
   workContributor,
   workSource,
+  workSourceObservation,
   workTaxonomyAssignment,
 } from "@/server/db/schema";
 
 const normalize = (value: string) => value.trim().toLowerCase();
 
+/** Trimmed, non-negative-integer parse -- empty/invalid input means "not set", not zero. */
+const parseOptionalCount = (raw: FormDataEntryValue | null): number | null => {
+  if (typeof raw !== "string") {
+    return null;
+  }
+  const trimmed = raw.trim();
+  if (trimmed === "") {
+    return null;
+  }
+  const parsed = Number(trimmed);
+  return Number.isNaN(parsed) ? null : Math.max(0, Math.trunc(parsed));
+};
+
 const serverValidate = createServerValidate({
   ...workFormOpts,
+  // createServerValidate's onServerValidate only documents returning a
+  // plain string (see the SSR guide) -- an earlier version of this
+  // returned `{ fields }` (the shape validators.onSubmitAsync accepts, a
+  // different API), which isGlobalFormValidationError happily matched on
+  // (it just checks for a `fields` key) but createServerValidate never
+  // decomposes, so the whole object landed in the error slot and rendered
+  // as the literal string "[object Object]".
   onServerValidate: ({ value }) => {
     const result = workFormSchema.safeParse(normalizeRawWorkFormData(value));
     if (result.success) {
       return;
     }
-    const fields: Record<string, string> = {};
-    for (const issue of result.error.issues) {
-      const key = issue.path.join(".");
-      fields[key] ??= issue.message;
-    }
-    return { fields };
+    return result.error.issues
+      .map((issue) => `${issue.path.join(".") || "form"}: ${issue.message}`)
+      .join("; ");
   },
 });
 
@@ -67,6 +87,10 @@ export const createWorkAction = async (
     throw error;
   }
 
+  const chapterCount = parseOptionalCount(formData.get("chapterCount"));
+  const wordCount = parseOptionalCount(formData.get("wordCount"));
+  const currentChapter = parseOptionalCount(formData.get("currentChapter"));
+
   const { taxonomyAssigned, workPublicId } = await db.transaction(
     async (tx) => {
       const normalizedUrl = normalize(value.sourceUrl);
@@ -75,9 +99,10 @@ export const createWorkAction = async (
         .insert(work)
         .values({
           contentRating: value.contentRating,
+          description: value.description?.trim() || null,
           isNsfw: value.isNsfw,
           publicationStatus: value.publicationStatus,
-          sortTitle: value.sortTitle,
+          sortTitle: deriveSortTitle(value.title),
           title: value.title,
         })
         .returning({ id: work.id, publicId: work.publicId });
@@ -96,12 +121,31 @@ export const createWorkAction = async (
         throw new Error("Unknown source platform.");
       }
 
-      await tx.insert(workSource).values({
-        normalizedUrl,
-        sourcePlatformId: platform.id,
-        url: value.sourceUrl,
-        workId: createdWork.id,
-      });
+      const [createdSource] = await tx
+        .insert(workSource)
+        .values({
+          chapterCount,
+          normalizedUrl,
+          sourcePlatformId: platform.id,
+          url: value.sourceUrl,
+          wordCount,
+          workId: createdWork.id,
+        })
+        .returning({ id: workSource.id });
+
+      // Seeds the observation history at creation time -- otherwise the
+      // first "Record refresh" in the edit sheet would look like the story's
+      // first-ever recorded count, when really it's just the first *change*
+      // since these totals were typed in here.
+      if (createdSource && (chapterCount !== null || wordCount !== null)) {
+        await tx.insert(workSourceObservation).values({
+          chapterCount,
+          source: "manual",
+          wordCount,
+          workId: createdWork.id,
+          workSourceId: createdSource.id,
+        });
+      }
 
       const authorNormalizedName = normalize(value.authorName);
       const [existingContributor] = await tx
@@ -150,11 +194,25 @@ export const createWorkAction = async (
         }
       }
 
-      await tx.insert(libraryEntry).values({
-        status: "plan_to_read",
-        userId: session.user.id,
-        workId: createdWork.id,
-      });
+      const [createdEntry] = await tx
+        .insert(libraryEntry)
+        .values({
+          status: "plan_to_read",
+          userId: session.user.id,
+          workId: createdWork.id,
+        })
+        .returning({ id: libraryEntry.id });
+
+      if (createdEntry && currentChapter !== null) {
+        const now = new Date();
+        await tx.insert(readingState).values({
+          currentChapter,
+          lastReadAt: now,
+          libraryEntryId: createdEntry.id,
+          startedAt: now,
+          version: 1,
+        });
+      }
 
       return {
         taxonomyAssigned: didAssignTaxonomy,

@@ -13,8 +13,20 @@ import type {
 
 import { WorkCard, WorkCardSkeleton } from "./work-card";
 
-const ESTIMATED_ROW_HEIGHT = 72;
-const OVERSCAN = 5;
+const ESTIMATED_ROW_HEIGHT = 92;
+// Deliberately large -- this keeps a deep buffer of already-rendered rows
+// above and below the viewport so a fast scroll (mouse wheel flick, drag,
+// Page Down) never outruns the buffer and exposes an unrendered skeleton row.
+// (A previous attempt to paper over a too-small buffer by swapping rows to
+// WorkCardSkeleton while rowVirtualizer.isScrolling was true backfired: the
+// skeleton and the real card measure to different heights, so every swap
+// changed getTotalSize(), which nudged the scroll position, which kept
+// isScrolling true -- an actual render loop. Don't reintroduce that.)
+const OVERSCAN = 30;
+// Trigger the next page well before the user reaches the last loaded row,
+// not right as they hit it -- fetch latency alone (not just render cost)
+// is what causes the visible blank flash the virtualizer "struggles" with.
+const PREFETCH_ROW_THRESHOLD = 12;
 
 const fetchLibraryPage = async (
   filters: LibraryQueryFilters,
@@ -39,16 +51,6 @@ const fetchLibraryPage = async (
   if (filters.publicationStatus) {
     url.searchParams.set("publicationStatus", filters.publicationStatus);
   }
-  if (filters.favoriteOnly) {
-    url.searchParams.set("favorite", "1");
-  }
-  if (filters.featuredOnly) {
-    url.searchParams.set("featured", "1");
-  }
-  if (filters.taxonomyTermIds && filters.taxonomyTermIds.length > 0) {
-    url.searchParams.set("tags", filters.taxonomyTermIds.join(","));
-    url.searchParams.set("tagMode", filters.taxonomyMode ?? "effective");
-  }
   if (cursor) {
     url.searchParams.set("cursor", cursor);
   }
@@ -63,11 +65,13 @@ const fetchLibraryPage = async (
 export const LibraryListVirtualized = ({
   filters,
   initialPage,
+  isAdmin,
   sourcePlatforms,
 }: {
   filters: LibraryQueryFilters;
   initialPage: LibraryListPage;
-  sourcePlatforms: { id: string; name: string }[];
+  isAdmin: boolean;
+  sourcePlatforms: { id: string; name: string; baseUrl: string | null }[];
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const queryKey = libraryQueryKey(filters);
@@ -93,6 +97,12 @@ export const LibraryListVirtualized = ({
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? rows.length + 1 : rows.length,
     estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    // Keyed by the row's own stable id (not index) so a row that's already
+    // been measured keeps its cached size across re-renders/pagination
+    // instead of every index silently inheriting whatever the previous
+    // occupant of that slot measured to.
+    getItemKey: (index) =>
+      rows[index]?.libraryEntryPublicId ?? `pending-${index}`,
     getScrollElement: () => parentRef.current,
     overscan: OVERSCAN,
   });
@@ -112,7 +122,7 @@ export const LibraryListVirtualized = ({
       return;
     }
     if (
-      lastVirtualIndex >= rows.length - 1 &&
+      lastVirtualIndex >= rows.length - 1 - PREFETCH_ROW_THRESHOLD &&
       hasNextPage &&
       !isFetchingNextPage &&
       !isTriggeringNextPage.current
@@ -137,7 +147,7 @@ export const LibraryListVirtualized = ({
 
   return (
     <div
-      className="border-border/60 h-[70vh] overflow-auto rounded-md border"
+      className="h-[calc(100dvh-110px)] w-full overflow-auto"
       ref={parentRef}
     >
       <div
@@ -163,7 +173,11 @@ export const LibraryListVirtualized = ({
               }}
             >
               {row ? (
-                <WorkCard row={row} sourcePlatforms={sourcePlatforms} />
+                <WorkCard
+                  isAdmin={isAdmin}
+                  row={row}
+                  sourcePlatforms={sourcePlatforms}
+                />
               ) : (
                 <WorkCardSkeleton />
               )}

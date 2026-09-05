@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+import { LIBRARY_PAGE_SIZE } from "@/features/library/query-key";
 import { libraryStatusValues } from "@/features/library/search-params";
 import { getLibraryList } from "@/features/library/server/queries";
 import {
@@ -25,16 +26,11 @@ const isPublicationStatus = (
   value !== null &&
   (publicationStatusEnum.enumValues as readonly string[]).includes(value);
 
-const isTaxonomyMode = (
-  value: string | null
-): value is "direct" | "effective" =>
-  value === "direct" || value === "effective";
-
 const parseRating = (value: string | null): number | undefined => {
   if (!value) {
     return;
   }
-  const parsed = Math.trunc(Number(value));
+  const parsed = Number(value);
   return Number.isNaN(parsed) ? undefined : parsed;
 };
 
@@ -43,14 +39,11 @@ export const GET = async (request: NextRequest) => {
   const status = params.get("status");
   const contentRating = params.get("contentRating");
   const publicationStatus = params.get("publicationStatus");
-  const taxonomyMode = params.get("tagMode");
-  const tags = params.get("tags");
 
   const page = await getLibraryList({
     contentRating: isContentRating(contentRating) ? contentRating : undefined,
     cursor: params.get("cursor") ?? undefined,
-    favoriteOnly: params.get("favorite") === "1",
-    featuredOnly: params.get("featured") === "1",
+    limit: LIBRARY_PAGE_SIZE,
     minRating: parseRating(params.get("minRating")),
     publicationStatus: isPublicationStatus(publicationStatus)
       ? publicationStatus
@@ -58,8 +51,6 @@ export const GET = async (request: NextRequest) => {
     search: params.get("q") ?? undefined,
     sourcePlatformId: params.get("source") ?? undefined,
     status: isLibraryStatus(status) ? status : undefined,
-    taxonomyMode: isTaxonomyMode(taxonomyMode) ? taxonomyMode : undefined,
-    taxonomyTermIds: tags ? tags.split(",").filter(Boolean) : undefined,
   });
 
   return NextResponse.json(page);

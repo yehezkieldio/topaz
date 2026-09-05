@@ -53,7 +53,7 @@ export interface BacklogScoreInput {
  */
 export const backlogScore = (input: BacklogScoreInput): number => {
   const favoriteWeight = input.favorite ? 1 : 0.5;
-  const ratingWeight = input.rating === null ? 0.5 : input.rating / 5;
+  const ratingWeight = input.rating === null ? 0.5 : input.rating / 10;
   const freshness = Math.max(
     0,
     1 - input.daysSinceUpdate / input.freshnessHorizonDays
@@ -113,9 +113,9 @@ export interface DropRiskInput {
 }
 
 const DROP_RISK_INACTIVITY_DAYS = 30;
-const DROP_RISK_LOW_RATING = 2;
+const DROP_RISK_LOW_RATING = 4;
 
-/** Paused, silent for 30+ days, and rated 2 or lower (or never rated). */
+/** Paused, silent for 30+ days, and rated 4 or lower out of 10 (or never rated). */
 export const isDropRisk = (input: DropRiskInput): boolean =>
   input.status === "paused" &&
   input.daysSinceLastEvent >= DROP_RISK_INACTIVITY_DAYS &&

@@ -77,12 +77,14 @@ export const RecordObservationPanel = ({
   );
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border p-3">
-      <p className="text-sm font-medium">Record refresh</p>
-      <p className="text-muted-foreground text-xs">
-        Logs a work_source_observation row only if these values differ from the
-        last one recorded.
-      </p>
+    <div className="flex flex-col gap-2">
+      <div>
+        <p className="text-sm font-medium">Story totals</p>
+        <p className="text-muted-foreground text-xs">
+          What the source actually reports -- logs a new history entry only when
+          these differ from what was last recorded.
+        </p>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-2">
           <Label htmlFor={chapterId}>Chapters</Label>

@@ -79,7 +79,7 @@ export const readingState = pgTable(
       .primaryKey()
       .references(() => libraryEntry.id, { onDelete: "cascade" }),
     percent: numeric("percent", { precision: 5, scale: 2 }),
-    rating: integer("rating"),
+    rating: numeric("rating", { mode: "number", precision: 3, scale: 1 }),
     rereadCount: integer("reread_count").default(0).notNull(),
     startedAt: timestamp("started_at"),
     version: integer("version").default(1).notNull(),
@@ -88,7 +88,7 @@ export const readingState = pgTable(
   (table) => [
     check(
       "reading_state_rating_range",
-      sql`${table.rating} is null or (${table.rating} >= 1 and ${table.rating} <= 5)`
+      sql`${table.rating} is null or (${table.rating} >= 1 and ${table.rating} <= 10 and (${table.rating} * 2) = floor(${table.rating} * 2))`
     ),
   ]
 );

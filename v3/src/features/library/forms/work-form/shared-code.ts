@@ -9,9 +9,9 @@ import {
 export const workFormSchema = z.object({
   authorName: z.string().trim().min(1, "Author name is required").max(200),
   contentRating: z.enum(contentRatingEnum.enumValues),
+  description: z.string().trim().max(10_000),
   isNsfw: z.boolean(),
   publicationStatus: z.enum(publicationStatusEnum.enumValues),
-  sortTitle: z.string().trim().min(1, "Sort title is required").max(300),
   sourcePlatformId: z.string().trim().min(1, "Choose a source platform"),
   sourceUrl: z.url("Enter a valid URL"),
   taxonomyTermIds: z.array(z.string()),
@@ -23,9 +23,9 @@ export type WorkFormValues = z.infer<typeof workFormSchema>;
 const defaultValues: WorkFormValues = {
   authorName: "",
   contentRating: "not_rated",
+  description: "",
   isNsfw: false,
   publicationStatus: "in_progress",
-  sortTitle: "",
   sourcePlatformId: "",
   sourceUrl: "",
   taxonomyTermIds: [],
@@ -33,6 +33,17 @@ const defaultValues: WorkFormValues = {
 };
 
 export const workFormOpts = formOptions({ defaultValues });
+
+const LEADING_ARTICLE_PATTERN = /^(?:a|an|the)\s+/iu;
+
+/**
+ * `work.sort_title` isn't reader-facing -- it exists only so alphabetical
+ * listings (e.g. the featured-works order) don't scatter "The Foo" under T.
+ * Deriving it from the title keeps that behavior without asking anyone to
+ * fill in a field they'd never think to fill in correctly.
+ */
+export const deriveSortTitle = (title: string): string =>
+  title.trim().replace(LEADING_ARTICLE_PATTERN, "").toLowerCase();
 
 const safeParseJsonArray = (raw: string): unknown[] => {
   try {

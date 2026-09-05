@@ -1,3 +1,10 @@
+/**
+ * Larger than the generic `DEFAULT_PAGE_SIZE` -- the virtualized list wants
+ * a deep buffer of already-fetched rows so fast scrolling never outruns the
+ * network and exposes unrendered skeleton rows.
+ */
+export const LIBRARY_PAGE_SIZE = 40;
+
 export interface LibraryQueryFilters {
   search?: string;
   status?: string;
@@ -5,10 +12,6 @@ export interface LibraryQueryFilters {
   sourcePlatformId?: string;
   contentRating?: string;
   publicationStatus?: string;
-  favoriteOnly?: boolean;
-  featuredOnly?: boolean;
-  taxonomyTermIds?: string[];
-  taxonomyMode?: "direct" | "effective";
 }
 
 /**
@@ -25,8 +28,4 @@ export const libraryQueryKey = (filters: LibraryQueryFilters) =>
     filters.sourcePlatformId ?? "",
     filters.contentRating ?? "",
     filters.publicationStatus ?? "",
-    filters.favoriteOnly ? "1" : "",
-    filters.featuredOnly ? "1" : "",
-    (filters.taxonomyTermIds ?? []).join(","),
-    filters.taxonomyMode ?? "",
   ] as const;

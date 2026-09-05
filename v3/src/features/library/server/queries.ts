@@ -1,17 +1,18 @@
 import "server-only";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { cache } from "react";
 
 import { db } from "@/server/db/client";
 import {
+  contributor,
   libraryEntry,
   readingState,
   sourcePlatform,
   taxonomyTerm,
   work,
+  workContributor,
   workSource,
-  workTaxonomyAssignment,
   workTaxonomyEffective,
 } from "@/server/db/schema";
 import { decodeCursor } from "@/server/query/cursor";
@@ -39,7 +40,6 @@ export interface TaxonomyChip {
 
 type ContentRating = (typeof work.contentRating.enumValues)[number];
 type PublicationStatus = (typeof work.publicationStatus.enumValues)[number];
-type TaxonomyMode = "direct" | "effective";
 
 /**
  * `updatedAt` is a plain ISO string, not a Date -- this row shape crosses
@@ -51,9 +51,13 @@ export interface LibraryListRow {
   workPublicId: string;
   title: string;
   sortTitle: string;
+  authorName: string | null;
+  description: string | null;
+  summary: string | null;
+  sourcePlatformName: string | null;
+  wordCount: number | null;
+  latestChapterCount: number | null;
   status: (typeof libraryEntry.status.enumValues)[number];
-  favorite: boolean;
-  isFeatured: boolean;
   contentRating: ContentRating;
   publicationStatus: PublicationStatus;
   updatedAt: string;
@@ -79,8 +83,6 @@ interface LibraryListFilters {
   sourcePlatformId?: string;
   contentRating?: ContentRating;
   publicationStatus?: PublicationStatus;
-  favoriteOnly?: true;
-  featuredOnly?: true;
 }
 
 /**
@@ -89,14 +91,24 @@ interface LibraryListFilters {
  * much closer approximation of the old ILIKE "contains" behavior than full-
  * string similarity would be -- and it still uses the title's GIN trgm
  * index (work_title_trgm_idx), unlike ILIKE.
+ *
+ * `search` also matches against effective taxonomy term names -- tags don't
+ * have their own filter UI (they can grow without bound), so the one search
+ * box is the only way to narrow by tag as well as by title.
  */
 const libraryFilterSpec: FilterSpec<LibraryListFilters> = {
   contentRating: (value) => eq(work.contentRating, value),
-  favoriteOnly: () => eq(libraryEntry.favorite, true),
-  featuredOnly: () => eq(libraryEntry.isFeatured, true),
   minRating: (value) => gte(readingState.rating, value),
   publicationStatus: (value) => eq(work.publicationStatus, value),
-  search: (value) => sql`${value} <% ${work.title}`,
+  search: (value) => sql`(
+    ${value} <% ${work.title}
+    or exists (
+      select 1 from ${workTaxonomyEffective}
+      inner join ${taxonomyTerm} on ${taxonomyTerm.id} = ${workTaxonomyEffective.taxonomyTermId}
+      where ${workTaxonomyEffective.workId} = ${work.id}
+        and ${value} <% ${taxonomyTerm.name}
+    )
+  )`,
   sourcePlatformId: (value) => sql`exists (
     select 1 from ${workSource}
     where ${workSource.workId} = ${work.id}
@@ -108,25 +120,6 @@ const libraryFilterSpec: FilterSpec<LibraryListFilters> = {
   status: (value) => eq(libraryEntry.status, value),
 };
 
-/** Any-of match against either the direct or the effective assignment table. */
-const taxonomyTermsCondition = (
-  taxonomyTermIds: string[],
-  mode: TaxonomyMode
-) => {
-  const idsSql = sql.join(
-    taxonomyTermIds.map((id) => sql`${id}`),
-    sql`, `
-  );
-  const table =
-    mode === "direct" ? workTaxonomyAssignment : workTaxonomyEffective;
-  return sql`exists (
-    select 1 from ${table}
-    inner join ${taxonomyTerm} on ${taxonomyTerm.id} = ${table.taxonomyTermId}
-    where ${table.workId} = ${work.id}
-      and ${taxonomyTerm.publicId} in (${idsSql})
-  )`;
-};
-
 interface FetchLibraryListArgs {
   cursor?: string;
   limit?: number;
@@ -136,25 +129,17 @@ interface FetchLibraryListArgs {
   sourcePlatformId?: string;
   contentRating?: ContentRating;
   publicationStatus?: PublicationStatus;
-  favoriteOnly?: boolean;
-  featuredOnly?: boolean;
-  taxonomyTermIds?: string[];
-  taxonomyMode?: TaxonomyMode;
 }
 
 const fetchLibraryList = async ({
   contentRating,
   cursor,
-  favoriteOnly,
-  featuredOnly,
   limit,
   minRating,
   publicationStatus,
   search,
   sourcePlatformId,
   status,
-  taxonomyMode = "effective",
-  taxonomyTermIds,
 }: FetchLibraryListArgs) => {
   "use cache";
   cacheLife("minutes");
@@ -169,8 +154,6 @@ const fetchLibraryList = async ({
   const filterConditions = buildConditions(
     {
       contentRating,
-      favoriteOnly: favoriteOnly ? (true as const) : undefined,
-      featuredOnly: featuredOnly ? (true as const) : undefined,
       minRating,
       publicationStatus,
       search: sanitizedSearch ?? undefined,
@@ -179,12 +162,6 @@ const fetchLibraryList = async ({
     },
     libraryFilterSpec
   );
-
-  if (taxonomyTermIds && taxonomyTermIds.length > 0) {
-    filterConditions.push(
-      taxonomyTermsCondition(taxonomyTermIds, taxonomyMode)
-    );
-  }
 
   const condition = and(
     eq(libraryEntry.private, false),
@@ -221,28 +198,62 @@ const fetchLibraryList = async ({
     .groupBy(workTaxonomyEffective.workId)
     .as("taxonomy_agg");
 
+  /** One row per work: its earliest-added source, for a compact source pill. */
+  const primarySourceAgg = db
+    .selectDistinctOn([workSource.workId], {
+      chapterCount: workSource.chapterCount,
+      sourcePlatformName: sourcePlatform.name,
+      wordCount: workSource.wordCount,
+      workId: workSource.workId,
+    })
+    .from(workSource)
+    .innerJoin(
+      sourcePlatform,
+      eq(sourcePlatform.id, workSource.sourcePlatformId)
+    )
+    .orderBy(workSource.workId, asc(workSource.createdAt))
+    .as("primary_source");
+
+  /** One row per work: its first-listed author, for the byline. */
+  const primaryAuthorAgg = db
+    .selectDistinctOn([workContributor.workId], {
+      authorName: contributor.name,
+      workId: workContributor.workId,
+    })
+    .from(workContributor)
+    .innerJoin(contributor, eq(contributor.id, workContributor.contributorId))
+    .where(eq(workContributor.role, "author"))
+    .orderBy(workContributor.workId, asc(contributor.name))
+    .as("primary_author");
+
   const rows = await db
     .select({
+      authorName: primaryAuthorAgg.authorName,
       contentRating: work.contentRating,
       currentChapter: readingState.currentChapter,
-      favorite: libraryEntry.favorite,
-      isFeatured: libraryEntry.isFeatured,
+      description: work.description,
+      latestChapterCount: primarySourceAgg.chapterCount,
       libraryEntryPublicId: libraryEntry.publicId,
       publicationStatus: work.publicationStatus,
       rating: readingState.rating,
       readingStateVersion: readingState.version,
       sortTitle: work.sortTitle,
+      sourcePlatformName: primarySourceAgg.sourcePlatformName,
       status: libraryEntry.status,
+      summary: work.summary,
       taxonomyTerms: taxonomyAgg.terms,
       title: work.title,
       updatedAt: libraryEntry.updatedAt,
       version: libraryEntry.version,
+      wordCount: primarySourceAgg.wordCount,
       workPublicId: work.publicId,
     })
     .from(libraryEntry)
     .innerJoin(work, eq(libraryEntry.workId, work.id))
     .leftJoin(readingState, eq(readingState.libraryEntryId, libraryEntry.id))
     .leftJoin(taxonomyAgg, eq(taxonomyAgg.workId, work.id))
+    .leftJoin(primarySourceAgg, eq(primarySourceAgg.workId, work.id))
+    .leftJoin(primaryAuthorAgg, eq(primaryAuthorAgg.workId, work.id))
     .where(condition)
     .orderBy(
       ...orderByKeyset(

@@ -5,7 +5,6 @@ import { useQueryStates } from "nuqs";
 import { useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +27,7 @@ const ALL_SOURCES = "all";
 const ALL_CONTENT_RATINGS = "all";
 const ALL_PUBLICATION_STATUSES = "all";
 
-const RATING_VALUES = [1, 2, 3, 4, 5] as const;
+const RATING_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
 const formatLabel = (value: string) =>
   value.replaceAll("_", " ").replace(/^./u, (char) => char.toUpperCase());
@@ -52,11 +51,12 @@ const FilterDropdown = ({
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button
-        className="text-foreground gap-2 rounded-md focus-visible:border-transparent focus-visible:ring-0"
+        className="text-foreground h-8 gap-1.5 rounded-md text-sm focus-visible:border-transparent focus-visible:ring-0"
+        size="sm"
         variant="outline"
       >
         {currentLabel}
-        <ChevronDownIcon className="size-4" />
+        <ChevronDownIcon className="size-3.5" />
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="start" className="rounded-md">
@@ -71,118 +71,32 @@ const FilterDropdown = ({
   </DropdownMenu>
 );
 
-const TagFilterDropdown = ({
-  onModeChange,
-  onToggle,
-  options,
-  selected,
-  taxonomyMode,
-}: {
-  options: FilterOption[];
-  selected: string[];
-  taxonomyMode: "direct" | "effective";
-  onToggle: (id: string) => void;
-  onModeChange: (mode: "direct" | "effective") => void;
-}) => {
-  const currentLabel =
-    selected.length === 0 ? "Tags: All" : `Tags: ${selected.length}`;
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          className="text-foreground gap-2 rounded-md focus-visible:border-transparent focus-visible:ring-0"
-          variant="outline"
-        >
-          {currentLabel}
-          <ChevronDownIcon className="size-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        className="max-h-72 w-64 overflow-y-auto rounded-md"
-      >
-        {options.map((option) => (
-          <label
-            className="hover:bg-muted flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm"
-            key={option.id}
-          >
-            <Checkbox
-              checked={selected.includes(option.id)}
-              onCheckedChange={() => onToggle(option.id)}
-            />
-            {option.label}
-          </label>
-        ))}
-        {selected.length > 0 && (
-          <div className="mt-1 flex items-center gap-1 border-t px-2 pt-2">
-            <Button
-              className="h-6 flex-1 text-[11px]"
-              onClick={() => onModeChange("effective")}
-              size="sm"
-              variant={taxonomyMode === "effective" ? "default" : "ghost"}
-            >
-              Effective
-            </Button>
-            <Button
-              className="h-6 flex-1 text-[11px]"
-              onClick={() => onModeChange("direct")}
-              size="sm"
-              variant={taxonomyMode === "direct" ? "default" : "ghost"}
-            >
-              Direct only
-            </Button>
-          </div>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
-
 export const LibraryFiltersClient = ({
   sourcePlatforms,
-  taxonomyTerms,
 }: {
   sourcePlatforms: FilterOption[];
-  taxonomyTerms: FilterOption[];
 }) => {
   const [isPending, startTransition] = useTransition();
   const [
-    {
-      contentRating,
-      favorite,
-      featured,
-      minRating,
-      publicationStatus,
-      source,
-      status,
-      tagMode,
-      tags,
-    },
+    { contentRating, minRating, publicationStatus, source, status },
     setFilters,
   ] = useQueryStates(
     {
       contentRating: librarySearchParsers.contentRating,
-      favorite: librarySearchParsers.favorite,
-      featured: librarySearchParsers.featured,
       minRating: librarySearchParsers.minRating,
       publicationStatus: librarySearchParsers.publicationStatus,
       source: librarySearchParsers.source,
       status: librarySearchParsers.status,
-      tagMode: librarySearchParsers.tagMode,
-      tags: librarySearchParsers.tags,
     },
     { shallow: false, startTransition }
   );
 
-  const selectedTags = tags ?? [];
-
   return (
     <div
-      className="flex flex-wrap items-center gap-2 data-[pending]:opacity-60"
+      className="flex flex-wrap items-center gap-1.5 data-[pending]:opacity-60"
       data-pending={isPending ? "" : undefined}
     >
-      <FilterIcon className="text-muted-foreground size-4 shrink-0" />
+      <FilterIcon className="text-muted-foreground mr-0.5 size-4 shrink-0" />
 
       <FilterDropdown
         currentLabel={status ? formatLabel(status) : "Status: All"}
@@ -286,45 +200,6 @@ export const LibraryFiltersClient = ({
           value={source ?? ALL_SOURCES}
         />
       )}
-
-      {taxonomyTerms.length > 0 && (
-        <TagFilterDropdown
-          onModeChange={(mode) => {
-            void setFilters({ tagMode: mode === "effective" ? null : mode });
-          }}
-          onToggle={(id) => {
-            const next = selectedTags.includes(id)
-              ? selectedTags.filter((tagId) => tagId !== id)
-              : [...selectedTags, id];
-            void setFilters({ tags: next.length > 0 ? next : null });
-          }}
-          options={taxonomyTerms}
-          selected={selectedTags}
-          taxonomyMode={tagMode ?? "effective"}
-        />
-      )}
-
-      <Button
-        className="rounded-md"
-        onClick={() => {
-          void setFilters({ favorite: favorite ? null : true });
-        }}
-        size="sm"
-        variant={favorite ? "default" : "outline"}
-      >
-        Favorites
-      </Button>
-
-      <Button
-        className="rounded-md"
-        onClick={() => {
-          void setFilters({ featured: featured ? null : true });
-        }}
-        size="sm"
-        variant={featured ? "default" : "outline"}
-      >
-        Featured
-      </Button>
     </div>
   );
 };

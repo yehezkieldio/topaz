@@ -19,8 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { recordSourceObservationAction } from "@/features/catalog/server/observation-actions";
+import { ProgressInput } from "@/features/library/components/progress-input";
+import { RatingStars } from "@/features/library/components/rating-stars";
 import { RecordObservationPanel } from "@/features/library/components/record-observation-panel";
+import { StatusSelect } from "@/features/library/components/status-select";
+import {
+  updateProgressAction,
+  updateRatingAction,
+  updateStatusAction,
+} from "@/features/library/server/actions";
 import { TermMultiselect } from "@/features/taxonomy/components/term-multiselect";
 import { createTaxonomyCreatable } from "@/features/taxonomy/creatable";
 import {
@@ -30,6 +39,7 @@ import {
 
 import type { WorkEditDetail } from "../../server/update-work-action";
 import { updateWorkAction } from "../../server/update-work-action";
+import { detectSourcePlatform } from "./detect-source-platform";
 import { workFormOpts, workFormSchema } from "./shared-code";
 
 const taxonomyCreatable = createTaxonomyCreatable();
@@ -57,7 +67,7 @@ export const EditWorkForm = ({
   sourcePlatforms,
 }: {
   detail: WorkEditDetail;
-  sourcePlatforms: { id: string; name: string }[];
+  sourcePlatforms: { id: string; name: string; baseUrl: string | null }[];
   onSuccess: () => void;
   onDirtyChange: (isDirty: boolean) => void;
 }) => {
@@ -77,9 +87,9 @@ export const EditWorkForm = ({
     defaultValues: {
       authorName: detail.authorName,
       contentRating: detail.contentRating,
+      description: detail.description ?? "",
       isNsfw: detail.isNsfw,
       publicationStatus: detail.publicationStatus,
-      sortTitle: detail.sortTitle,
       sourcePlatformId: detail.sourcePlatformId,
       sourceUrl: detail.sourceUrl,
       taxonomyTermIds: detail.taxonomyTermIds,
@@ -117,6 +127,16 @@ export const EditWorkForm = ({
       ? actionState.currentVersion
       : null;
 
+  const handleSourceUrlBlur = (url: string) => {
+    if (form.getFieldValue("sourcePlatformId")) {
+      return;
+    }
+    const detected = detectSourcePlatform(url, sourcePlatforms);
+    if (detected) {
+      form.setFieldValue("sourcePlatformId", detected);
+    }
+  };
+
   return (
     <form
       action={dispatchAction as never}
@@ -129,6 +149,65 @@ export const EditWorkForm = ({
           see the latest values before saving again.
         </p>
       )}
+
+      <form.Subscribe selector={(state) => state.errorMap.onServer}>
+        {(serverError) =>
+          typeof serverError === "string" && serverError ? (
+            <p className="bg-destructive/10 text-destructive rounded-md p-2 text-xs">
+              {serverError}
+            </p>
+          ) : null
+        }
+      </form.Subscribe>
+
+      <div className="flex flex-col gap-4 rounded-md border p-3">
+        <p className="text-sm font-medium">Progress</p>
+
+        <div>
+          <p className="text-muted-foreground mb-2 text-xs">Your progress</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="flex flex-col gap-2">
+              <Label>Status</Label>
+              <StatusSelect
+                libraryEntryPublicId={detail.libraryEntryPublicId}
+                status={detail.status}
+                updateStatusAction={updateStatusAction}
+                version={detail.libraryEntryVersion}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label>Rating</Label>
+              <RatingStars
+                libraryEntryPublicId={detail.libraryEntryPublicId}
+                rating={detail.rating}
+                updateRatingAction={updateRatingAction}
+                version={detail.readingStateVersion ?? 0}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label>Current chapter</Label>
+              <ProgressInput
+                currentChapter={detail.currentChapter}
+                libraryEntryPublicId={detail.libraryEntryPublicId}
+                updateProgressAction={updateProgressAction}
+                version={detail.readingStateVersion ?? 0}
+              />
+            </div>
+          </div>
+        </div>
+
+        {detail.workSourcePublicId && (
+          <div className="border-t pt-4">
+            <RecordObservationPanel
+              initialChapterCount={detail.latestChapterCount}
+              initialPublicationStatus={detail.latestPublicationStatus}
+              initialWordCount={detail.latestWordCount}
+              recordAction={recordSourceObservationAction}
+              workSourcePublicId={detail.workSourcePublicId}
+            />
+          </div>
+        )}
+      </div>
 
       <form.Field name="title">
         {(field) => (
@@ -151,23 +230,19 @@ export const EditWorkForm = ({
         )}
       </form.Field>
 
-      <form.Field name="sortTitle">
+      <form.Field name="description">
         {(field) => (
           <div className="flex flex-col gap-2">
-            <Label htmlFor={field.name}>Sort title</Label>
-            <Input
+            <Label htmlFor={field.name}>Description</Label>
+            <Textarea
               className="rounded-md"
               id={field.name}
               name={field.name}
               onBlur={field.handleBlur}
               onChange={(event) => field.handleChange(event.target.value)}
+              placeholder="Work description or summary..."
               value={field.state.value}
             />
-            {field.state.meta.errors.map((error) => (
-              <p className="text-destructive text-xs" key={String(error)}>
-                {String(error)}
-              </p>
-            ))}
           </div>
         )}
       </form.Field>
@@ -318,7 +393,10 @@ export const EditWorkForm = ({
                 className="rounded-md"
                 id={field.name}
                 name={field.name}
-                onBlur={field.handleBlur}
+                onBlur={(event) => {
+                  field.handleBlur();
+                  handleSourceUrlBlur(event.target.value);
+                }}
                 onChange={(event) => field.handleChange(event.target.value)}
                 value={field.state.value}
               />
@@ -353,16 +431,6 @@ export const EditWorkForm = ({
           </div>
         )}
       </form.Field>
-
-      {detail.workSourcePublicId && (
-        <RecordObservationPanel
-          initialChapterCount={detail.latestChapterCount}
-          initialPublicationStatus={detail.latestPublicationStatus}
-          initialWordCount={detail.latestWordCount}
-          recordAction={recordSourceObservationAction}
-          workSourcePublicId={detail.workSourcePublicId}
-        />
-      )}
 
       <form.Subscribe
         selector={(state) => [state.canSubmit, state.isSubmitting]}

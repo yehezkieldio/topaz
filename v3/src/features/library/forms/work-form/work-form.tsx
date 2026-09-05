@@ -6,7 +6,8 @@ import {
   useForm,
   useTransform,
 } from "@tanstack/react-form-nextjs";
-import { useActionState, useEffect } from "react";
+import { WandSparklesIcon } from "lucide-react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,6 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { fetchWorkMetadataAction } from "@/features/catalog/server/fetch-metadata-action";
 import { createWorkAction } from "@/features/library/server/create-work-action";
 import { TermMultiselect } from "@/features/taxonomy/components/term-multiselect";
 import { createTaxonomyCreatable } from "@/features/taxonomy/creatable";
@@ -27,6 +30,7 @@ import {
   searchTaxonomyTermsAction,
 } from "@/features/taxonomy/server/actions";
 
+import { detectSourcePlatform } from "./detect-source-platform";
 import { workFormOpts, workFormSchema } from "./shared-code";
 
 const taxonomyCreatable = createTaxonomyCreatable();
@@ -52,7 +56,7 @@ export const WorkForm = ({
   onSuccess,
   sourcePlatforms,
 }: {
-  sourcePlatforms: { id: string; name: string }[];
+  sourcePlatforms: { id: string; name: string; baseUrl: string | null }[];
   onSuccess: (workPublicId: string) => void;
   onDirtyChange: (isDirty: boolean) => void;
 }) => {
@@ -60,6 +64,12 @@ export const WorkForm = ({
     createWorkAction,
     initialFormState
   );
+
+  const [chapterCount, setChapterCount] = useState("");
+  const [wordCount, setWordCount] = useState("");
+  const [currentChapter, setCurrentChapter] = useState("");
+  const [isFetchingMetadata, startMetadataFetch] = useTransition();
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const form = useForm({
     ...workFormOpts,
@@ -94,12 +104,64 @@ export const WorkForm = ({
     }
   }, [actionState, onSuccess]);
 
+  const handleFetchMetadata = () => {
+    const url = form.getFieldValue("sourceUrl");
+    if (!url) {
+      return;
+    }
+    setFetchError(null);
+    startMetadataFetch(async () => {
+      const metadata = await fetchWorkMetadataAction(url);
+      if (!metadata) {
+        setFetchError("Couldn't find story info for that URL.");
+        return;
+      }
+      // Never overwrites something already typed in -- a fetch is a
+      // convenience for empty fields, not a way to clobber manual entry.
+      if (metadata.title && !form.getFieldValue("title")) {
+        form.setFieldValue("title", metadata.title);
+      }
+      if (metadata.author && !form.getFieldValue("authorName")) {
+        form.setFieldValue("authorName", metadata.author);
+      }
+      if (metadata.description && !form.getFieldValue("description")) {
+        form.setFieldValue("description", metadata.description);
+      }
+      if (metadata.chapterCount !== null && !chapterCount) {
+        setChapterCount(String(metadata.chapterCount));
+      }
+      if (metadata.wordCount !== null && !wordCount) {
+        setWordCount(String(metadata.wordCount));
+      }
+    });
+  };
+
+  const handleSourceUrlBlur = (url: string) => {
+    if (form.getFieldValue("sourcePlatformId")) {
+      return;
+    }
+    const detected = detectSourcePlatform(url, sourcePlatforms);
+    if (detected) {
+      form.setFieldValue("sourcePlatformId", detected);
+    }
+  };
+
   return (
     <form
       action={dispatchAction as never}
       className="flex flex-col gap-4"
       onSubmit={() => form.handleSubmit()}
     >
+      <form.Subscribe selector={(state) => state.errorMap.onServer}>
+        {(serverError) =>
+          typeof serverError === "string" && serverError ? (
+            <p className="bg-destructive/10 text-destructive rounded-md p-2 text-xs">
+              {serverError}
+            </p>
+          ) : null
+        }
+      </form.Subscribe>
+
       <form.Field name="title">
         {(field) => (
           <div className="flex flex-col gap-2">
@@ -121,23 +183,19 @@ export const WorkForm = ({
         )}
       </form.Field>
 
-      <form.Field name="sortTitle">
+      <form.Field name="description">
         {(field) => (
           <div className="flex flex-col gap-2">
-            <Label htmlFor={field.name}>Sort title</Label>
-            <Input
+            <Label htmlFor={field.name}>Description</Label>
+            <Textarea
               className="rounded-md"
               id={field.name}
               name={field.name}
               onBlur={field.handleBlur}
               onChange={(event) => field.handleChange(event.target.value)}
+              placeholder="Work description or summary..."
               value={field.state.value}
             />
-            {field.state.meta.errors.map((error) => (
-              <p className="text-destructive text-xs" key={String(error)}>
-                {String(error)}
-              </p>
-            ))}
           </div>
         )}
       </form.Field>
@@ -284,14 +342,33 @@ export const WorkForm = ({
           {(field) => (
             <div className="flex flex-col gap-2">
               <Label htmlFor={field.name}>Source URL</Label>
-              <Input
-                className="rounded-md"
-                id={field.name}
-                name={field.name}
-                onBlur={field.handleBlur}
-                onChange={(event) => field.handleChange(event.target.value)}
-                value={field.state.value}
-              />
+              <div className="flex gap-2">
+                <Input
+                  className="rounded-md"
+                  id={field.name}
+                  name={field.name}
+                  onBlur={(event) => {
+                    field.handleBlur();
+                    handleSourceUrlBlur(event.target.value);
+                  }}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  value={field.state.value}
+                />
+                <Button
+                  aria-label="Fetch story info from URL"
+                  className="shrink-0 rounded-md"
+                  disabled={isFetchingMetadata || !field.state.value}
+                  onClick={handleFetchMetadata}
+                  size="icon"
+                  type="button"
+                  variant="outline"
+                >
+                  <WandSparklesIcon className="size-4" />
+                </Button>
+              </div>
+              {fetchError && (
+                <p className="text-destructive text-xs">{fetchError}</p>
+              )}
               {field.state.meta.errors.map((error) => (
                 <p className="text-destructive text-xs" key={String(error)}>
                   {String(error)}
@@ -300,6 +377,53 @@ export const WorkForm = ({
             </div>
           )}
         </form.Field>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-md border p-3">
+        <div>
+          <p className="text-sm font-medium">Progress &amp; totals</p>
+          <p className="text-muted-foreground text-xs">
+            Optional -- fill these in now to skip editing the entry afterward.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="currentChapter">Current chapter</Label>
+            <Input
+              className="no-spinner rounded-md"
+              id="currentChapter"
+              inputMode="numeric"
+              name="currentChapter"
+              onChange={(event) => setCurrentChapter(event.target.value)}
+              type="number"
+              value={currentChapter}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="chapterCount">Chapters</Label>
+            <Input
+              className="no-spinner rounded-md"
+              id="chapterCount"
+              inputMode="numeric"
+              name="chapterCount"
+              onChange={(event) => setChapterCount(event.target.value)}
+              type="number"
+              value={chapterCount}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="wordCount">Words</Label>
+            <Input
+              className="no-spinner rounded-md"
+              id="wordCount"
+              inputMode="numeric"
+              name="wordCount"
+              onChange={(event) => setWordCount(event.target.value)}
+              type="number"
+              value={wordCount}
+            />
+          </div>
+        </div>
       </div>
 
       <form.Field name="taxonomyTermIds">

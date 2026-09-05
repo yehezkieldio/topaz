@@ -272,6 +272,18 @@ export const updateRatingAction = async (
 ): Promise<MutationResult<{ rating: number | null; version: number }>> => {
   const session = await requireAdmin();
 
+  if (
+    rating !== null &&
+    (rating < 1 || rating > 10 || Math.round(rating * 2) !== rating * 2)
+  ) {
+    return {
+      fieldErrors: {
+        rating: ["Rating must be between 1 and 10, in half-point steps."],
+      },
+      status: "validation-error" as const,
+    };
+  }
+
   const result = await db.transaction(async (tx) => {
     const [entry] = await tx
       .select({ id: libraryEntry.id })

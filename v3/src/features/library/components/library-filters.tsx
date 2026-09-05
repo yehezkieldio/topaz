@@ -1,12 +1,8 @@
 import { LibraryFiltersClient } from "@/features/library/components/library-filters-client";
 import { getSourcePlatforms } from "@/features/library/server/source-platforms-query";
-import { getFilterableTaxonomyTerms } from "@/features/library/server/taxonomy-filter-query";
 
 export const LibraryFilters = async () => {
-  const [sourcePlatforms, taxonomyTerms] = await Promise.all([
-    getSourcePlatforms(),
-    getFilterableTaxonomyTerms(),
-  ]);
+  const sourcePlatforms = await getSourcePlatforms();
 
   return (
     <LibraryFiltersClient
@@ -14,7 +10,6 @@ export const LibraryFilters = async () => {
         id: platform.id,
         label: platform.name,
       }))}
-      taxonomyTerms={taxonomyTerms}
     />
   );
 };

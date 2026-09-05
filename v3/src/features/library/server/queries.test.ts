@@ -9,7 +9,6 @@ import {
   taxonomyTerm,
   work,
   workSource,
-  workTaxonomyAssignment,
   workTaxonomyEffective,
 } from "@/server/db/schema";
 
@@ -130,37 +129,11 @@ describe("getLibraryList: filter breadth", () => {
     expect(page.items[0]?.title).toBe("B");
   });
 
-  it("filters to favorites only", async () => {
-    const admin = await createTestUser("admin");
-    await createFixture(admin.id, { favorite: false, title: "A" });
-    await createFixture(admin.id, { favorite: true, title: "B" });
-
-    const page = await getLibraryList({ favoriteOnly: true });
-
-    expect(page.items).toHaveLength(1);
-    expect(page.items[0]?.title).toBe("B");
-  });
-
-  it("filters to featured only", async () => {
-    const admin = await createTestUser("admin");
-    await createFixture(admin.id, { isFeatured: false, title: "A" });
-    await createFixture(admin.id, {
-      displayOrder: 0,
-      isFeatured: true,
-      title: "B",
-    });
-
-    const page = await getLibraryList({ featuredOnly: true });
-
-    expect(page.items).toHaveLength(1);
-    expect(page.items[0]?.title).toBe("B");
-  });
-
-  it("matches any of several tag ids (effective mode)", async () => {
+  it("search matches an effective taxonomy term name, not just the title", async () => {
     const admin = await createTestUser("admin");
     const { work: workA } = await createFixture(admin.id, { title: "A" });
     await createFixture(admin.id, { title: "B" });
-    const term = await createTerm("qa-any-of");
+    const term = await createTerm("qa-searchable-tag");
 
     await db.insert(workTaxonomyEffective).values({
       depth: 0,
@@ -169,52 +142,9 @@ describe("getLibraryList: filter breadth", () => {
       workId: workA.id,
     });
 
-    const page = await getLibraryList({ taxonomyTermIds: [term.publicId] });
+    const page = await getLibraryList({ search: term.name });
 
     expect(page.items).toHaveLength(1);
     expect(page.items[0]?.title).toBe("A");
-  });
-
-  it("direct mode excludes inferred-only assignments", async () => {
-    const admin = await createTestUser("admin");
-    const { work: workA } = await createFixture(admin.id, { title: "A" });
-    const term = await createTerm("qa-inferred-only");
-
-    // Effective but not directly assigned (simulates an inferred row).
-    await db.insert(workTaxonomyEffective).values({
-      depth: 1,
-      reason: "inferred",
-      taxonomyTermId: term.id,
-      workId: workA.id,
-    });
-
-    const effectivePage = await getLibraryList({
-      taxonomyMode: "effective",
-      taxonomyTermIds: [term.publicId],
-    });
-    const directPage = await getLibraryList({
-      taxonomyMode: "direct",
-      taxonomyTermIds: [term.publicId],
-    });
-
-    expect(effectivePage.items).toHaveLength(1);
-    expect(directPage.items).toHaveLength(0);
-  });
-
-  it("direct mode matches a directly-assigned term", async () => {
-    const admin = await createTestUser("admin");
-    const { work: workA } = await createFixture(admin.id, { title: "A" });
-    const term = await createTerm("qa-direct");
-
-    await db
-      .insert(workTaxonomyAssignment)
-      .values({ taxonomyTermId: term.id, workId: workA.id });
-
-    const page = await getLibraryList({
-      taxonomyMode: "direct",
-      taxonomyTermIds: [term.publicId],
-    });
-
-    expect(page.items).toHaveLength(1);
   });
 });

@@ -11,10 +11,6 @@ import {
 } from "@/features/library/components/library-results";
 import { LibrarySearch } from "@/features/library/components/library-search";
 import { LibraryShell } from "@/features/library/components/library-shell";
-import {
-  LibraryStats,
-  LibraryStatsSkeleton,
-} from "@/features/library/components/library-stats";
 import { LibraryQueryProvider } from "@/features/library/providers/library-query-provider";
 
 const LibraryPage = ({
@@ -25,7 +21,7 @@ const LibraryPage = ({
   <LibraryQueryProvider>
     <LibraryShell>
       <div className="border-border/50 bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-10 shrink-0 border-b backdrop-blur">
-        <div className="mx-auto w-full max-w-5xl p-4">
+        <div className="w-full px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <Suspense fallback={<LibraryControlsSkeleton />}>
               <LibrarySearch />
@@ -38,13 +34,7 @@ const LibraryPage = ({
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-5xl p-4">
-        <Suspense fallback={<LibraryStatsSkeleton />}>
-          <LibraryStats />
-        </Suspense>
-      </div>
-
-      <div className="mx-auto w-full max-w-5xl p-4">
+      <div className="w-full px-4 py-4 sm:px-6 lg:px-8">
         <SectionErrorBoundary>
           <Suspense fallback={<LibraryResultsSkeleton />}>
             <LibraryResults searchParams={searchParams} />

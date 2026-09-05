@@ -68,11 +68,7 @@ export const StatusSelect = ({
       onValueChange={(value) => handleChange(value as LibraryStatus)}
       value={optimisticStatus}
     >
-      <SelectTrigger
-        aria-label="Reading status"
-        className="border-border/60 h-6 rounded-sm px-2 text-[11px]"
-        size="sm"
-      >
+      <SelectTrigger aria-label="Reading status" className="w-full rounded-md">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

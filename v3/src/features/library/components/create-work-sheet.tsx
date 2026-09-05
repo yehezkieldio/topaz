@@ -29,7 +29,7 @@ import { authClient } from "@/lib/auth-client";
 export const CreateWorkSheet = ({
   sourcePlatforms,
 }: {
-  sourcePlatforms: { id: string; name: string }[];
+  sourcePlatforms: { id: string; name: string; baseUrl: string | null }[];
 }) => {
   const router = useRouter();
   const { data: session } = authClient.useSession();

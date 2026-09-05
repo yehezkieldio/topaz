@@ -57,7 +57,7 @@ describe("backlogScore", () => {
         daysSinceUpdate: 0,
         favorite: true,
         freshnessHorizonDays: 30,
-        rating: 5,
+        rating: 10,
       })
     ).toBe(100);
   });
@@ -138,7 +138,7 @@ describe("isDropRisk", () => {
 
   it("does not flag a highly-rated paused entry", () => {
     expect(
-      isDropRisk({ daysSinceLastEvent: 45, rating: 5, status: "paused" })
+      isDropRisk({ daysSinceLastEvent: 45, rating: 9, status: "paused" })
     ).toBe(false);
   });
 

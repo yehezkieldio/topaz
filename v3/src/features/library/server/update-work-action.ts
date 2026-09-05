@@ -8,6 +8,7 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
 
 import {
+  deriveSortTitle,
   normalizeRawWorkFormData,
   workFormOpts,
   workFormSchema,
@@ -19,6 +20,8 @@ import { recordAudit } from "@/server/db/audit";
 import { db } from "@/server/db/client";
 import {
   contributor,
+  libraryEntry,
+  readingState,
   sourcePlatform,
   taxonomyTerm,
   work,
@@ -36,7 +39,7 @@ export interface WorkEditDetail {
   workPublicId: string;
   version: number;
   title: string;
-  sortTitle: string;
+  description: string | null;
   contentRating: (typeof work.contentRating.enumValues)[number];
   publicationStatus: (typeof work.publicationStatus.enumValues)[number];
   isNsfw: boolean;
@@ -51,25 +54,35 @@ export interface WorkEditDetail {
     | null;
   taxonomyTermIds: string[];
   taxonomyTermOptions: { id: string; label: string }[];
+  libraryEntryPublicId: string;
+  libraryEntryVersion: number;
+  status: (typeof libraryEntry.status.enumValues)[number];
+  rating: number | null;
+  currentChapter: number | null;
+  readingStateVersion: number | null;
 }
 
 /**
  * Feeds the edit sheet's initial form state. Admin-only, on-demand read
  * (not "use cache") -- called directly from a client component the moment
- * the sheet opens, not rendered as part of any cached list.
+ * the sheet opens, not rendered as part of any cached list. Scoped by
+ * libraryEntryPublicId (not just workPublicId) because the reading-progress
+ * fields below -- status, rating, current chapter -- live on that entry, not
+ * on the work itself.
  */
 export const getWorkEditDetailAction = async (
-  workPublicId: string
+  workPublicId: string,
+  libraryEntryPublicId: string
 ): Promise<WorkEditDetail | null> => {
   await requireAdmin();
 
   const [workRow] = await db
     .select({
       contentRating: work.contentRating,
+      description: work.description,
       id: work.id,
       isNsfw: work.isNsfw,
       publicationStatus: work.publicationStatus,
-      sortTitle: work.sortTitle,
       title: work.title,
       version: work.version,
     })
@@ -78,6 +91,24 @@ export const getWorkEditDetailAction = async (
     .limit(1);
 
   if (!workRow) {
+    return null;
+  }
+
+  const [entryRow] = await db
+    .select({
+      currentChapter: readingState.currentChapter,
+      id: libraryEntry.id,
+      rating: readingState.rating,
+      readingStateVersion: readingState.version,
+      status: libraryEntry.status,
+      version: libraryEntry.version,
+    })
+    .from(libraryEntry)
+    .leftJoin(readingState, eq(readingState.libraryEntryId, libraryEntry.id))
+    .where(eq(libraryEntry.publicId, libraryEntryPublicId))
+    .limit(1);
+
+  if (!entryRow) {
     return null;
   }
 
@@ -132,14 +163,20 @@ export const getWorkEditDetailAction = async (
   return {
     authorName: contributorRow?.name ?? "",
     contentRating: workRow.contentRating,
+    currentChapter: entryRow.currentChapter,
+    description: workRow.description,
     isNsfw: workRow.isNsfw,
     latestChapterCount: sourceRow?.chapterCount ?? null,
     latestPublicationStatus: latestObservation?.publicationStatus ?? null,
     latestWordCount: sourceRow?.wordCount ?? null,
+    libraryEntryPublicId,
+    libraryEntryVersion: entryRow.version,
     publicationStatus: workRow.publicationStatus,
-    sortTitle: workRow.sortTitle,
+    rating: entryRow.rating,
+    readingStateVersion: entryRow.readingStateVersion,
     sourcePlatformId: sourceRow?.sourcePlatformId ?? "",
     sourceUrl: sourceRow?.sourceUrl ?? "",
+    status: entryRow.status,
     taxonomyTermIds: taxonomyRows.map((row) => row.id),
     taxonomyTermOptions: taxonomyRows,
     title: workRow.title,
@@ -151,17 +188,17 @@ export const getWorkEditDetailAction = async (
 
 const serverValidate = createServerValidate({
   ...workFormOpts,
+  // See the matching comment in create-work-action.ts -- `{ fields }` isn't
+  // a shape createServerValidate's onServerValidate decomposes; it just
+  // renders as "[object Object]" wherever the error surfaces.
   onServerValidate: ({ value }) => {
     const result = workFormSchema.safeParse(normalizeRawWorkFormData(value));
     if (result.success) {
       return;
     }
-    const fields: Record<string, string> = {};
-    for (const issue of result.error.issues) {
-      const key = issue.path.join(".");
-      fields[key] ??= issue.message;
-    }
-    return { fields };
+    return result.error.issues
+      .map((issue) => `${issue.path.join(".") || "form"}: ${issue.message}`)
+      .join("; ");
   },
 });
 
@@ -218,9 +255,10 @@ export const updateWorkAction = async (
       .update(work)
       .set({
         contentRating: value.contentRating,
+        description: value.description?.trim() || null,
         isNsfw: value.isNsfw,
         publicationStatus: value.publicationStatus,
-        sortTitle: value.sortTitle,
+        sortTitle: deriveSortTitle(value.title),
         title: value.title,
         version: current.version + 1,
       })

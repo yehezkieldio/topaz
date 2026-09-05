@@ -1,8 +1,6 @@
 import {
   createSearchParamsCache,
-  parseAsArrayOf,
-  parseAsBoolean,
-  parseAsInteger,
+  parseAsFloat,
   parseAsString,
   parseAsStringLiteral,
 } from "nuqs/server";
@@ -14,7 +12,6 @@ import {
 import { libraryEntry } from "@/server/db/schema/library";
 
 export const libraryStatusValues = libraryEntry.status.enumValues;
-export const taxonomyModeValues = ["direct", "effective"] as const;
 
 export const libraryStatusParser = parseAsStringLiteral(libraryStatusValues);
 export const contentRatingParser = parseAsStringLiteral(
@@ -23,19 +20,14 @@ export const contentRatingParser = parseAsStringLiteral(
 export const publicationStatusParser = parseAsStringLiteral(
   publicationStatusEnum.enumValues
 );
-export const taxonomyModeParser = parseAsStringLiteral(taxonomyModeValues);
 
 export const librarySearchParsers = {
   contentRating: contentRatingParser,
-  favorite: parseAsBoolean,
-  featured: parseAsBoolean,
-  minRating: parseAsInteger,
+  minRating: parseAsFloat,
   publicationStatus: publicationStatusParser,
   q: parseAsString.withDefault(""),
   source: parseAsString,
   status: libraryStatusParser,
-  tagMode: taxonomyModeParser,
-  tags: parseAsArrayOf(parseAsString),
 };
 
 export const librarySearchParamsCache =

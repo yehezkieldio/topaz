@@ -6,6 +6,7 @@ import { db } from "@/server/db/client";
 import {
   auditLog,
   contributor,
+  libraryEntry,
   sourcePlatform,
   work,
   workContributor,
@@ -38,8 +39,8 @@ const buildFormData = (overrides: Record<string, string> = {}) => {
   const defaults: Record<string, string> = {
     authorName: "Original Author",
     contentRating: "general",
+    description: "",
     publicationStatus: "in_progress",
-    sortTitle: "original work",
     sourceUrl: "https://archiveofourown.org/works/original",
     taxonomyTermIds: "[]",
     title: "Original Work",
@@ -74,7 +75,26 @@ const createFixtureWork = async () => {
   if (!(result && "workPublicId" in result)) {
     throw new Error("Fixture setup: createWorkAction did not succeed.");
   }
-  return { sourcePlatformId: platform.id, workPublicId: result.workPublicId };
+
+  const [workRow] = await db
+    .select({ id: work.id })
+    .from(work)
+    .where(eq(work.publicId, result.workPublicId))
+    .limit(1);
+  const [entryRow] = await db
+    .select({ publicId: libraryEntry.publicId })
+    .from(libraryEntry)
+    .where(eq(libraryEntry.workId, workRow?.id ?? ""))
+    .limit(1);
+  if (!entryRow) {
+    throw new Error("Fixture setup: no library entry created for work.");
+  }
+
+  return {
+    libraryEntryPublicId: entryRow.publicId,
+    sourcePlatformId: platform.id,
+    workPublicId: result.workPublicId,
+  };
 };
 
 describe("update-work-action: authorization", () => {
@@ -91,9 +111,9 @@ describe("update-work-action: authorization", () => {
     const nonAdmin = await createTestUser("user");
     headersRef.current = await createAuthHeaders(nonAdmin.id);
 
-    await expect(getWorkEditDetailAction("nonexistent")).rejects.toThrow(
-      /forbidden/iu
-    );
+    await expect(
+      getWorkEditDetailAction("nonexistent", "nonexistent")
+    ).rejects.toThrow(/forbidden/iu);
   });
 });
 
@@ -167,7 +187,8 @@ describe("update-work-action: admin success path", () => {
   it("assigns and unassigns taxonomy terms, rebuilding effective taxonomy", async () => {
     const admin = await createTestUser("admin");
     headersRef.current = await createAuthHeaders(admin.id);
-    const { sourcePlatformId, workPublicId } = await createFixtureWork();
+    const { libraryEntryPublicId, sourcePlatformId, workPublicId } =
+      await createFixtureWork();
 
     const term = await createTaxonomyTermAction("Found family");
     if (term.status !== "success") {
@@ -203,7 +224,10 @@ describe("update-work-action: admin success path", () => {
       .where(eq(workTaxonomyEffective.workId, workRow?.id ?? ""));
     expect(effective).toHaveLength(1);
 
-    const detail = await getWorkEditDetailAction(workPublicId);
+    const detail = await getWorkEditDetailAction(
+      workPublicId,
+      libraryEntryPublicId
+    );
     expect(detail?.taxonomyTermIds).toEqual([term.data.id]);
 
     const removed = await updateWorkAction(

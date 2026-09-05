@@ -11,7 +11,11 @@ const fetchSourcePlatforms = async () => {
   cacheTag("source-platforms");
 
   return await db
-    .select({ id: sourcePlatform.publicId, name: sourcePlatform.name })
+    .select({
+      baseUrl: sourcePlatform.baseUrl,
+      id: sourcePlatform.publicId,
+      name: sourcePlatform.name,
+    })
     .from(sourcePlatform)
     .orderBy(sourcePlatform.name);
 };

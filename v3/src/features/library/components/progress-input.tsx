@@ -3,7 +3,6 @@
 import { startTransition, useActionState, useId, useOptimistic } from "react";
 
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type { MutationResult } from "@/server/query/mutation-result";
 
 interface ProgressState {
@@ -63,21 +62,16 @@ export const ProgressInput = ({
   };
 
   return (
-    <div className="flex items-center gap-1.5">
-      <Label className="text-muted-foreground text-xs" htmlFor={inputId}>
-        Ch.
-      </Label>
-      <Input
-        aria-label="Current chapter"
-        className="h-6 w-14 rounded-sm px-1.5 text-xs"
-        defaultValue={optimisticChapter ?? ""}
-        disabled={isPending}
-        id={inputId}
-        inputMode="numeric"
-        key={optimisticChapter}
-        onBlur={(event) => handleCommit(event.target.value)}
-        type="number"
-      />
-    </div>
+    <Input
+      aria-label="Current chapter"
+      className="no-spinner rounded-md"
+      defaultValue={optimisticChapter ?? ""}
+      disabled={isPending}
+      id={inputId}
+      inputMode="numeric"
+      key={optimisticChapter}
+      onBlur={(event) => handleCommit(event.target.value)}
+      type="number"
+    />
   );
 };
