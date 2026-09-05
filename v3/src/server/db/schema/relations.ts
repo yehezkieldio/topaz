@@ -9,6 +9,7 @@ import {
   workSource,
 } from "./catalog";
 import { libraryEntry, readingEvent, readingState } from "./library";
+import { workSourceObservation } from "./observations";
 import {
   taxonomyKind,
   taxonomyLabel,
@@ -46,7 +47,8 @@ export const workRelations = relations(work, ({ many }) => ({
   taxonomyAssignments: many(workTaxonomyAssignment),
 }));
 
-export const workSourceRelations = relations(workSource, ({ one }) => ({
+export const workSourceRelations = relations(workSource, ({ one, many }) => ({
+  observations: many(workSourceObservation),
   sourcePlatform: one(sourcePlatform, {
     fields: [workSource.sourcePlatformId],
     references: [sourcePlatform.id],
@@ -56,6 +58,20 @@ export const workSourceRelations = relations(workSource, ({ one }) => ({
     references: [work.id],
   }),
 }));
+
+export const workSourceObservationRelations = relations(
+  workSourceObservation,
+  ({ one }) => ({
+    work: one(work, {
+      fields: [workSourceObservation.workId],
+      references: [work.id],
+    }),
+    workSource: one(workSource, {
+      fields: [workSourceObservation.workSourceId],
+      references: [workSource.id],
+    }),
+  })
+);
 
 export const sourcePlatformRelations = relations(
   sourcePlatform,

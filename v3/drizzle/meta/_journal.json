@@ -15,6 +15,20 @@
       "when": 1788514801050,
       "tag": "0001_dry_vector",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788571341607,
+      "tag": "0002_square_paladin",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788571560752,
+      "tag": "0003_cooing_captain_universe",
+      "breakpoints": true
     }
   ]
 }

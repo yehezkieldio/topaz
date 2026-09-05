@@ -21,6 +21,8 @@ export const truncateAppData = async () => {
       "work_taxonomy_assignment",
       "taxonomy_relation",
       "taxonomy_term",
+      "audit_log",
+      "work_source_observation",
       "reading_event",
       "reading_state",
       "library_entry",

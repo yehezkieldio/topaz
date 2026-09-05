@@ -21,7 +21,9 @@
     "test:e2e": "playwright test",
     "verify:auth-roles": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/verify-auth-roles.ts",
     "verify:authoring-flow": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/verify-authoring-flow.ts",
-    "verify": "bun run verify:auth-roles && bun run verify:authoring-flow"
+    "verify": "bun run verify:auth-roles && bun run verify:authoring-flow",
+    "export-stats": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/export-stats.ts",
+    "prune-observations": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/prune-observations.ts"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^3.3.0",

@@ -15,7 +15,9 @@ import {
 import {
   libraryListTag,
   libraryStatsTag,
+  workTag,
 } from "@/features/library/server/cache-tags";
+import { workTaxonomyEffectiveTag } from "@/features/taxonomy/server/cache-tags";
 import { rebuildEffectiveTaxonomyForWork } from "@/features/taxonomy/server/repository/effective-taxonomy";
 import { requireAdmin } from "@/server/auth/require-admin";
 import { db } from "@/server/db/client";
@@ -65,98 +67,108 @@ export const createWorkAction = async (
     throw error;
   }
 
-  const workPublicId = await db.transaction(async (tx) => {
-    const normalizedUrl = normalize(value.sourceUrl);
+  const { taxonomyAssigned, workPublicId } = await db.transaction(
+    async (tx) => {
+      const normalizedUrl = normalize(value.sourceUrl);
 
-    const [createdWork] = await tx
-      .insert(work)
-      .values({
-        contentRating: value.contentRating,
-        isNsfw: value.isNsfw,
-        publicationStatus: value.publicationStatus,
-        sortTitle: value.sortTitle,
-        title: value.title,
-      })
-      .returning({ id: work.id, publicId: work.publicId });
+      const [createdWork] = await tx
+        .insert(work)
+        .values({
+          contentRating: value.contentRating,
+          isNsfw: value.isNsfw,
+          publicationStatus: value.publicationStatus,
+          sortTitle: value.sortTitle,
+          title: value.title,
+        })
+        .returning({ id: work.id, publicId: work.publicId });
 
-    if (!createdWork) {
-      throw new Error("Failed to create work.");
-    }
-
-    const [platform] = await tx
-      .select({ id: sourcePlatform.id })
-      .from(sourcePlatform)
-      .where(eq(sourcePlatform.publicId, value.sourcePlatformId))
-      .limit(1);
-
-    if (!platform) {
-      throw new Error("Unknown source platform.");
-    }
-
-    await tx.insert(workSource).values({
-      normalizedUrl,
-      sourcePlatformId: platform.id,
-      url: value.sourceUrl,
-      workId: createdWork.id,
-    });
-
-    const authorNormalizedName = normalize(value.authorName);
-    const [existingContributor] = await tx
-      .select({ id: contributor.id })
-      .from(contributor)
-      .where(eq(contributor.normalizedName, authorNormalizedName))
-      .limit(1);
-
-    const [newContributor] = existingContributor
-      ? []
-      : await tx
-          .insert(contributor)
-          .values({
-            name: value.authorName,
-            normalizedName: authorNormalizedName,
-          })
-          .returning({ id: contributor.id });
-
-    const contributorId = existingContributor?.id ?? newContributor?.id;
-    if (!contributorId) {
-      throw new Error("Failed to resolve contributor.");
-    }
-
-    await tx.insert(workContributor).values({
-      contributorId,
-      role: "author",
-      workId: createdWork.id,
-    });
-
-    if (value.taxonomyTermIds.length > 0) {
-      const termRows = await tx
-        .select({ id: taxonomyTerm.id })
-        .from(taxonomyTerm)
-        .where(inArray(taxonomyTerm.publicId, value.taxonomyTermIds));
-
-      if (termRows.length > 0) {
-        await tx.insert(workTaxonomyAssignment).values(
-          termRows.map((term) => ({
-            taxonomyTermId: term.id,
-            workId: createdWork.id,
-          }))
-        );
-        await rebuildEffectiveTaxonomyForWork(tx, createdWork.id);
+      if (!createdWork) {
+        throw new Error("Failed to create work.");
       }
+
+      const [platform] = await tx
+        .select({ id: sourcePlatform.id })
+        .from(sourcePlatform)
+        .where(eq(sourcePlatform.publicId, value.sourcePlatformId))
+        .limit(1);
+
+      if (!platform) {
+        throw new Error("Unknown source platform.");
+      }
+
+      await tx.insert(workSource).values({
+        normalizedUrl,
+        sourcePlatformId: platform.id,
+        url: value.sourceUrl,
+        workId: createdWork.id,
+      });
+
+      const authorNormalizedName = normalize(value.authorName);
+      const [existingContributor] = await tx
+        .select({ id: contributor.id })
+        .from(contributor)
+        .where(eq(contributor.normalizedName, authorNormalizedName))
+        .limit(1);
+
+      const [newContributor] = existingContributor
+        ? []
+        : await tx
+            .insert(contributor)
+            .values({
+              name: value.authorName,
+              normalizedName: authorNormalizedName,
+            })
+            .returning({ id: contributor.id });
+
+      const contributorId = existingContributor?.id ?? newContributor?.id;
+      if (!contributorId) {
+        throw new Error("Failed to resolve contributor.");
+      }
+
+      await tx.insert(workContributor).values({
+        contributorId,
+        role: "author",
+        workId: createdWork.id,
+      });
+
+      let didAssignTaxonomy = false;
+      if (value.taxonomyTermIds.length > 0) {
+        const termRows = await tx
+          .select({ id: taxonomyTerm.id })
+          .from(taxonomyTerm)
+          .where(inArray(taxonomyTerm.publicId, value.taxonomyTermIds));
+
+        if (termRows.length > 0) {
+          await tx.insert(workTaxonomyAssignment).values(
+            termRows.map((term) => ({
+              taxonomyTermId: term.id,
+              workId: createdWork.id,
+            }))
+          );
+          await rebuildEffectiveTaxonomyForWork(tx, createdWork.id);
+          didAssignTaxonomy = true;
+        }
+      }
+
+      await tx.insert(libraryEntry).values({
+        status: "plan_to_read",
+        userId: session.user.id,
+        workId: createdWork.id,
+      });
+
+      return {
+        taxonomyAssigned: didAssignTaxonomy,
+        workPublicId: createdWork.publicId,
+      };
     }
+  );
 
-    await tx.insert(libraryEntry).values({
-      status: "plan_to_read",
-      userId: session.user.id,
-      workId: createdWork.id,
-    });
-
-    return createdWork.publicId;
-  });
-
-  revalidateTag(`work:${workPublicId}`, "max");
+  revalidateTag(workTag(workPublicId), "max");
   revalidateTag(libraryStatsTag, "max");
   revalidateTag(libraryListTag, "max");
+  if (taxonomyAssigned) {
+    revalidateTag(workTaxonomyEffectiveTag(workPublicId), "max");
+  }
 
   // Shaped as a ServerFormState (values/errors/errorMap) so it stays
   // assignable to mergeForm's second argument on the client, with
