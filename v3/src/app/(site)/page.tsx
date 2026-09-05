@@ -9,6 +9,10 @@ import {
 import { PageSocialContact } from "@/components/site/social-contact";
 import type { PageSocialLink } from "@/components/site/social-contact";
 import {
+  FeaturedWorks,
+  FeaturedWorksSkeleton,
+} from "@/features/library/components/featured-works";
+import {
   LibraryStats,
   LibraryStatsSkeleton,
 } from "@/features/library/components/library-stats";
@@ -48,6 +52,9 @@ const Home = () => (
     >
       <Suspense fallback={<LibraryStatsSkeleton />}>
         <LibraryStats />
+      </Suspense>
+      <Suspense fallback={<FeaturedWorksSkeleton />}>
+        <FeaturedWorks />
       </Suspense>
       <Link
         className="motion-link motion-title-link inline-block text-[15px] font-medium sm:text-base"

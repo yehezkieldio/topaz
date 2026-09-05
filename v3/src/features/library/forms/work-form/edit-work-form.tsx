@@ -19,7 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createWorkAction } from "@/features/library/server/create-work-action";
+import { recordSourceObservationAction } from "@/features/catalog/server/observation-actions";
+import { RecordObservationPanel } from "@/features/library/components/record-observation-panel";
 import { TermMultiselect } from "@/features/taxonomy/components/term-multiselect";
 import { createTaxonomyCreatable } from "@/features/taxonomy/creatable";
 import {
@@ -27,6 +28,8 @@ import {
   searchTaxonomyTermsAction,
 } from "@/features/taxonomy/server/actions";
 
+import type { WorkEditDetail } from "../../server/update-work-action";
+import { updateWorkAction } from "../../server/update-work-action";
 import { workFormOpts, workFormSchema } from "./shared-code";
 
 const taxonomyCreatable = createTaxonomyCreatable();
@@ -47,31 +50,44 @@ const PUBLICATION_STATUSES = [
 
 const formatOption = (value: string) => value.replaceAll("_", " ");
 
-export const WorkForm = ({
+export const EditWorkForm = ({
+  detail,
   onDirtyChange,
   onSuccess,
   sourcePlatforms,
 }: {
+  detail: WorkEditDetail;
   sourcePlatforms: { id: string; name: string }[];
-  onSuccess: (workPublicId: string) => void;
+  onSuccess: () => void;
   onDirtyChange: (isDirty: boolean) => void;
 }) => {
+  const boundAction = updateWorkAction.bind(
+    null,
+    detail.workPublicId,
+    detail.version
+  );
+
   const [actionState, dispatchAction, isActionPending] = useActionState(
-    createWorkAction,
+    boundAction,
     initialFormState
   );
 
   const form = useForm({
     ...workFormOpts,
+    defaultValues: {
+      authorName: detail.authorName,
+      contentRating: detail.contentRating,
+      isNsfw: detail.isNsfw,
+      publicationStatus: detail.publicationStatus,
+      sortTitle: detail.sortTitle,
+      sourcePlatformId: detail.sourcePlatformId,
+      sourceUrl: detail.sourceUrl,
+      taxonomyTermIds: detail.taxonomyTermIds,
+      title: detail.title,
+    },
     listeners: {
       onChange: ({ formApi }) => onDirtyChange(formApi.state.isDirty),
     },
-    // initialFormState has `values: undefined` as an *own* property, and
-    // mergeForm's deep-merge overwrites any key present on the source object
-    // regardless of whether its value is undefined -- merging it in on the
-    // very first render (before any real submission) wipes out every
-    // defaultValue the form was just initialized with. Skip the merge until
-    // there's an actual server response to reconcile.
     transform: useTransform(
       (baseForm) =>
         actionState === initialFormState
@@ -79,20 +95,27 @@ export const WorkForm = ({
           : mergeForm(baseForm, actionState ?? {}),
       [actionState]
     ),
-    // Re-validates on every change so canSubmit recovers after a failed
-    // submission -- without this, a server-merged error from one bad
-    // submission would keep the button disabled even once the user fixes
-    // the underlying values, since nothing else re-evaluates validity.
     validators: {
       onChange: workFormSchema,
     },
   });
 
   useEffect(() => {
-    if (actionState && "workPublicId" in actionState) {
-      onSuccess(actionState.workPublicId as string);
+    if (
+      actionState &&
+      "status" in actionState &&
+      actionState.status === "success"
+    ) {
+      onSuccess();
     }
   }, [actionState, onSuccess]);
+
+  const conflictVersion =
+    actionState &&
+    "status" in actionState &&
+    actionState.status === "version-conflict"
+      ? actionState.currentVersion
+      : null;
 
   return (
     <form
@@ -100,6 +123,13 @@ export const WorkForm = ({
       className="flex flex-col gap-4"
       onSubmit={() => form.handleSubmit()}
     >
+      {conflictVersion !== null && (
+        <p className="bg-destructive/10 text-destructive rounded-md p-2 text-xs">
+          This work changed elsewhere since you opened it -- reopen the sheet to
+          see the latest values before saving again.
+        </p>
+      )}
+
       <form.Field name="title">
         {(field) => (
           <div className="flex flex-col gap-2">
@@ -313,6 +343,7 @@ export const WorkForm = ({
             />
             <TermMultiselect
               creatable={taxonomyCreatable}
+              initialSelected={detail.taxonomyTermOptions}
               loadHotTerms={listHotTaxonomyTermsAction}
               onSelectionChange={(selected) =>
                 field.handleChange(selected.map((option) => option.id))
@@ -323,6 +354,16 @@ export const WorkForm = ({
         )}
       </form.Field>
 
+      {detail.workSourcePublicId && (
+        <RecordObservationPanel
+          initialChapterCount={detail.latestChapterCount}
+          initialPublicationStatus={detail.latestPublicationStatus}
+          initialWordCount={detail.latestWordCount}
+          recordAction={recordSourceObservationAction}
+          workSourcePublicId={detail.workSourcePublicId}
+        />
+      )}
+
       <form.Subscribe
         selector={(state) => [state.canSubmit, state.isSubmitting]}
       >
@@ -332,7 +373,7 @@ export const WorkForm = ({
             disabled={!canSubmit || isSubmitting || isActionPending}
             type="submit"
           >
-            {isSubmitting || isActionPending ? "Creating..." : "Create work"}
+            {isSubmitting || isActionPending ? "Saving..." : "Save changes"}
           </Button>
         )}
       </form.Subscribe>

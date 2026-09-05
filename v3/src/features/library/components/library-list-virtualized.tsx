@@ -27,6 +27,28 @@ const fetchLibraryPage = async (
   if (filters.status) {
     url.searchParams.set("status", filters.status);
   }
+  if (filters.minRating) {
+    url.searchParams.set("minRating", String(filters.minRating));
+  }
+  if (filters.sourcePlatformId) {
+    url.searchParams.set("source", filters.sourcePlatformId);
+  }
+  if (filters.contentRating) {
+    url.searchParams.set("contentRating", filters.contentRating);
+  }
+  if (filters.publicationStatus) {
+    url.searchParams.set("publicationStatus", filters.publicationStatus);
+  }
+  if (filters.favoriteOnly) {
+    url.searchParams.set("favorite", "1");
+  }
+  if (filters.featuredOnly) {
+    url.searchParams.set("featured", "1");
+  }
+  if (filters.taxonomyTermIds && filters.taxonomyTermIds.length > 0) {
+    url.searchParams.set("tags", filters.taxonomyTermIds.join(","));
+    url.searchParams.set("tagMode", filters.taxonomyMode ?? "effective");
+  }
   if (cursor) {
     url.searchParams.set("cursor", cursor);
   }
@@ -41,9 +63,11 @@ const fetchLibraryPage = async (
 export const LibraryListVirtualized = ({
   filters,
   initialPage,
+  sourcePlatforms,
 }: {
   filters: LibraryQueryFilters;
   initialPage: LibraryListPage;
+  sourcePlatforms: { id: string; name: string }[];
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const queryKey = libraryQueryKey(filters);
@@ -138,7 +162,11 @@ export const LibraryListVirtualized = ({
                 width: "100%",
               }}
             >
-              {row ? <WorkCard row={row} /> : <WorkCardSkeleton />}
+              {row ? (
+                <WorkCard row={row} sourcePlatforms={sourcePlatforms} />
+              ) : (
+                <WorkCardSkeleton />
+              )}
             </div>
           );
         })}

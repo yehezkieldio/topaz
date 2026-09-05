@@ -3,6 +3,7 @@ import type { SearchParams } from "nuqs/server";
 import { LibraryListVirtualized } from "@/features/library/components/library-list-virtualized";
 import { librarySearchParamsCache } from "@/features/library/search-params";
 import { getLibraryList } from "@/features/library/server/queries";
+import { getSourcePlatforms } from "@/features/library/server/source-platforms-query";
 
 import { WorkCardSkeleton } from "./work-card";
 
@@ -11,9 +12,34 @@ export const LibraryResults = async ({
 }: {
   searchParams: Promise<SearchParams>;
 }) => {
-  const { q, status } = await librarySearchParamsCache.parse(searchParams);
-  const filters = { search: q || undefined, status: status ?? undefined };
-  const initialPage = await getLibraryList(filters);
+  const {
+    contentRating,
+    favorite,
+    featured,
+    minRating,
+    publicationStatus,
+    q,
+    source,
+    status,
+    tagMode,
+    tags,
+  } = await librarySearchParamsCache.parse(searchParams);
+  const filters = {
+    contentRating: contentRating ?? undefined,
+    favoriteOnly: favorite ?? undefined,
+    featuredOnly: featured ?? undefined,
+    minRating: minRating ?? undefined,
+    publicationStatus: publicationStatus ?? undefined,
+    search: q || undefined,
+    sourcePlatformId: source ?? undefined,
+    status: status ?? undefined,
+    taxonomyMode: tagMode ?? undefined,
+    taxonomyTermIds: tags && tags.length > 0 ? tags : undefined,
+  };
+  const [initialPage, sourcePlatforms] = await Promise.all([
+    getLibraryList(filters),
+    getSourcePlatforms(),
+  ]);
 
   if (initialPage.items.length === 0) {
     return (
@@ -28,7 +54,13 @@ export const LibraryResults = async ({
     );
   }
 
-  return <LibraryListVirtualized filters={filters} initialPage={initialPage} />;
+  return (
+    <LibraryListVirtualized
+      filters={filters}
+      initialPage={initialPage}
+      sourcePlatforms={sourcePlatforms}
+    />
+  );
 };
 
 const SKELETON_ROWS = ["a", "b", "c", "d", "e", "f"];

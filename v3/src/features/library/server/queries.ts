@@ -1,10 +1,19 @@
 import "server-only";
-import { and, eq, ilike } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { cache } from "react";
 
 import { db } from "@/server/db/client";
-import { libraryEntry, readingState, work } from "@/server/db/schema";
+import {
+  libraryEntry,
+  readingState,
+  sourcePlatform,
+  taxonomyTerm,
+  work,
+  workSource,
+  workTaxonomyAssignment,
+  workTaxonomyEffective,
+} from "@/server/db/schema";
 import { decodeCursor } from "@/server/query/cursor";
 import { buildConditions } from "@/server/query/filters";
 import type { FilterSpec } from "@/server/query/filters";
@@ -23,6 +32,15 @@ import {
   workTag,
 } from "./cache-tags";
 
+export interface TaxonomyChip {
+  id: string;
+  label: string;
+}
+
+type ContentRating = (typeof work.contentRating.enumValues)[number];
+type PublicationStatus = (typeof work.publicationStatus.enumValues)[number];
+type TaxonomyMode = "direct" | "effective";
+
 /**
  * `updatedAt` is a plain ISO string, not a Date -- this row shape crosses
  * both the RSC-to-Client-Component boundary (first page) and a JSON Route
@@ -35,11 +53,15 @@ export interface LibraryListRow {
   sortTitle: string;
   status: (typeof libraryEntry.status.enumValues)[number];
   favorite: boolean;
-  contentRating: (typeof work.contentRating.enumValues)[number];
+  isFeatured: boolean;
+  contentRating: ContentRating;
+  publicationStatus: PublicationStatus;
   updatedAt: string;
   version: number;
   rating: number | null;
+  currentChapter: number | null;
   readingStateVersion: number | null;
+  taxonomyTerms: TaxonomyChip[];
 }
 
 export interface LibraryListPage {
@@ -53,24 +75,87 @@ const SORT_ORDER = "desc" as const;
 interface LibraryListFilters {
   search?: string;
   status?: (typeof libraryEntry.status.enumValues)[number];
+  minRating?: number;
+  sourcePlatformId?: string;
+  contentRating?: ContentRating;
+  publicationStatus?: PublicationStatus;
+  favoriteOnly?: true;
+  featuredOnly?: true;
 }
 
+/**
+ * Word-similarity (`<%`) rather than plain similarity (`%`): it matches when
+ * the search term is similar to *any substring* of the title, which is a
+ * much closer approximation of the old ILIKE "contains" behavior than full-
+ * string similarity would be -- and it still uses the title's GIN trgm
+ * index (work_title_trgm_idx), unlike ILIKE.
+ */
 const libraryFilterSpec: FilterSpec<LibraryListFilters> = {
-  search: (value) => ilike(work.title, `%${value}%`),
+  contentRating: (value) => eq(work.contentRating, value),
+  favoriteOnly: () => eq(libraryEntry.favorite, true),
+  featuredOnly: () => eq(libraryEntry.isFeatured, true),
+  minRating: (value) => gte(readingState.rating, value),
+  publicationStatus: (value) => eq(work.publicationStatus, value),
+  search: (value) => sql`${value} <% ${work.title}`,
+  sourcePlatformId: (value) => sql`exists (
+    select 1 from ${workSource}
+    where ${workSource.workId} = ${work.id}
+      and ${workSource.sourcePlatformId} = (
+        select ${sourcePlatform.id} from ${sourcePlatform}
+        where ${sourcePlatform.publicId} = ${value}
+      )
+  )`,
   status: (value) => eq(libraryEntry.status, value),
 };
 
-const fetchLibraryList = async ({
-  cursor,
-  limit,
-  search,
-  status,
-}: {
+/** Any-of match against either the direct or the effective assignment table. */
+const taxonomyTermsCondition = (
+  taxonomyTermIds: string[],
+  mode: TaxonomyMode
+) => {
+  const idsSql = sql.join(
+    taxonomyTermIds.map((id) => sql`${id}`),
+    sql`, `
+  );
+  const table =
+    mode === "direct" ? workTaxonomyAssignment : workTaxonomyEffective;
+  return sql`exists (
+    select 1 from ${table}
+    inner join ${taxonomyTerm} on ${taxonomyTerm.id} = ${table.taxonomyTermId}
+    where ${table.workId} = ${work.id}
+      and ${taxonomyTerm.publicId} in (${idsSql})
+  )`;
+};
+
+interface FetchLibraryListArgs {
   cursor?: string;
   limit?: number;
   search?: string;
   status?: (typeof libraryEntry.status.enumValues)[number];
-}) => {
+  minRating?: number;
+  sourcePlatformId?: string;
+  contentRating?: ContentRating;
+  publicationStatus?: PublicationStatus;
+  favoriteOnly?: boolean;
+  featuredOnly?: boolean;
+  taxonomyTermIds?: string[];
+  taxonomyMode?: TaxonomyMode;
+}
+
+const fetchLibraryList = async ({
+  contentRating,
+  cursor,
+  favoriteOnly,
+  featuredOnly,
+  limit,
+  minRating,
+  publicationStatus,
+  search,
+  sourcePlatformId,
+  status,
+  taxonomyMode = "effective",
+  taxonomyTermIds,
+}: FetchLibraryListArgs) => {
   "use cache";
   cacheLife("minutes");
 
@@ -82,9 +167,24 @@ const fetchLibraryList = async ({
   const sanitizedSearch = sanitizeSearchText(search);
 
   const filterConditions = buildConditions(
-    { search: sanitizedSearch ?? undefined, status },
+    {
+      contentRating,
+      favoriteOnly: favoriteOnly ? (true as const) : undefined,
+      featuredOnly: featuredOnly ? (true as const) : undefined,
+      minRating,
+      publicationStatus,
+      search: sanitizedSearch ?? undefined,
+      sourcePlatformId,
+      status,
+    },
     libraryFilterSpec
   );
+
+  if (taxonomyTermIds && taxonomyTermIds.length > 0) {
+    filterConditions.push(
+      taxonomyTermsCondition(taxonomyTermIds, taxonomyMode)
+    );
+  }
 
   const condition = and(
     eq(libraryEntry.private, false),
@@ -102,15 +202,38 @@ const fetchLibraryList = async ({
     })
   );
 
+  const taxonomyAgg = db
+    .select({
+      terms: sql`coalesce(
+        json_agg(
+          json_build_object('id', ${taxonomyTerm.publicId}, 'label', ${taxonomyTerm.name})
+          order by ${taxonomyTerm.name}
+        ) filter (where ${taxonomyTerm.id} is not null),
+        '[]'
+      )`.as("terms"),
+      workId: workTaxonomyEffective.workId,
+    })
+    .from(workTaxonomyEffective)
+    .innerJoin(
+      taxonomyTerm,
+      eq(taxonomyTerm.id, workTaxonomyEffective.taxonomyTermId)
+    )
+    .groupBy(workTaxonomyEffective.workId)
+    .as("taxonomy_agg");
+
   const rows = await db
     .select({
       contentRating: work.contentRating,
+      currentChapter: readingState.currentChapter,
       favorite: libraryEntry.favorite,
+      isFeatured: libraryEntry.isFeatured,
       libraryEntryPublicId: libraryEntry.publicId,
+      publicationStatus: work.publicationStatus,
       rating: readingState.rating,
       readingStateVersion: readingState.version,
       sortTitle: work.sortTitle,
       status: libraryEntry.status,
+      taxonomyTerms: taxonomyAgg.terms,
       title: work.title,
       updatedAt: libraryEntry.updatedAt,
       version: libraryEntry.version,
@@ -119,6 +242,7 @@ const fetchLibraryList = async ({
     .from(libraryEntry)
     .innerJoin(work, eq(libraryEntry.workId, work.id))
     .leftJoin(readingState, eq(readingState.libraryEntryId, libraryEntry.id))
+    .leftJoin(taxonomyAgg, eq(taxonomyAgg.workId, work.id))
     .where(condition)
     .orderBy(
       ...orderByKeyset(
@@ -131,6 +255,7 @@ const fetchLibraryList = async ({
 
   const mappedRows: LibraryListRow[] = rows.map((row) => ({
     ...row,
+    taxonomyTerms: (row.taxonomyTerms as TaxonomyChip[] | null) ?? [],
     updatedAt:
       row.updatedAt instanceof Date
         ? row.updatedAt.toISOString()
