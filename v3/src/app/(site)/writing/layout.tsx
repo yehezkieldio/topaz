@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { SectionNav } from "@/components/site/section-nav";
+import { SiteSectionNav } from "@/features/site/components/site-section-nav";
 
 const writingLinks = [
   { active: "exact" as const, href: "/writing", label: "writing" },
@@ -9,7 +9,7 @@ const writingLinks = [
 
 const WritingLayout = ({ children }: { children: ReactNode }) => (
   <>
-    <SectionNav
+    <SiteSectionNav
       ariaLabel="Writing navigation"
       className="mb-9 gap-x-4 font-mono text-xs"
       links={writingLinks}

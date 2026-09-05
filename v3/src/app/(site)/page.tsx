@@ -2,13 +2,6 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import {
-  PageHeader,
-  PageIntro,
-  PageSection,
-} from "@/components/site/content-primitives";
-import { PageSocialContact } from "@/components/site/social-contact";
-import type { PageSocialLink } from "@/components/site/social-contact";
-import {
   FeaturedWorks,
   FeaturedWorksSkeleton,
 } from "@/features/library/components/featured-works";
@@ -16,6 +9,13 @@ import {
   LibraryStats,
   LibraryStatsSkeleton,
 } from "@/features/library/components/library-stats";
+import {
+  SiteHeader,
+  SiteIntro,
+  SiteSection,
+} from "@/features/site/components/site-primitives";
+import { SiteSocialContact } from "@/features/site/components/site-social-contact";
+import type { SiteSocialLink } from "@/features/site/components/site-social-contact";
 
 const heading = {
   description: "Software Engineer",
@@ -33,14 +33,14 @@ const contact = {
     { href: "https://github.com/yehezkieldio", label: "GitHub" },
     { href: "https://www.linkedin.com/in/yehezkieldio", label: "LinkedIn" },
     { href: "https://x.com/yehezkieldio", label: "X" },
-  ] satisfies PageSocialLink[],
+  ] satisfies SiteSocialLink[],
 };
 
 const Home = () => (
-  <PageSection>
-    <PageHeader description={heading.description} title={heading.title} />
-    <PageIntro paragraphs={intro} />
-    <PageSocialContact
+  <SiteSection>
+    <SiteHeader description={heading.description} title={heading.title} />
+    <SiteIntro paragraphs={intro} />
+    <SiteSocialContact
       delayIndex={intro.length + 1}
       email={contact.email}
       links={contact.links}
@@ -63,7 +63,7 @@ const Home = () => (
         Explore the library &rarr;
       </Link>
     </div>
-  </PageSection>
+  </SiteSection>
 );
 
 export default Home;

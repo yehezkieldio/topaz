@@ -3,13 +3,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ContentTags } from "@/components/site/content-primitives";
 import {
   ArticleHeader,
   MdxBody,
   mdxComponents,
-} from "@/components/site/mdx-content";
-import { getProject, getProjects } from "@/lib/projects";
+} from "@/features/site/components/site-mdx-content";
+import { SiteContentTags } from "@/features/site/components/site-primitives";
+import { getProject, getProjects } from "@/features/site/server/projects";
 
 interface ProjectPageProps {
   params: Promise<{ slug: string }>;
@@ -99,7 +99,7 @@ const ProjectPage = async ({ params }: ProjectPageProps) => {
         title={project.title}
       >
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <ContentTags tags={project.tags} />
+          <SiteContentTags tags={project.tags} />
           <ProjectLinks links={project.links} />
         </div>
       </ArticleHeader>

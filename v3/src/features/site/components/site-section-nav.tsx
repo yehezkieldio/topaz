@@ -19,7 +19,7 @@ const isActivePath = (pathname: string, link: SectionNavLink) => {
   return pathname === link.href || pathname.startsWith(`${link.href}/`);
 };
 
-export const SectionNav = ({
+export const SiteSectionNav = ({
   ariaLabel,
   className,
   links,

@@ -21,7 +21,7 @@ const XGlyph = (props: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export interface PageSocialLink {
+export interface SiteSocialLink {
   href: string;
   label: string;
 }
@@ -37,7 +37,7 @@ const getHostname = (href: string) => {
 const getSocialIcon = ({
   href,
   label,
-}: PageSocialLink): ComponentType<SVGProps<SVGSVGElement>> | null => {
+}: SiteSocialLink): ComponentType<SVGProps<SVGSVGElement>> | null => {
   const normalizedLabel = label.toLowerCase();
   const hostname = getHostname(href);
 
@@ -68,7 +68,7 @@ const getSocialIcon = ({
 const socialIconClassName =
   "size-3.5 opacity-80 transition-opacity duration-200 ease-(--ease-ui) group-hover:opacity-100";
 
-const PageSocialIcon = ({ link }: { link: PageSocialLink }) => {
+const SiteSocialIcon = ({ link }: { link: SiteSocialLink }) => {
   switch (getSocialIcon(link)) {
     case GithubGlyph: {
       return <GithubGlyph aria-hidden="true" className={socialIconClassName} />;
@@ -87,14 +87,14 @@ const PageSocialIcon = ({ link }: { link: PageSocialLink }) => {
   }
 };
 
-export const PageSocialContact = ({
+export const SiteSocialContact = ({
   delayIndex = 0,
   email,
   links,
 }: {
   delayIndex?: number;
   email: string;
-  links: PageSocialLink[];
+  links: SiteSocialLink[];
 }) => (
   <section
     className="project-row-enter text-muted-foreground max-w-xl space-y-2 text-[15px] leading-6 tracking-normal sm:space-y-2.5 sm:text-base"
@@ -110,7 +110,7 @@ export const PageSocialContact = ({
           rel="noopener noreferrer"
           target="_blank"
         >
-          <PageSocialIcon link={link} />
+          <SiteSocialIcon link={link} />
           <span>{link.label}</span>
         </a>
       ))}

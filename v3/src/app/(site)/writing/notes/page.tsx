@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 
 import {
-  ContentList,
-  ContentMeta,
-  ContentRow,
-  ContentTags,
-  ContentTitleLink,
-  EmptyLine,
-  PageHeader,
-  PageSection,
-} from "@/components/site/content-primitives";
-import { getNotes } from "@/lib/notes";
+  SiteContentList,
+  SiteContentMeta,
+  SiteContentRow,
+  SiteContentTags,
+  SiteContentTitleLink,
+  SiteEmptyLine,
+  SiteHeader,
+  SiteSection,
+} from "@/features/site/components/site-primitives";
+import { getNotes } from "@/features/site/server/notes";
 
 export const metadata: Metadata = {
   description:
@@ -22,25 +22,25 @@ const NotesPage = () => {
   const notes = getNotes();
 
   return (
-    <PageSection>
-      <PageHeader
+    <SiteSection>
+      <SiteHeader
         description="References, quick notes, and snippets."
         title="Notes"
       />
 
       <div className="pt-5 sm:pt-6">
-        <ContentList
+        <SiteContentList
           className="pt-5 sm:pt-7"
           empty={
-            <EmptyLine>
+            <SiteEmptyLine>
               Notes will show up here once they are added, eventually.
-            </EmptyLine>
+            </SiteEmptyLine>
           }
           isEmpty={notes.length === 0}
           withTopRule
         >
           {notes.map((note, index) => (
-            <ContentRow
+            <SiteContentRow
               delayIndex={index}
               key={note.slug}
               withRule={index < notes.length - 1}
@@ -48,11 +48,13 @@ const NotesPage = () => {
             >
               <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
                 <h2 className="min-w-0 text-[13px] leading-tight font-medium tracking-normal sm:text-sm sm:leading-tight">
-                  <ContentTitleLink href={`/writing/notes/${note.slug}`}>
+                  <SiteContentTitleLink href={`/writing/notes/${note.slug}`}>
                     {note.title}
-                  </ContentTitleLink>
+                  </SiteContentTitleLink>
                 </h2>
-                {note.date ? <ContentMeta>{note.date}</ContentMeta> : null}
+                {note.date ? (
+                  <SiteContentMeta>{note.date}</SiteContentMeta>
+                ) : null}
               </div>
 
               {note.description ? (
@@ -61,12 +63,12 @@ const NotesPage = () => {
                 </p>
               ) : null}
 
-              <ContentTags tags={note.tags} />
-            </ContentRow>
+              <SiteContentTags tags={note.tags} />
+            </SiteContentRow>
           ))}
-        </ContentList>
+        </SiteContentList>
       </div>
-    </PageSection>
+    </SiteSection>
   );
 };
 

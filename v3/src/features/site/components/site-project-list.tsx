@@ -2,13 +2,13 @@ import { ExternalLinkIcon, FileTextIcon } from "lucide-react";
 import Link from "next/link";
 
 import {
-  ContentList,
-  ContentRow,
-  ContentTags,
-  ContentTitleLink,
-  EmptyLine,
-} from "@/components/site/content-primitives";
-import type { getProjects } from "@/lib/projects";
+  SiteContentList,
+  SiteContentRow,
+  SiteContentTags,
+  SiteContentTitleLink,
+  SiteEmptyLine,
+} from "@/features/site/components/site-primitives";
+import type { getProjects } from "@/features/site/server/projects";
 
 type ProjectListItem = ReturnType<typeof getProjects>[number];
 type ProjectLink = ProjectListItem["links"][number];
@@ -28,9 +28,9 @@ const getProjectLinkLabel = (link: ProjectLink) => {
 const ProjectTitle = ({ project }: { project: ProjectListItem }) => {
   if (project.hasNote) {
     return (
-      <ContentTitleLink href={`/projects/${project.slug}`}>
+      <SiteContentTitleLink href={`/projects/${project.slug}`}>
         {project.title}
-      </ContentTitleLink>
+      </SiteContentTitleLink>
     );
   }
 
@@ -41,9 +41,9 @@ const ProjectTitle = ({ project }: { project: ProjectListItem }) => {
   }
 
   return (
-    <ContentTitleLink href={href} isExternal>
+    <SiteContentTitleLink href={href} isExternal>
       {project.title}
-    </ContentTitleLink>
+    </SiteContentTitleLink>
   );
 };
 
@@ -71,7 +71,7 @@ const ProjectRow = ({
   revealIndex: number;
   withRule: boolean;
 }) => (
-  <ContentRow delayIndex={revealIndex} withRule={withRule} withSpacing>
+  <SiteContentRow delayIndex={revealIndex} withRule={withRule} withSpacing>
     <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1.5 sm:gap-y-1">
       <h2 className="min-w-0 text-[13px] leading-tight font-medium tracking-normal sm:text-sm sm:leading-tight">
         <ProjectTitle project={project} />
@@ -87,7 +87,7 @@ const ProjectRow = ({
 
     <div className="flex items-center justify-between gap-3 pt-1 sm:gap-4">
       <div className="min-w-0 flex-1 overflow-hidden">
-        <ContentTags tags={project.tags} />
+        <SiteContentTags tags={project.tags} />
       </div>
       <p className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-[11px] leading-5 tracking-normal sm:text-xs">
         {project.hasNote ? (
@@ -111,12 +111,16 @@ const ProjectRow = ({
         ))}
       </p>
     </div>
-  </ContentRow>
+  </SiteContentRow>
 );
 
-export const ProjectList = ({ projects }: { projects: ProjectListItem[] }) => (
-  <ContentList
-    empty={<EmptyLine>No projects yet.</EmptyLine>}
+export const SiteProjectList = ({
+  projects,
+}: {
+  projects: ProjectListItem[];
+}) => (
+  <SiteContentList
+    empty={<SiteEmptyLine>No projects yet.</SiteEmptyLine>}
     isEmpty={projects.length === 0}
   >
     {projects.map((project, index) => (
@@ -127,5 +131,5 @@ export const ProjectList = ({ projects }: { projects: ProjectListItem[] }) => (
         withRule={index < projects.length - 1}
       />
     ))}
-  </ContentList>
+  </SiteContentList>
 );

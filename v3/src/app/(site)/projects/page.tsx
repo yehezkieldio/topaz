@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 
-import { PageHeader, PageSection } from "@/components/site/content-primitives";
-import { ProjectList } from "@/components/site/project-list";
-import { getProjects } from "@/lib/projects";
+import {
+  SiteHeader,
+  SiteSection,
+} from "@/features/site/components/site-primitives";
+import { SiteProjectList } from "@/features/site/components/site-project-list";
+import { getProjects } from "@/features/site/server/projects";
 
 export const metadata: Metadata = {
   description: "Projects by Yehezkiel Dio Sinolungan.",
@@ -10,13 +13,13 @@ export const metadata: Metadata = {
 };
 
 const ProjectsPage = () => (
-  <PageSection>
-    <PageHeader
+  <SiteSection>
+    <SiteHeader
       description="A collection of my personal and professional projects."
       title="Projects"
     />
-    <ProjectList projects={getProjects()} />
-  </PageSection>
+    <SiteProjectList projects={getProjects()} />
+  </SiteSection>
 );
 
 export default ProjectsPage;

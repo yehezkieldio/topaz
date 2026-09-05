@@ -1,4 +1,4 @@
-import { SectionNav } from "@/components/site/section-nav";
+import { SiteSectionNav } from "@/features/site/components/site-section-nav";
 
 const navLinks = [
   { active: "exact" as const, href: "/", label: "about" },
@@ -8,5 +8,5 @@ const navLinks = [
 ];
 
 export const SiteNav = () => (
-  <SectionNav ariaLabel="Primary navigation" links={navLinks} />
+  <SiteSectionNav ariaLabel="Primary navigation" links={navLinks} />
 );

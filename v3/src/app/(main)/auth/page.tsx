@@ -2,23 +2,12 @@ import { Suspense } from "react";
 
 import { DiscordIcon } from "@/components/icons/discord-icon";
 import { Button } from "@/components/ui/button";
-import { AuthActionForm } from "@/features/auth/components/auth-action-form";
+import { AuthPanel } from "@/features/auth/components/auth-panel";
 import { AuthShell } from "@/features/auth/components/auth-shell";
-import { getIsAdmin } from "@/server/auth/get-is-admin";
 
 export const metadata = {
   description: "Administrator authentication for Topaz.",
   title: "Authentication | Topaz",
-};
-
-/**
- * getIsAdmin() reads headers() (a request-time API) -- under Cache
- * Components, that has to happen inside a Suspense boundary or the route
- * can't be prerendered at all (see blocking-prerender-runtime).
- */
-const AuthGate = async () => {
-  const isAdmin = await getIsAdmin();
-  return <AuthActionForm isAdmin={isAdmin} />;
 };
 
 const AuthPage = () => (
@@ -41,7 +30,7 @@ const AuthPage = () => (
           </Button>
         }
       >
-        <AuthGate />
+        <AuthPanel />
       </Suspense>
     </div>
   </AuthShell>

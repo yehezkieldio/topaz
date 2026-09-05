@@ -1,6 +1,9 @@
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
-import { ContentTags, PageHeader } from "@/components/site/content-primitives";
+import {
+  SiteContentTags,
+  SiteHeader,
+} from "@/features/site/components/site-primitives";
 import { cn } from "@/lib/utils";
 
 const EMPTY_TAGS: string[] = [];
@@ -18,9 +21,9 @@ export const ArticleHeader = ({
   tags?: string[];
   title: string;
 }) => (
-  <PageHeader description={description} meta={meta} title={title} withRule>
-    {children ?? <ContentTags tags={tags} />}
-  </PageHeader>
+  <SiteHeader description={description} meta={meta} title={title} withRule>
+    {children ?? <SiteContentTags tags={tags} />}
+  </SiteHeader>
 );
 
 export const MdxBody = ({ children }: { children: ReactNode }) => (

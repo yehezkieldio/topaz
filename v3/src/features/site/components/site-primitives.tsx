@@ -3,11 +3,11 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-export const PageSection = ({ children }: { children: ReactNode }) => (
+export const SiteSection = ({ children }: { children: ReactNode }) => (
   <section className="space-y-7 sm:space-y-8">{children}</section>
 );
 
-export const PageHeader = ({
+export const SiteHeader = ({
   children,
   description,
   meta,
@@ -39,7 +39,7 @@ export const PageHeader = ({
   </header>
 );
 
-export const PageIntro = ({
+export const SiteIntro = ({
   delayStart = 1,
   paragraphs,
 }: {
@@ -59,7 +59,7 @@ export const PageIntro = ({
   </div>
 );
 
-export const ContentList = ({
+export const SiteContentList = ({
   children,
   className,
   empty,
@@ -88,7 +88,7 @@ export const ContentList = ({
   );
 };
 
-export const ContentRow = ({
+export const SiteContentRow = ({
   children,
   delayIndex = 0,
   withRule = true,
@@ -111,7 +111,7 @@ export const ContentRow = ({
   </article>
 );
 
-export const ContentTitleLink = ({
+export const SiteContentTitleLink = ({
   children,
   href,
   isExternal = false,
@@ -140,7 +140,7 @@ export const ContentTitleLink = ({
   );
 };
 
-export const ContentMeta = ({
+export const SiteContentMeta = ({
   children,
   className,
 }: {
@@ -157,7 +157,7 @@ export const ContentMeta = ({
   </p>
 );
 
-export const ContentTags = ({
+export const SiteContentTags = ({
   tags,
   limit = 5,
 }: {
@@ -175,6 +175,6 @@ export const ContentTags = ({
   );
 };
 
-export const EmptyLine = ({ children }: { children: ReactNode }) => (
+export const SiteEmptyLine = ({ children }: { children: ReactNode }) => (
   <p className="text-muted-foreground py-8 text-sm">{children}</p>
 );

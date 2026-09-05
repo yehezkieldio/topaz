@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { ContentMeta } from "@/components/site/content-primitives";
 import {
   ArticleHeader,
   MdxBody,
   mdxComponents,
-} from "@/components/site/mdx-content";
-import { getNote, getNotes } from "@/lib/notes";
+} from "@/features/site/components/site-mdx-content";
+import { SiteContentMeta } from "@/features/site/components/site-primitives";
+import { getNote, getNotes } from "@/features/site/server/notes";
 
 interface NotePageProps {
   params: Promise<{ slug: string }>;
@@ -51,7 +51,9 @@ const NotePage = async ({ params }: NotePageProps) => {
     <article className="space-y-9">
       <ArticleHeader
         description={note.description}
-        meta={note.date ? <ContentMeta>{note.date}</ContentMeta> : undefined}
+        meta={
+          note.date ? <SiteContentMeta>{note.date}</SiteContentMeta> : undefined
+        }
         tags={note.tags}
         title={note.title}
       />

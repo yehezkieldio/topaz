@@ -2,7 +2,11 @@
 
 import { usePathname } from "next/navigation";
 
-export const PageTransition = ({ children }: { children: React.ReactNode }) => {
+export const SitePageTransition = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const pathname = usePathname();
 
   return (
