@@ -4,28 +4,35 @@ import { XIcon } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import type { CreatableOptionPicker } from "@/features/taxonomy/components/option-results-list";
+import { OptionResultsList } from "@/features/taxonomy/components/option-results-list";
 import { TermChipMenu } from "@/features/taxonomy/components/term-chip-menu";
 import { useOptionPicker } from "@/features/taxonomy/hooks/use-option-picker";
 import type { OptionPickerOption } from "@/features/taxonomy/hooks/use-option-picker";
 import { useOutsideClick } from "@/hooks/use-outside-click";
-import { cn } from "@/lib/utils";
 
 export const TermMultiselect = ({
-  createTerm,
+  creatable,
   initialSelected,
+  kind,
+  loadHotTerms,
   onSelectionChange,
   search,
 }: {
   initialSelected?: OptionPickerOption[];
-  search: (query: string) => Promise<OptionPickerOption[]>;
+  search: (query: string, kind?: string) => Promise<OptionPickerOption[]>;
   onSelectionChange: (selected: OptionPickerOption[]) => void;
-  createTerm?: (name: string) => Promise<OptionPickerOption | null>;
+  kind?: string;
+  loadHotTerms?: () => Promise<OptionPickerOption[]>;
+  creatable?: CreatableOptionPicker;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const {
     deselect,
+    hotTerms,
+    isQueryEmpty,
     isSearching,
     isSelected,
     query,
@@ -33,31 +40,15 @@ export const TermMultiselect = ({
     select,
     selected,
     setQuery,
-  } = useOptionPicker({ initialSelected, onSelectionChange, search });
+  } = useOptionPicker({
+    initialSelected,
+    kind,
+    loadHotTerms,
+    onSelectionChange,
+    search,
+  });
 
   useOutsideClick(isOpen, containerRef, () => setIsOpen(false));
-
-  const trimmedQuery = query.trim();
-  const hasExactMatch = results.some(
-    (option) => option.label.toLowerCase() === trimmedQuery.toLowerCase()
-  );
-  const canCreate =
-    Boolean(createTerm) && trimmedQuery.length >= 2 && !hasExactMatch;
-
-  const handleCreate = async () => {
-    if (!createTerm) {
-      return;
-    }
-    try {
-      const created = await createTerm(trimmedQuery);
-      if (created) {
-        select(created);
-        setQuery("");
-      }
-    } catch {
-      // The picker just leaves the query text in place; the user can retry.
-    }
-  };
 
   return (
     <div className="relative" ref={containerRef}>
@@ -88,49 +79,25 @@ export const TermMultiselect = ({
           value={query}
         />
       </div>
-      {isOpen && (query.trim().length >= 2 || results.length > 0) && (
+      {isOpen && (
         <div className="bg-popover absolute z-10 mt-1 w-full rounded-md border shadow-md">
-          {isSearching && (
-            <p className="text-muted-foreground px-3 py-2 text-xs">
-              Searching...
-            </p>
-          )}
-          {!isSearching && results.length === 0 && !canCreate && (
-            <p className="text-muted-foreground px-3 py-2 text-xs">
-              No matches.
-            </p>
-          )}
-          <ul>
-            {results.map((option) => (
-              <li key={option.id}>
-                <button
-                  className={cn(
-                    "hover:bg-muted w-full px-3 py-1.5 text-left text-sm",
-                    isSelected(option.id) && "opacity-50"
-                  )}
-                  disabled={isSelected(option.id)}
-                  onClick={() => {
-                    select(option);
-                    setQuery("");
-                  }}
-                  type="button"
-                >
-                  {option.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-          {canCreate && (
-            <button
-              className="hover:bg-muted w-full border-t px-3 py-1.5 text-left text-sm"
-              onClick={() => {
-                handleCreate();
-              }}
-              type="button"
-            >
-              Create &ldquo;{trimmedQuery}&rdquo;
-            </button>
-          )}
+          <OptionResultsList
+            creatable={creatable}
+            hotTerms={hotTerms}
+            isQueryEmpty={isQueryEmpty}
+            isSearching={isSearching}
+            isSelected={isSelected}
+            onCreated={(option) => {
+              select(option);
+              setQuery("");
+            }}
+            onSelect={(option) => {
+              select(option);
+              setQuery("");
+            }}
+            query={query}
+            results={results}
+          />
         </div>
       )}
     </div>

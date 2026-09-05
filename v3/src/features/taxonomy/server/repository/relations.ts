@@ -1,5 +1,5 @@
 import "server-only";
-import { eq, or } from "drizzle-orm";
+import { eq, inArray, or } from "drizzle-orm";
 
 import type { db as dbClient } from "@/server/db/client";
 import {
@@ -69,4 +69,23 @@ export const findWorkPublicId = async (tx: Tx, workId: string) => {
     .where(eq(work.id, workId))
     .limit(1);
   return row?.publicId;
+};
+
+/**
+ * One query for however many work ids need their public id -- used instead
+ * of calling findWorkPublicId per work in a loop, per
+ * topaz-v3-specs/07_backend/01_query_and_n_plus_one_policy.md.
+ */
+export const findWorkPublicIds = async (
+  tx: Tx,
+  workIds: string[]
+): Promise<string[]> => {
+  if (workIds.length === 0) {
+    return [];
+  }
+  const rows = await tx
+    .select({ publicId: work.publicId })
+    .from(work)
+    .where(inArray(work.id, workIds));
+  return rows.map((row) => row.publicId);
 };

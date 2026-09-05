@@ -5,25 +5,34 @@ import { useDeferredValue, useEffect, useState, useTransition } from "react";
 export interface OptionPickerOption {
   id: string;
   label: string;
+  /** Taxonomy kind slug (taxonomy_kind.slug), when the caller cares. */
+  kind?: string;
+  description?: string;
 }
 
 const MIN_QUERY_LENGTH = 2;
 
 /**
  * The shared state machine both the combobox (single-select) and multiselect
- * taxonomy pickers render on top of -- selection, search, and results live
- * here once; the two components differ only in how they render `selected`.
+ * taxonomy pickers render on top of -- selection, search, and hot-terms live
+ * here once; the two components differ only in how they render `selected`
+ * (topaz-v3-specs/06_library/04_taxonomy_picker.md).
  */
 export const useOptionPicker = ({
   initialSelected = [],
+  kind,
+  loadHotTerms,
   mode = "multi",
   onSelectionChange,
   search,
 }: {
   initialSelected?: OptionPickerOption[];
-  search: (query: string) => Promise<OptionPickerOption[]>;
+  search: (query: string, kind?: string) => Promise<OptionPickerOption[]>;
+  loadHotTerms?: () => Promise<OptionPickerOption[]>;
   onSelectionChange?: (selected: OptionPickerOption[]) => void;
   mode?: "single" | "multi";
+  /** Fixed kind slug to scope every search/hot-terms call to, if any. */
+  kind?: string;
 }) => {
   const [selected, setSelected] = useState<
     ReadonlyMap<string, OptionPickerOption>
@@ -31,9 +40,37 @@ export const useOptionPicker = ({
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const [results, setResults] = useState<OptionPickerOption[]>([]);
+  const [hotTerms, setHotTerms] = useState<OptionPickerOption[]>([]);
   const [isPending, startTransition] = useTransition();
 
+  const isQueryEmpty = deferredQuery.trim().length === 0;
   const isQueryLongEnough = deferredQuery.trim().length >= MIN_QUERY_LENGTH;
+
+  useEffect(() => {
+    if (!loadHotTerms) {
+      return;
+    }
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const next = await loadHotTerms();
+        if (!cancelled) {
+          setHotTerms(next);
+        }
+      } catch {
+        if (!cancelled) {
+          setHotTerms([]);
+        }
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+    // Re-runs when the fixed kind changes -- loadHotTerms is expected to be
+    // a stable reference closing over the current kind (or re-created by the
+    // caller when kind changes), same contract as `search`.
+  }, [loadHotTerms]);
 
   useEffect(() => {
     if (!isQueryLongEnough) {
@@ -44,7 +81,7 @@ export const useOptionPicker = ({
 
     const run = async () => {
       try {
-        const next = await search(deferredQuery);
+        const next = await search(deferredQuery, kind);
         if (!cancelled) {
           setResults(next);
         }
@@ -62,7 +99,7 @@ export const useOptionPicker = ({
     return () => {
       cancelled = true;
     };
-  }, [deferredQuery, search, isQueryLongEnough]);
+  }, [deferredQuery, search, isQueryLongEnough, kind]);
 
   const visibleResults = isQueryLongEnough ? results : [];
 
@@ -91,6 +128,8 @@ export const useOptionPicker = ({
 
   return {
     deselect,
+    hotTerms,
+    isQueryEmpty,
     isSearching: query !== deferredQuery || isPending,
     isSelected,
     query,

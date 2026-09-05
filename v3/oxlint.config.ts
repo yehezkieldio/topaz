@@ -20,7 +20,10 @@ export default defineConfig({
       // function references (measureElement, getVirtualItems) each render --
       // this is the documented, unavoidable React Compiler interaction noted
       // in 02_stack/05_advanced_react_patterns.md, not a bug to work around.
-      files: ["src/features/library/components/library-list-virtualized.tsx"],
+      files: [
+        "src/features/library/components/library-list-virtualized.tsx",
+        "src/features/taxonomy/components/option-results-list.tsx",
+      ],
       rules: {
         "react/incompatible-library": "off",
       },

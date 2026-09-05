@@ -2,10 +2,11 @@
 
 import { useRef, useState } from "react";
 
+import type { CreatableOptionPicker } from "@/features/taxonomy/components/option-results-list";
+import { OptionResultsList } from "@/features/taxonomy/components/option-results-list";
 import { useOptionPicker } from "@/features/taxonomy/hooks/use-option-picker";
 import type { OptionPickerOption } from "@/features/taxonomy/hooks/use-option-picker";
 import { useOutsideClick } from "@/hooks/use-outside-click";
-import { cn } from "@/lib/utils";
 
 /**
  * Single-select thin variant over useOptionPicker's shared state machine --
@@ -14,27 +15,32 @@ import { cn } from "@/lib/utils";
  * (06_library/04_taxonomy_picker.md).
  */
 export const TermCombobox = ({
+  creatable,
   exclude,
+  kind,
+  loadHotTerms,
   onSelect,
   placeholder = "Search terms...",
   search,
 }: {
-  search: (query: string) => Promise<OptionPickerOption[]>;
+  search: (query: string, kind?: string) => Promise<OptionPickerOption[]>;
   onSelect: (option: OptionPickerOption) => void;
   exclude?: string;
   placeholder?: string;
+  kind?: string;
+  loadHotTerms?: () => Promise<OptionPickerOption[]>;
+  creatable?: CreatableOptionPicker;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { isSearching, query, results, setQuery } = useOptionPicker({
-    mode: "single",
-    search,
-  });
+  const { hotTerms, isQueryEmpty, isSearching, query, results, setQuery } =
+    useOptionPicker({ kind, loadHotTerms, mode: "single", search });
 
   useOutsideClick(isOpen, containerRef, () => setIsOpen(false));
 
-  const visibleResults = results.filter((option) => option.id !== exclude);
+  const excludeOption = (options: OptionPickerOption[]) =>
+    exclude ? options.filter((option) => option.id !== exclude) : options;
 
   return (
     <div className="relative" ref={containerRef}>
@@ -46,37 +52,27 @@ export const TermCombobox = ({
         type="text"
         value={query}
       />
-      {isOpen && query.trim().length >= 2 && (
+      {isOpen && (
         <div className="bg-popover absolute z-10 mt-1 w-full rounded-md border shadow-md">
-          {isSearching && (
-            <p className="text-muted-foreground px-3 py-2 text-xs">
-              Searching...
-            </p>
-          )}
-          {!isSearching && visibleResults.length === 0 && (
-            <p className="text-muted-foreground px-3 py-2 text-xs">
-              No matches.
-            </p>
-          )}
-          <ul>
-            {visibleResults.map((option) => (
-              <li key={option.id}>
-                <button
-                  className={cn(
-                    "hover:bg-muted w-full px-3 py-1.5 text-left text-sm"
-                  )}
-                  onClick={() => {
-                    onSelect(option);
-                    setQuery("");
-                    setIsOpen(false);
-                  }}
-                  type="button"
-                >
-                  {option.label}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <OptionResultsList
+            creatable={creatable}
+            hotTerms={excludeOption(hotTerms)}
+            isQueryEmpty={isQueryEmpty}
+            isSearching={isSearching}
+            isSelected={() => false}
+            onCreated={(option) => {
+              onSelect(option);
+              setQuery("");
+              setIsOpen(false);
+            }}
+            onSelect={(option) => {
+              onSelect(option);
+              setQuery("");
+              setIsOpen(false);
+            }}
+            query={query}
+            results={excludeOption(results)}
+          />
         </div>
       )}
     </div>

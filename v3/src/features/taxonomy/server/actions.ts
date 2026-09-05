@@ -1,21 +1,32 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
 
 import { requireAdmin } from "@/server/auth/require-admin";
 import { db } from "@/server/db/client";
 import type { taxonomyRelation } from "@/server/db/schema";
-import { taxonomyKind, taxonomyTerm } from "@/server/db/schema";
+import {
+  taxonomyKind,
+  taxonomyTerm,
+  workTaxonomyAssignment,
+} from "@/server/db/schema";
 import type { MutationResult } from "@/server/query/mutation-result";
 
 import { taxonomyTermTag, workTaxonomyEffectiveTag } from "./cache-tags";
-import { rebuildEffectiveTaxonomyForWork } from "./repository/effective-taxonomy";
+import { rebuildEffectiveTaxonomyForWorks } from "./repository/effective-taxonomy";
+import {
+  deleteLabel,
+  findLabelByPublicId,
+  insertLabel,
+  listLabelsForTerm,
+  setPrimaryLabel,
+} from "./repository/labels";
 import { mergeTerms } from "./repository/merge";
 import {
   deleteRelation,
   findWorkIdsAssignedToTerm,
-  findWorkPublicId,
+  findWorkPublicIds,
   insertRelation,
   listRelationsForTerm,
 } from "./repository/relations";
@@ -28,19 +39,18 @@ import {
 
 type RelationType = (typeof taxonomyRelation.relationType.enumValues)[number];
 
+/**
+ * Rebuilds effective taxonomy for every affected work in one batched pass
+ * (O(MAX_DEPTH) round trips total, not O(workIds.length * MAX_DEPTH)) --
+ * see rebuildEffectiveTaxonomyForWorks and
+ * topaz-v3-specs/07_backend/01_query_and_n_plus_one_policy.md.
+ */
 const rebuildAndRevalidate = async (
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   workIds: string[]
 ) => {
-  const publicIds: string[] = [];
-  for (const workId of workIds) {
-    await rebuildEffectiveTaxonomyForWork(tx, workId);
-    const publicId = await findWorkPublicId(tx, workId);
-    if (publicId) {
-      publicIds.push(publicId);
-    }
-  }
-  return publicIds;
+  await rebuildEffectiveTaxonomyForWorks(tx, workIds);
+  return await findWorkPublicIds(tx, workIds);
 };
 
 const MIN_QUERY_LENGTH = 2;
@@ -67,6 +77,7 @@ export const getTermVersionAction = async (
 export interface TaxonomyOption {
   id: string;
   label: string;
+  kind: string;
 }
 
 const normalize = (value: string) => value.trim().toLowerCase();
@@ -80,10 +91,13 @@ const slugify = (value: string) =>
  * Trigram similarity search over active taxonomy terms -- surfaced by the
  * taxonomy picker before a duplicate term is created, per the roadmap's
  * "taxonomy-suggestion" requirement. Admin-only: the picker only ever
- * renders inside an authoring form.
+ * renders inside an authoring form. `kindSlug` scopes the search to one
+ * taxonomy kind (topaz-v3-specs/06_library/04_taxonomy_picker.md); omit it
+ * to search across every kind.
  */
 export const searchTaxonomyTermsAction = async (
-  query: string
+  query: string,
+  kindSlug?: string
 ): Promise<TaxonomyOption[]> => {
   await requireAdmin();
 
@@ -93,10 +107,19 @@ export const searchTaxonomyTermsAction = async (
   }
 
   const rows = await db
-    .select({ id: taxonomyTerm.publicId, label: taxonomyTerm.name })
+    .select({
+      id: taxonomyTerm.publicId,
+      kind: taxonomyKind.slug,
+      label: taxonomyTerm.name,
+    })
     .from(taxonomyTerm)
+    .innerJoin(taxonomyKind, eq(taxonomyKind.id, taxonomyTerm.taxonomyKindId))
     .where(
-      sql`${taxonomyTerm.status} = 'active' and ${taxonomyTerm.name} % ${trimmed}`
+      and(
+        eq(taxonomyTerm.status, "active"),
+        sql`${taxonomyTerm.name} % ${trimmed}`,
+        kindSlug ? eq(taxonomyKind.slug, kindSlug) : undefined
+      )
     )
     .orderBy(sql`similarity(${taxonomyTerm.name}, ${trimmed}) desc`)
     .limit(MAX_RESULTS);
@@ -104,14 +127,50 @@ export const searchTaxonomyTermsAction = async (
   return rows;
 };
 
+const MAX_HOT_TERMS = 20;
+
 /**
- * Creates a term under the "custom" taxonomy kind if one with the same
- * normalized name doesn't already exist for that kind -- called only after
- * the picker's search has already surfaced no match, so this is a genuine
- * create, not a race-prone upsert path.
+ * "Hot terms" default view shown when the picker's query is empty --
+ * ordered by how many works currently carry the term directly, not by
+ * recency (topaz-v3-specs/06_library/04_taxonomy_picker.md).
+ */
+export const listHotTaxonomyTermsAction = async (
+  kindSlug?: string
+): Promise<TaxonomyOption[]> => {
+  await requireAdmin();
+
+  return await db
+    .select({
+      id: taxonomyTerm.publicId,
+      kind: taxonomyKind.slug,
+      label: taxonomyTerm.name,
+    })
+    .from(workTaxonomyAssignment)
+    .innerJoin(
+      taxonomyTerm,
+      eq(taxonomyTerm.id, workTaxonomyAssignment.taxonomyTermId)
+    )
+    .innerJoin(taxonomyKind, eq(taxonomyKind.id, taxonomyTerm.taxonomyKindId))
+    .where(
+      and(
+        eq(taxonomyTerm.status, "active"),
+        kindSlug ? eq(taxonomyKind.slug, kindSlug) : undefined
+      )
+    )
+    .groupBy(taxonomyTerm.id, taxonomyKind.slug)
+    .orderBy(desc(count(workTaxonomyAssignment.workId)))
+    .limit(MAX_HOT_TERMS);
+};
+
+/**
+ * Creates a term under the given taxonomy kind (default "custom") if one
+ * with the same normalized name doesn't already exist for that kind --
+ * called only after the picker's search has already surfaced no match, so
+ * this is a genuine create, not a race-prone upsert path.
  */
 export const createTaxonomyTermAction = async (
-  name: string
+  name: string,
+  kindSlug = "custom"
 ): Promise<MutationResult<TaxonomyOption>> => {
   await requireAdmin();
 
@@ -123,24 +182,35 @@ export const createTaxonomyTermAction = async (
     };
   }
 
-  const [customKind] = await db
-    .select({ id: taxonomyKind.id })
+  const [kind] = await db
+    .select({ id: taxonomyKind.id, slug: taxonomyKind.slug })
     .from(taxonomyKind)
-    .where(eq(taxonomyKind.slug, "custom"))
+    .where(eq(taxonomyKind.slug, kindSlug))
     .limit(1);
 
-  if (!customKind) {
-    throw new Error("The 'custom' taxonomy kind is not seeded.");
+  if (!kind) {
+    return {
+      fieldErrors: { kind: ["Unknown taxonomy kind."] },
+      status: "validation-error",
+    };
   }
 
   const normalizedName = normalize(trimmed);
   const slug = slugify(trimmed);
 
   const [existing] = await db
-    .select({ id: taxonomyTerm.publicId, label: taxonomyTerm.name })
+    .select({
+      id: taxonomyTerm.publicId,
+      kind: taxonomyKind.slug,
+      label: taxonomyTerm.name,
+    })
     .from(taxonomyTerm)
+    .innerJoin(taxonomyKind, eq(taxonomyKind.id, taxonomyTerm.taxonomyKindId))
     .where(
-      sql`${taxonomyTerm.taxonomyKindId} = ${customKind.id} and ${taxonomyTerm.normalizedName} = ${normalizedName}`
+      and(
+        eq(taxonomyTerm.taxonomyKindId, kind.id),
+        eq(taxonomyTerm.normalizedName, normalizedName)
+      )
     )
     .limit(1);
 
@@ -154,7 +224,7 @@ export const createTaxonomyTermAction = async (
       name: trimmed,
       normalizedName,
       slug,
-      taxonomyKindId: customKind.id,
+      taxonomyKindId: kind.id,
     })
     .returning({ id: taxonomyTerm.publicId, label: taxonomyTerm.name });
 
@@ -162,7 +232,7 @@ export const createTaxonomyTermAction = async (
     throw new Error("Failed to create taxonomy term.");
   }
 
-  return { data: created, status: "success" };
+  return { data: { ...created, kind: kind.slug }, status: "success" };
 };
 
 export interface TermMutationResult {
@@ -431,6 +501,162 @@ export const mergeTermsAction = async (
     for (const workPublicId of result.affectedWorkPublicIds) {
       revalidateTag(workTaxonomyEffectiveTag(workPublicId), "max");
     }
+  }
+
+  return result;
+};
+
+export interface TaxonomyKindOption {
+  slug: string;
+  name: string;
+}
+
+export const listTaxonomyKindsAction = async (): Promise<
+  TaxonomyKindOption[]
+> => {
+  await requireAdmin();
+  return await db
+    .select({ name: taxonomyKind.name, slug: taxonomyKind.slug })
+    .from(taxonomyKind)
+    .orderBy(taxonomyKind.name);
+};
+
+const MAX_LABEL_LENGTH = 100;
+
+export interface LabelMutationResult {
+  id: string;
+  label: string;
+  isPrimary: boolean;
+}
+
+export const listTermLabelsAction = async (
+  termPublicId: string
+): Promise<LabelMutationResult[]> => {
+  await requireAdmin();
+  return await db.transaction(async (tx) => {
+    const term = await findTermByPublicId(tx, termPublicId);
+    if (!term) {
+      return [];
+    }
+    return await listLabelsForTerm(tx, term.id);
+  });
+};
+
+/**
+ * Adds an alias/label for a term. Not an assignment/relation change, so no
+ * effective-taxonomy rebuild -- labels are display metadata only.
+ */
+export const addTermLabelAction = async (
+  termPublicId: string,
+  label: string
+): Promise<MutationResult<LabelMutationResult>> => {
+  await requireAdmin();
+
+  const trimmed = label.trim();
+  if (trimmed.length < 1 || trimmed.length > MAX_LABEL_LENGTH) {
+    return {
+      fieldErrors: {
+        label: [`Label must be 1-${MAX_LABEL_LENGTH} characters.`],
+      },
+      status: "validation-error",
+    };
+  }
+
+  const result = await db.transaction(async (tx) => {
+    const term = await findTermByPublicId(tx, termPublicId);
+    if (!term) {
+      return { status: "not-found" as const };
+    }
+
+    const existing = await listLabelsForTerm(tx, term.id);
+    const isFirstLabel = existing.length === 0;
+
+    // Pre-check rather than try/catch around the insert -- a unique
+    // constraint violation aborts the whole Postgres transaction, so
+    // catching it here can't recover cleanly (the next statement would
+    // fail with "current transaction is aborted"). citext makes the
+    // uniqueness case-insensitive, so compare the same way here.
+    const duplicate = existing.some(
+      (row) => row.label.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (duplicate) {
+      return {
+        fieldErrors: { label: ["This label already exists for this term."] },
+        status: "validation-error" as const,
+      };
+    }
+
+    const [inserted] = await insertLabel(tx, term.id, trimmed, isFirstLabel);
+    if (!inserted) {
+      throw new Error("Failed to add taxonomy label.");
+    }
+    return { data: inserted, status: "success" as const };
+  });
+
+  if (result.status === "success") {
+    revalidateTag(taxonomyTermTag(termPublicId), "max");
+  }
+
+  return result;
+};
+
+export const deleteTermLabelAction = async (
+  labelPublicId: string
+): Promise<MutationResult<{ id: string }>> => {
+  await requireAdmin();
+
+  const result = await db.transaction(async (tx) => {
+    const label = await findLabelByPublicId(tx, labelPublicId);
+    if (!label) {
+      return { status: "not-found" as const };
+    }
+    await deleteLabel(tx, label.id);
+    return {
+      data: { id: labelPublicId },
+      status: "success" as const,
+      termId: label.taxonomyTermId,
+    };
+  });
+
+  if (result.status === "success") {
+    const term = await db
+      .select({ publicId: taxonomyTerm.publicId })
+      .from(taxonomyTerm)
+      .where(eq(taxonomyTerm.id, result.termId))
+      .limit(1);
+    const termPublicId = term.at(0)?.publicId;
+    if (termPublicId) {
+      revalidateTag(taxonomyTermTag(termPublicId), "max");
+    }
+  }
+
+  return result;
+};
+
+export const setPrimaryTermLabelAction = async (
+  termPublicId: string,
+  labelPublicId: string
+): Promise<MutationResult<LabelMutationResult>> => {
+  await requireAdmin();
+
+  const result = await db.transaction(async (tx) => {
+    const [term, label] = await Promise.all([
+      findTermByPublicId(tx, termPublicId),
+      findLabelByPublicId(tx, labelPublicId),
+    ]);
+    if (!(term && label) || label.taxonomyTermId !== term.id) {
+      return { status: "not-found" as const };
+    }
+
+    const [updated] = await setPrimaryLabel(tx, term.id, label.id);
+    if (!updated) {
+      throw new Error("Failed to set primary taxonomy label.");
+    }
+    return { data: updated, status: "success" as const };
+  });
+
+  if (result.status === "success") {
+    revalidateTag(taxonomyTermTag(termPublicId), "max");
   }
 
   return result;

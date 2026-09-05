@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, inArray } from "drizzle-orm";
 
 import type { db as dbClient } from "@/server/db/client";
 import {
@@ -25,32 +25,62 @@ const PROPAGATING_RELATION_TYPES = [
 
 type Tx = Parameters<Parameters<typeof dbClient.transaction>[0]>[0];
 
-/**
- * Rebuilds `work_taxonomy_effective` for one work: direct assignments at
- * depth 0 (reason "direct"), then a bounded BFS over propagating relation
- * types up to `MAX_DEPTH` (reason "inferred"). Replace-in-place inside the
- * caller's transaction -- called from every Server Action that changes an
- * assignment or a relation, per 06_library/05_taxonomy_in_sheets.md.
- */
-export const rebuildEffectiveTaxonomyForWork = async (
-  tx: Tx,
-  workId: string
-): Promise<void> => {
-  const direct = await tx
-    .select({ taxonomyTermId: workTaxonomyAssignment.taxonomyTermId })
-    .from(workTaxonomyAssignment)
-    .where(eq(workTaxonomyAssignment.workId, workId));
+interface EffectiveEntry {
+  depth: number;
+  reason: "direct" | "inferred";
+}
+type EffectiveMap = Map<string, EffectiveEntry>;
 
-  const effective = new Map<
-    string,
-    { depth: number; reason: "direct" | "inferred" }
-  >();
-  for (const row of direct) {
-    effective.set(row.taxonomyTermId, { depth: 0, reason: "direct" });
+/**
+ * Rebuilds `work_taxonomy_effective` for every work in `workIds` at once:
+ * one query for all direct assignments, then a bounded BFS where each depth
+ * level is *one shared edge query* across every work's frontier (not one
+ * query per work per depth) -- so a merge/relation-change affecting N works
+ * costs O(MAX_DEPTH) round trips total, not O(N * MAX_DEPTH)
+ * (topaz-v3-specs/07_backend/01_query_and_n_plus_one_policy.md). Replace-
+ * in-place inside the caller's transaction for every affected work in one
+ * delete + one insert.
+ */
+export const rebuildEffectiveTaxonomyForWorks = async (
+  tx: Tx,
+  workIds: string[]
+): Promise<void> => {
+  if (workIds.length === 0) {
+    return;
   }
 
-  let frontier = [...effective.keys()];
-  for (let depth = 1; depth <= MAX_DEPTH && frontier.length > 0; depth += 1) {
+  const direct = await tx
+    .select({
+      taxonomyTermId: workTaxonomyAssignment.taxonomyTermId,
+      workId: workTaxonomyAssignment.workId,
+    })
+    .from(workTaxonomyAssignment)
+    .where(inArray(workTaxonomyAssignment.workId, workIds));
+
+  const effectiveByWork = new Map<string, EffectiveMap>(
+    workIds.map((workId) => [workId, new Map()])
+  );
+  for (const row of direct) {
+    effectiveByWork
+      .get(row.workId)
+      ?.set(row.taxonomyTermId, { depth: 0, reason: "direct" });
+  }
+
+  let frontierByWork = new Map<string, string[]>(
+    workIds.map((workId) => [
+      workId,
+      [...(effectiveByWork.get(workId)?.keys() ?? [])],
+    ])
+  );
+
+  for (let depth = 1; depth <= MAX_DEPTH; depth += 1) {
+    const allFrontierTermIds = [
+      ...new Set([...frontierByWork.values()].flat()),
+    ];
+    if (allFrontierTermIds.length === 0) {
+      break;
+    }
+
     const edges = await tx
       .select({
         fromTermId: taxonomyRelation.fromTermId,
@@ -59,35 +89,62 @@ export const rebuildEffectiveTaxonomyForWork = async (
       .from(taxonomyRelation)
       .where(
         and(
-          inArray(taxonomyRelation.fromTermId, frontier),
+          inArray(taxonomyRelation.fromTermId, allFrontierTermIds),
           inArray(taxonomyRelation.relationType, [
             ...PROPAGATING_RELATION_TYPES,
           ])
         )
       );
 
-    const nextFrontier: string[] = [];
+    const toTermsByFromTerm = new Map<string, string[]>();
     for (const edge of edges) {
-      if (!effective.has(edge.toTermId)) {
-        effective.set(edge.toTermId, { depth, reason: "inferred" });
-        nextFrontier.push(edge.toTermId);
-      }
+      const bucket = toTermsByFromTerm.get(edge.fromTermId) ?? [];
+      bucket.push(edge.toTermId);
+      toTermsByFromTerm.set(edge.fromTermId, bucket);
     }
-    frontier = nextFrontier;
+
+    const nextFrontierByWork = new Map<string, string[]>();
+    for (const workId of workIds) {
+      const effective = effectiveByWork.get(workId);
+      if (!effective) {
+        continue;
+      }
+      const nextFrontier: string[] = [];
+      for (const fromTermId of frontierByWork.get(workId) ?? []) {
+        for (const toTermId of toTermsByFromTerm.get(fromTermId) ?? []) {
+          if (!effective.has(toTermId)) {
+            effective.set(toTermId, { depth, reason: "inferred" });
+            nextFrontier.push(toTermId);
+          }
+        }
+      }
+      nextFrontierByWork.set(workId, nextFrontier);
+    }
+    frontierByWork = nextFrontierByWork;
   }
 
   await tx
     .delete(workTaxonomyEffective)
-    .where(eq(workTaxonomyEffective.workId, workId));
+    .where(inArray(workTaxonomyEffective.workId, workIds));
 
-  const rows = [...effective.entries()].map(([taxonomyTermId, meta]) => ({
-    depth: meta.depth,
-    reason: meta.reason,
-    taxonomyTermId,
-    workId,
-  }));
+  const rows = [...effectiveByWork.entries()].flatMap(([workId, effective]) =>
+    [...effective.entries()].map(([taxonomyTermId, meta]) => ({
+      depth: meta.depth,
+      reason: meta.reason,
+      taxonomyTermId,
+      workId,
+    }))
+  );
 
   if (rows.length > 0) {
     await tx.insert(workTaxonomyEffective).values(rows);
   }
+};
+
+/** Single-work convenience wrapper over rebuildEffectiveTaxonomyForWorks. */
+export const rebuildEffectiveTaxonomyForWork = async (
+  tx: Tx,
+  workId: string
+): Promise<void> => {
+  await rebuildEffectiveTaxonomyForWorks(tx, [workId]);
 };

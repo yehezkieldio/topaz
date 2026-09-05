@@ -38,14 +38,25 @@ import { TermCombobox } from "@/features/taxonomy/components/term-combobox";
 import type { OptionPickerOption } from "@/features/taxonomy/hooks/use-option-picker";
 import {
   addRelationAction,
+  addTermLabelAction,
+  changeTermKindAction,
   deleteRelationAction,
+  deleteTermLabelAction,
   getTermVersionAction,
+  listTaxonomyKindsAction,
+  listTermLabelsAction,
   listTermRelationsAction,
   mergeTermsAction,
   renameTermAction,
+  listHotTaxonomyTermsAction,
   searchTaxonomyTermsAction,
+  setPrimaryTermLabelAction,
 } from "@/features/taxonomy/server/actions";
-import type { RelationRow } from "@/features/taxonomy/server/actions";
+import type {
+  LabelMutationResult,
+  RelationRow,
+  TaxonomyKindOption,
+} from "@/features/taxonomy/server/actions";
 import type { MutationResult } from "@/server/query/mutation-result";
 
 const RELATION_TYPES = [
@@ -253,6 +264,7 @@ const RelationsPopover = ({
           </Select>
           <TermCombobox
             exclude={termId}
+            loadHotTerms={listHotTaxonomyTermsAction}
             onSelect={(option: OptionPickerOption) => {
               if (isAddPending) {
                 return;
@@ -264,6 +276,250 @@ const RelationsPopover = ({
             placeholder="Related term..."
             search={searchTaxonomyTermsAction}
           />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const LabelsPopover = ({
+  onClose,
+  termId,
+  termLabel,
+}: {
+  termId: string;
+  termLabel: string;
+  onClose: () => void;
+}) => {
+  const [labels, setLabels] = useState<LabelMutationResult[] | null>(null);
+  const [newLabel, setNewLabel] = useState("");
+
+  const refresh = async () => {
+    const rows = await listTermLabelsAction(termId);
+    setLabels(rows);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const rows = await listTermLabelsAction(termId);
+      if (!cancelled) {
+        setLabels(rows);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [termId]);
+
+  const [addState, dispatchAdd, isAddPending] = useActionState<
+    MutationResult<LabelMutationResult> | null,
+    string
+  >(async (_previous, label) => {
+    const result = await addTermLabelAction(termId, label);
+    if (result.status === "success") {
+      setNewLabel("");
+      await refresh();
+    }
+    return result;
+  }, null);
+
+  const [deleteState, dispatchDelete, isDeletePending] = useActionState<
+    MutationResult<{ id: string }> | null,
+    string
+  >(async (_previous, labelId) => {
+    const result = await deleteTermLabelAction(labelId);
+    if (result.status === "success") {
+      await refresh();
+    }
+    return result;
+  }, null);
+
+  const [, dispatchSetPrimary, isSetPrimaryPending] = useActionState<
+    MutationResult<LabelMutationResult> | null,
+    string
+  >(async (_previous, labelId) => {
+    const result = await setPrimaryTermLabelAction(termId, labelId);
+    if (result.status === "success") {
+      await refresh();
+    }
+    return result;
+  }, null);
+
+  return (
+    <Dialog onOpenChange={(open) => !open && onClose()} open>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Labels for {termLabel}</DialogTitle>
+        </DialogHeader>
+        <ul className="mb-3 flex flex-col gap-1">
+          {(labels ?? []).map((label) => (
+            <li
+              className="flex items-center justify-between gap-2 text-xs"
+              key={label.id}
+            >
+              <span className={label.isPrimary ? "font-medium" : undefined}>
+                {label.label}
+                {label.isPrimary && (
+                  <span className="text-muted-foreground ml-1">(primary)</span>
+                )}
+              </span>
+              <div className="flex items-center gap-1">
+                {!label.isPrimary && (
+                  <Button
+                    className="h-5 px-1.5 text-[10px]"
+                    disabled={isSetPrimaryPending}
+                    onClick={() => {
+                      startTransition(() => {
+                        dispatchSetPrimary(label.id);
+                      });
+                    }}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    Set primary
+                  </Button>
+                )}
+                <Button
+                  className="size-5 p-0"
+                  disabled={isDeletePending}
+                  onClick={() => {
+                    startTransition(() => {
+                      dispatchDelete(label.id);
+                    });
+                  }}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <TrashIcon className="size-3" />
+                </Button>
+              </div>
+            </li>
+          ))}
+          {labels?.length === 0 && (
+            <li className="text-muted-foreground text-xs">No labels yet.</li>
+          )}
+        </ul>
+        {addState?.status === "validation-error" && (
+          <p className="text-destructive mb-2 text-xs">
+            {addState.fieldErrors.label?.[0]}
+          </p>
+        )}
+        {deleteState?.status === "not-found" && (
+          <p className="text-destructive mb-2 text-xs">
+            That label no longer exists -- refresh and try again.
+          </p>
+        )}
+        <div className="flex gap-2">
+          <Input
+            className="text-sm"
+            onChange={(event) => setNewLabel(event.target.value)}
+            placeholder="Add an alias..."
+            value={newLabel}
+          />
+          <Button
+            disabled={isAddPending || newLabel.trim().length === 0}
+            onClick={() => {
+              startTransition(() => {
+                dispatchAdd(newLabel);
+              });
+            }}
+            size="sm"
+          >
+            Add
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const ChangeKindPopover = ({
+  onClose,
+  termId,
+  termLabel,
+}: {
+  termId: string;
+  termLabel: string;
+  onClose: () => void;
+}) => {
+  const [kinds, setKinds] = useState<TaxonomyKindOption[] | null>(null);
+  const [version, setVersion] = useState<number | null>(null);
+  const [selectedSlug, setSelectedSlug] = useState<string>("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const [kindOptions, currentVersion] = await Promise.all([
+        listTaxonomyKindsAction(),
+        getTermVersionAction(termId),
+      ]);
+      if (!cancelled) {
+        setKinds(kindOptions);
+        setVersion(currentVersion);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [termId]);
+
+  const [state, dispatch, isPending] = useActionState(
+    async () =>
+      version === null || selectedSlug === ""
+        ? null
+        : await changeTermKindAction(termId, version, selectedSlug),
+    null
+  );
+
+  useEffect(() => {
+    if (state?.status === "success") {
+      onClose();
+    }
+  }, [state, onClose]);
+
+  return (
+    <Dialog onOpenChange={(open) => !open && onClose()} open>
+      <DialogContent className="sm:max-w-xs">
+        <DialogHeader>
+          <DialogTitle>Change kind for {termLabel}</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-2">
+          <Select onValueChange={setSelectedSlug} value={selectedSlug}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a kind..." />
+            </SelectTrigger>
+            <SelectContent>
+              {(kinds ?? []).map((kind) => (
+                <SelectItem key={kind.slug} value={kind.slug}>
+                  {kind.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {state?.status === "validation-error" && (
+            <p className="text-destructive text-xs">
+              {state.fieldErrors.kind?.[0]}
+            </p>
+          )}
+          {state?.status === "version-conflict" && (
+            <p className="text-destructive text-xs">
+              This term changed elsewhere -- reopen to see the latest value.
+            </p>
+          )}
+          <Button
+            disabled={isPending || version === null || selectedSlug === ""}
+            onClick={() => {
+              startTransition(() => {
+                dispatch();
+              });
+            }}
+            size="sm"
+          >
+            Save
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -302,6 +558,7 @@ const MergeDialog = ({
           </DialogHeader>
           <TermCombobox
             exclude={termId}
+            loadHotTerms={listHotTaxonomyTermsAction}
             onSelect={(option) => {
               setTarget(option);
               setConfirming(true);
@@ -366,7 +623,7 @@ export const TermChipMenu = ({
   termLabel: string;
 }) => {
   const [openPanel, setOpenPanel] = useState<
-    "none" | "edit" | "relations" | "merge"
+    "none" | "edit" | "relations" | "merge" | "labels" | "kind"
   >("none");
 
   return (
@@ -389,6 +646,12 @@ export const TermChipMenu = ({
           <DropdownMenuItem onSelect={() => setOpenPanel("relations")}>
             Manage relations
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setOpenPanel("labels")}>
+            Manage labels
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setOpenPanel("kind")}>
+            Change kind
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setOpenPanel("merge")}>
             Merge into...
           </DropdownMenuItem>
@@ -404,6 +667,20 @@ export const TermChipMenu = ({
       )}
       {openPanel === "relations" && (
         <RelationsPopover
+          onClose={() => setOpenPanel("none")}
+          termId={termId}
+          termLabel={termLabel}
+        />
+      )}
+      {openPanel === "labels" && (
+        <LabelsPopover
+          onClose={() => setOpenPanel("none")}
+          termId={termId}
+          termLabel={termLabel}
+        />
+      )}
+      {openPanel === "kind" && (
+        <ChangeKindPopover
           onClose={() => setOpenPanel("none")}
           termId={termId}
           termLabel={termLabel}
