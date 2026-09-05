@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { mdxComponents } from "@/features/site/components/mdx-component-map";
 import {
   ArticleHeader,
   MdxBody,
-  mdxComponents,
 } from "@/features/site/components/site-mdx-content";
 import { SiteContentMeta } from "@/features/site/components/site-primitives";
 import { getNote, getNotes } from "@/features/site/server/notes";

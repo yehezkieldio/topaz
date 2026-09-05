@@ -3,10 +3,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { mdxComponents } from "@/features/site/components/mdx-component-map";
 import {
   ArticleHeader,
   MdxBody,
-  mdxComponents,
 } from "@/features/site/components/site-mdx-content";
 import { SiteContentTags } from "@/features/site/components/site-primitives";
 import { getProject, getProjects } from "@/features/site/server/projects";

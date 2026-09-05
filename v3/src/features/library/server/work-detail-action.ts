@@ -78,37 +78,37 @@ export const getWorkDetailAction = async (
     return null;
   }
 
-  const [contributorRow] = await db
-    .select({ name: contributor.name })
-    .from(workContributor)
-    .innerJoin(contributor, eq(contributor.id, workContributor.contributorId))
-    .where(eq(workContributor.workId, entryRow.workId))
-    .limit(1);
-
-  const sourceRows = await db
-    .select({
-      chapterCount: workSource.chapterCount,
-      sourcePlatformName: sourcePlatform.name,
-      url: workSource.url,
-      wordCount: workSource.wordCount,
-    })
-    .from(workSource)
-    .innerJoin(
-      sourcePlatform,
-      eq(sourcePlatform.id, workSource.sourcePlatformId)
-    )
-    .where(eq(workSource.workId, entryRow.workId))
-    .orderBy(asc(workSource.createdAt));
-
-  const taxonomyRows = await db
-    .select({ id: taxonomyTerm.publicId, label: taxonomyTerm.name })
-    .from(workTaxonomyEffective)
-    .innerJoin(
-      taxonomyTerm,
-      eq(taxonomyTerm.id, workTaxonomyEffective.taxonomyTermId)
-    )
-    .where(eq(workTaxonomyEffective.workId, entryRow.workId))
-    .orderBy(asc(taxonomyTerm.name));
+  const [[contributorRow], sourceRows, taxonomyRows] = await Promise.all([
+    db
+      .select({ name: contributor.name })
+      .from(workContributor)
+      .innerJoin(contributor, eq(contributor.id, workContributor.contributorId))
+      .where(eq(workContributor.workId, entryRow.workId))
+      .limit(1),
+    db
+      .select({
+        chapterCount: workSource.chapterCount,
+        sourcePlatformName: sourcePlatform.name,
+        url: workSource.url,
+        wordCount: workSource.wordCount,
+      })
+      .from(workSource)
+      .innerJoin(
+        sourcePlatform,
+        eq(sourcePlatform.id, workSource.sourcePlatformId)
+      )
+      .where(eq(workSource.workId, entryRow.workId))
+      .orderBy(asc(workSource.createdAt)),
+    db
+      .select({ id: taxonomyTerm.publicId, label: taxonomyTerm.name })
+      .from(workTaxonomyEffective)
+      .innerJoin(
+        taxonomyTerm,
+        eq(taxonomyTerm.id, workTaxonomyEffective.taxonomyTermId)
+      )
+      .where(eq(workTaxonomyEffective.workId, entryRow.workId))
+      .orderBy(asc(taxonomyTerm.name)),
+  ]);
 
   return {
     authorName: contributorRow?.name ?? null,

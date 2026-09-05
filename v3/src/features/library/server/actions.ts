@@ -209,20 +209,21 @@ export const updateStatusAction = async (
       };
     }
 
-    const [startedRow] = await tx
-      .select({ startedAt: readingState.startedAt })
-      .from(readingState)
-      .where(eq(readingState.libraryEntryId, current.id))
-      .limit(1);
-
-    const [updated] = await tx
-      .update(libraryEntry)
-      .set({ status, version: current.version + 1 })
-      .where(eq(libraryEntry.publicId, libraryEntryPublicId))
-      .returning({
-        status: libraryEntry.status,
-        version: libraryEntry.version,
-      });
+    const [[startedRow], [updated]] = await Promise.all([
+      tx
+        .select({ startedAt: readingState.startedAt })
+        .from(readingState)
+        .where(eq(readingState.libraryEntryId, current.id))
+        .limit(1),
+      tx
+        .update(libraryEntry)
+        .set({ status, version: current.version + 1 })
+        .where(eq(libraryEntry.publicId, libraryEntryPublicId))
+        .returning({
+          status: libraryEntry.status,
+          version: libraryEntry.version,
+        }),
+    ]);
 
     const plan = toReadingEvent({
       from: { status: current.status },

@@ -22,15 +22,16 @@ export const mergeTerms = async (
   winningTermId: string,
   losingTermId: string
 ): Promise<string[]> => {
-  const losingAssignments = await tx
-    .select({ workId: workTaxonomyAssignment.workId })
-    .from(workTaxonomyAssignment)
-    .where(eq(workTaxonomyAssignment.taxonomyTermId, losingTermId));
-
-  const winningAssignments = await tx
-    .select({ workId: workTaxonomyAssignment.workId })
-    .from(workTaxonomyAssignment)
-    .where(eq(workTaxonomyAssignment.taxonomyTermId, winningTermId));
+  const [losingAssignments, winningAssignments] = await Promise.all([
+    tx
+      .select({ workId: workTaxonomyAssignment.workId })
+      .from(workTaxonomyAssignment)
+      .where(eq(workTaxonomyAssignment.taxonomyTermId, losingTermId)),
+    tx
+      .select({ workId: workTaxonomyAssignment.workId })
+      .from(workTaxonomyAssignment)
+      .where(eq(workTaxonomyAssignment.taxonomyTermId, winningTermId)),
+  ]);
 
   const alreadyOnWinner = new Set(winningAssignments.map((row) => row.workId));
   const workIdsToReassign = losingAssignments

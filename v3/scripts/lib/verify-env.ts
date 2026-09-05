@@ -75,8 +75,10 @@ export const truncateAppData = async () => {
 };
 
 export const seedReferenceData = async () => {
-  const { db } = await import("@/server/db/client");
-  const { sourcePlatform, taxonomyKind } = await import("@/server/db/schema");
+  const [{ db }, { sourcePlatform, taxonomyKind }] = await Promise.all([
+    import("@/server/db/client"),
+    import("@/server/db/schema"),
+  ]);
 
   await db
     .insert(taxonomyKind)
@@ -99,8 +101,10 @@ export const seedReferenceData = async () => {
 };
 
 export const createTestUser = async (role: "admin" | "user") => {
-  const { db } = await import("@/server/db/client");
-  const { user: userTable } = await import("@/server/db/schema/auth");
+  const [{ db }, { user: userTable }] = await Promise.all([
+    import("@/server/db/client"),
+    import("@/server/db/schema/auth"),
+  ]);
   const id = createId();
   const [row] = await db
     .insert(userTable)
@@ -123,8 +127,10 @@ export const createTestUser = async (role: "admin" | "user") => {
 const SESSION_TTL_MS = 1000 * 60 * 60;
 
 export const createAuthHeaders = async (userId: string) => {
-  const { db } = await import("@/server/db/client");
-  const { session: sessionTable } = await import("@/server/db/schema/auth");
+  const [{ db }, { session: sessionTable }] = await Promise.all([
+    import("@/server/db/client"),
+    import("@/server/db/schema/auth"),
+  ]);
   const token = createId();
   await db.insert(sessionTable).values({
     expiresAt: new Date(Date.now() + SESSION_TTL_MS),

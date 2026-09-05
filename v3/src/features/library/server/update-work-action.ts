@@ -112,44 +112,44 @@ export const getWorkEditDetailAction = async (
     return null;
   }
 
-  const [sourceRow] = await db
-    .select({
-      chapterCount: workSource.chapterCount,
-      id: workSource.id,
-      sourcePlatformId: sourcePlatform.publicId,
-      sourceUrl: workSource.url,
-      wordCount: workSource.wordCount,
-      workSourcePublicId: workSource.publicId,
-    })
-    .from(workSource)
-    .innerJoin(
-      sourcePlatform,
-      eq(sourcePlatform.id, workSource.sourcePlatformId)
-    )
-    .where(eq(workSource.workId, workRow.id))
-    .orderBy(asc(workSource.createdAt))
-    .limit(1);
-
-  const [contributorRow] = await db
-    .select({ name: contributor.name })
-    .from(workContributor)
-    .innerJoin(contributor, eq(contributor.id, workContributor.contributorId))
-    .where(
-      and(
-        eq(workContributor.workId, workRow.id),
-        eq(workContributor.role, "author")
+  const [[sourceRow], [contributorRow], taxonomyRows] = await Promise.all([
+    db
+      .select({
+        chapterCount: workSource.chapterCount,
+        id: workSource.id,
+        sourcePlatformId: sourcePlatform.publicId,
+        sourceUrl: workSource.url,
+        wordCount: workSource.wordCount,
+        workSourcePublicId: workSource.publicId,
+      })
+      .from(workSource)
+      .innerJoin(
+        sourcePlatform,
+        eq(sourcePlatform.id, workSource.sourcePlatformId)
       )
-    )
-    .limit(1);
-
-  const taxonomyRows = await db
-    .select({ id: taxonomyTerm.publicId, label: taxonomyTerm.name })
-    .from(workTaxonomyAssignment)
-    .innerJoin(
-      taxonomyTerm,
-      eq(taxonomyTerm.id, workTaxonomyAssignment.taxonomyTermId)
-    )
-    .where(eq(workTaxonomyAssignment.workId, workRow.id));
+      .where(eq(workSource.workId, workRow.id))
+      .orderBy(asc(workSource.createdAt))
+      .limit(1),
+    db
+      .select({ name: contributor.name })
+      .from(workContributor)
+      .innerJoin(contributor, eq(contributor.id, workContributor.contributorId))
+      .where(
+        and(
+          eq(workContributor.workId, workRow.id),
+          eq(workContributor.role, "author")
+        )
+      )
+      .limit(1),
+    db
+      .select({ id: taxonomyTerm.publicId, label: taxonomyTerm.name })
+      .from(workTaxonomyAssignment)
+      .innerJoin(
+        taxonomyTerm,
+        eq(taxonomyTerm.id, workTaxonomyAssignment.taxonomyTermId)
+      )
+      .where(eq(workTaxonomyAssignment.workId, workRow.id)),
+  ]);
 
   const [latestObservation] = sourceRow
     ? await db
