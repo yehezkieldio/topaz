@@ -84,6 +84,7 @@ const ProjectPage = async ({ params }: ProjectPageProps) => {
       <Link
         className="motion-link text-muted-foreground/75 mb-6 inline-flex items-center gap-2 font-mono text-xs"
         href="/projects"
+        prefetch={false}
       >
         <ArrowLeftIcon
           aria-hidden="true"

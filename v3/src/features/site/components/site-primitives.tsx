@@ -134,7 +134,11 @@ export const SiteContentTitleLink = ({
   }
 
   return (
-    <Link className="motion-link motion-title-link" href={href}>
+    <Link
+      className="motion-link motion-title-link"
+      href={href}
+      prefetch={false}
+    >
       {children}
     </Link>
   );

@@ -39,6 +39,11 @@ export const SiteSectionNav = ({
         const isActive = isActivePath(pathname, link);
 
         return (
+          // Deliberately left prefetching on: this is the site's primary,
+          // persistent section nav -- a small fixed set of links rendered on
+          // every page, all high click-through. Disabling prefetch here
+          // would trade a barely-measurable compute saving for a slower feel
+          // on the site's most-used navigation.
           <Link
             aria-current={isActive ? "page" : undefined}
             className={cn(

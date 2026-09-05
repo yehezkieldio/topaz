@@ -388,17 +388,13 @@ export const addRelationAction = async (
       return { status: "not-found" as const };
     }
 
-    const [inserted] = await insertRelation(
-      tx,
-      fromTerm.id,
-      toTerm.id,
-      relationType
-    );
-
-    const affectedWorkIds = new Set([
-      ...(await findWorkIdsAssignedToTerm(tx, fromTerm.id)),
-      ...(await findWorkIdsAssignedToTerm(tx, toTerm.id)),
+    const [[inserted], fromWorkIds, toWorkIds] = await Promise.all([
+      insertRelation(tx, fromTerm.id, toTerm.id, relationType),
+      findWorkIdsAssignedToTerm(tx, fromTerm.id),
+      findWorkIdsAssignedToTerm(tx, toTerm.id),
     ]);
+
+    const affectedWorkIds = new Set([...fromWorkIds, ...toWorkIds]);
     const affectedWorkPublicIds = await rebuildAndRevalidate(tx, [
       ...affectedWorkIds,
     ]);

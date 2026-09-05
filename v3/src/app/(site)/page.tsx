@@ -59,6 +59,7 @@ const Home = () => (
       <Link
         className="motion-link motion-title-link inline-block text-[15px] font-medium sm:text-base"
         href="/library"
+        prefetch={false}
       >
         Explore the library &rarr;
       </Link>

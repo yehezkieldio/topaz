@@ -20,6 +20,7 @@ export const FeaturedWorks = async () => {
             <Link
               className="motion-link text-sm"
               href={`/library?q=${encodeURIComponent(featuredWork.title)}`}
+              prefetch={false}
             >
               {featuredWork.title}
             </Link>

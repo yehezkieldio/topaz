@@ -25,6 +25,7 @@ export const AuthShell = ({
           <Link
             className="border-border/60 bg-background/40 text-foreground/90 hover:bg-background/60 inline-flex items-center justify-center rounded-md border px-4 py-2 text-xs font-medium backdrop-blur transition"
             href="/library"
+            prefetch={false}
           >
             Return to library
           </Link>

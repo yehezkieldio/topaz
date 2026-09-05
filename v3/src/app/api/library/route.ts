@@ -53,5 +53,14 @@ export const GET = async (request: NextRequest) => {
     status: isLibraryStatus(status) ? status : undefined,
   });
 
-  return NextResponse.json(page);
+  // Public data only (private entries are filtered out in getLibraryList),
+  // so it's safe to share across viewers on the CDN. 60s matches the
+  // client-side staleTime the infinite-scroll list already uses
+  // (library-list-virtualized.tsx), with a longer SWR window so a cache miss
+  // never blocks on the origin.
+  return NextResponse.json(page, {
+    headers: {
+      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+    },
+  });
 };

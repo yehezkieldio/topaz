@@ -94,6 +94,7 @@ const ProjectRow = ({
           <Link
             className="motion-link group text-foreground/82 hover:text-foreground inline-flex items-center gap-1.5 font-medium transition-colors duration-200 ease-(--ease-ui)"
             href={`/projects/${project.slug}`}
+            prefetch={false}
           >
             <FileTextIcon
               aria-hidden="true"
