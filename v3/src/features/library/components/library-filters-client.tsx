@@ -101,6 +101,9 @@ export const LibraryFiltersClient = ({
       <FilterDropdown
         currentLabel={status ? formatLabel(status) : "Status: All"}
         onValueChange={(value) => {
+          // SAFETY: this dropdown's options are built from
+          // libraryStatusValues plus the ALL_STATUSES sentinel (handled
+          // below), so any other value is one of those enum values.
           void setFilters({
             status:
               value === ALL_STATUSES
@@ -141,6 +144,10 @@ export const LibraryFiltersClient = ({
         }
         onValueChange={(value) => {
           void setFilters({
+            // SAFETY: this dropdown's options are built from
+            // contentRatingEnum.enumValues plus the ALL_CONTENT_RATINGS
+            // sentinel (handled below), so any other value is one of those
+            // enum values.
             contentRating:
               value === ALL_CONTENT_RATINGS
                 ? null
@@ -165,6 +172,10 @@ export const LibraryFiltersClient = ({
         }
         onValueChange={(value) => {
           void setFilters({
+            // SAFETY: this dropdown's options are built from
+            // publicationStatusEnum.enumValues plus the
+            // ALL_PUBLICATION_STATUSES sentinel (handled below), so any
+            // other value is one of those enum values.
             publicationStatus:
               value === ALL_PUBLICATION_STATUSES
                 ? null

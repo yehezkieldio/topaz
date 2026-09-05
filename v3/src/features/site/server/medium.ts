@@ -22,10 +22,16 @@ const SENTENCE_END_REGEX = /[.!?]["')\]]?\s/gu;
 const TRAILING_EXCERPT_PUNCTUATION_REGEX = /[\s,;:.-]+$/u;
 const WHITESPACE_REGEX = /\s+/gu;
 const DATE_FORMATTER = new Intl.DateTimeFormat("en", { dateStyle: "medium" });
-const SENTENCE_SEGMENTER =
-  typeof Intl.Segmenter === "function"
-    ? new Intl.Segmenter("en", { granularity: "sentence" })
-    : null;
+/** Older runtimes without Intl.Segmenter throw a ReferenceError constructing it -- caught here so this falls back to the regex-based segmenter below. */
+const createSentenceSegmenter = (): Intl.Segmenter | null => {
+  try {
+    return new Intl.Segmenter("en", { granularity: "sentence" });
+  } catch {
+    return null;
+  }
+};
+
+const SENTENCE_SEGMENTER = createSentenceSegmenter();
 
 const mediumFeedParser = new XMLParser({
   ignoreAttributes: true,
@@ -156,6 +162,10 @@ const formatPublishedDate = (publishedAt: string) => {
 };
 
 const parseMediumFeed = (xml: string): MediumPost[] => {
+  // SAFETY: fast-xml-parser types its output as `any`; every field in
+  // ParsedMediumFeed/ParsedMediumItem is declared optional here and every
+  // read site below defaults it with `??`, so a feed that doesn't actually
+  // match this shape degrades to empty values rather than throwing.
   const feed = mediumFeedParser.parse(xml) as ParsedMediumFeed;
   const items = feed.rss?.channel?.item ?? [];
 

@@ -111,6 +111,9 @@ export const RecordObservationPanel = ({
         <Label>Publication status</Label>
         <Select
           onValueChange={(value) =>
+            // SAFETY: every SelectItem below is rendered from
+            // PUBLICATION_STATUSES itself, so onValueChange can only ever
+            // fire with one of those values.
             setPublicationStatus(value as (typeof PUBLICATION_STATUSES)[number])
           }
           value={publicationStatus ?? undefined}

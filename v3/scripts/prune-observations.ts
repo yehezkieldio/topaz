@@ -37,10 +37,10 @@ const main = async () => {
     return;
   }
 
-  const deleted = (await db.execute(sql`
+  const deleted = await db.execute(sql`
     delete from work_source_observation
     where created_at < now() - interval '${sql.raw(RETENTION_INTERVAL)}'
-  `)) as unknown as { count: number };
+  `);
 
   // biome-ignore lint/suspicious/noConsole: local one-shot CLI script
   console.log(

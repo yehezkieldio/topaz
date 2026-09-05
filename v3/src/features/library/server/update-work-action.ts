@@ -4,6 +4,7 @@ import {
   createServerValidate,
   ServerValidateError,
 } from "@tanstack/react-form-nextjs";
+import type { ServerFormState } from "@tanstack/react-form-nextjs";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
 
@@ -13,6 +14,7 @@ import {
   workFormOpts,
   workFormSchema,
 } from "@/features/library/forms/work-form/shared-code";
+import type { WorkFormValues } from "@/features/library/forms/work-form/shared-code";
 import { workTaxonomyEffectiveTag } from "@/features/taxonomy/server/cache-tags";
 import { rebuildEffectiveTaxonomyForWork } from "@/features/taxonomy/server/repository/effective-taxonomy";
 import { requireAdmin } from "@/server/auth/require-admin";
@@ -212,7 +214,10 @@ const serverValidate = createServerValidate({
 export const updateWorkAction = async (
   workPublicId: string,
   expectedVersion: number,
-  _previousState: unknown,
+  // Unused: only present because useActionState/<form action> call this with
+  // (previousState, formData). Its real shape is whatever this action (or
+  // initialFormState) last returned -- a ServerFormState<WorkFormValues>.
+  _previousState: ServerFormState<WorkFormValues, undefined> | undefined,
   formData: FormData
 ) => {
   const session = await requireAdmin();

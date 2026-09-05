@@ -36,7 +36,7 @@ beforeEach(async () => {
 
 const buildFormData = (overrides: Record<string, string> = {}) => {
   const formData = new FormData();
-  const defaults: Record<string, string> = {
+  const defaults = {
     authorName: "Original Author",
     contentRating: "general",
     description: "",
@@ -44,22 +44,22 @@ const buildFormData = (overrides: Record<string, string> = {}) => {
     sourceUrl: "https://archiveofourown.org/works/original",
     taxonomyTermIds: "[]",
     title: "Original Work",
-  };
+  } satisfies Record<string, string>;
   for (const [key, value] of Object.entries({ ...defaults, ...overrides })) {
     formData.set(key, value);
   }
   return formData;
 };
 
+type WorkActionResult = Awaited<ReturnType<typeof updateWorkAction>>;
+
 /**
  * updateWorkAction's return type also includes bare ServerFormState (the
  * validation-error path from createServerValidate), which has no `status`
  * field -- narrow with `in` before reading it, same as EditWorkForm does.
  */
-const statusOf = (result: unknown): string | undefined =>
-  result !== null && typeof result === "object" && "status" in result
-    ? (result as { status: string }).status
-    : undefined;
+const statusOf = (result: WorkActionResult): string | undefined =>
+  "status" in result ? result.status : undefined;
 
 const createFixtureWork = async () => {
   const [platform] = await db
@@ -271,6 +271,9 @@ describe("update-work-action: admin success path", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.entityType).toBe("work");
     expect(rows[0]?.action).toBe("update-work");
+    // SAFETY: the audit_after_is_object CHECK constraint (audit.ts) guarantees
+    // this jsonb column is a JSON object whenever it's non-null, and this row
+    // was just written by updateWorkAction above.
     expect(Object.keys(rows[0]?.after as object).toSorted()).toEqual([
       "contentRating",
       "publicationStatus",

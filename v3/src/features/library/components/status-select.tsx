@@ -65,6 +65,8 @@ export const StatusSelect = ({
   return (
     <Select
       disabled={isPending}
+      // SAFETY: every SelectItem below is rendered from libraryStatusValues
+      // itself, so onValueChange can only ever fire with one of those values.
       onValueChange={(value) => handleChange(value as LibraryStatus)}
       value={optimisticStatus}
     >

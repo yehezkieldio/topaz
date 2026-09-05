@@ -59,6 +59,9 @@ const fetchLibraryPage = async (
   if (!response.ok) {
     throw new Error("Failed to fetch library page");
   }
+  // SAFETY: this fetches our own /api/library route (src/app/api/library/route.ts),
+  // which serializes exactly getLibraryList's `LibraryListPage` shape via
+  // NextResponse.json -- there is no external/untrusted producer of this response.
   return (await response.json()) as LibraryListPage;
 };
 
@@ -92,6 +95,10 @@ export const LibraryListVirtualized = ({
       // "use cache" call for the identical args.
       initialData: { pageParams: [null], pages: [initialPage] },
       initialDataUpdatedAt: Date.now(),
+      // SAFETY: initialPageParam must be null (page one, no cursor yet) but
+      // useInfiniteQuery infers TPageParam from this literal -- without the
+      // annotation it would narrow to the literal type `null`, which can't
+      // widen to accept the `string | null` cursor getNextPageParam returns.
       initialPageParam: null as string | null,
       queryFn: ({ pageParam }) => fetchLibraryPage(filters, pageParam),
       queryKey,

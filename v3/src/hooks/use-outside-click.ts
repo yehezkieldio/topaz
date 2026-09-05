@@ -19,6 +19,10 @@ export const useOutsideClick = (
     }
 
     const handlePointerDown = (event: PointerEvent) => {
+      // SAFETY: a PointerEvent dispatched on `document` always has a `Node`
+      // (an Element, or `document` itself) as its target -- the DOM only
+      // ever sets `target` to `null` for events that never reach a
+      // registered listener, which this one, by definition, did.
       if (ref.current && !ref.current.contains(event.target as Node)) {
         onOutside();
       }

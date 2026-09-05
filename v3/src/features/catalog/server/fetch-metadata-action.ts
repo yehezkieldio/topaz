@@ -1,5 +1,7 @@
 "use server";
 
+import { z } from "zod";
+
 import { requireAdmin } from "@/server/auth/require-admin";
 import type { publicationStatusEnum } from "@/server/db/schema";
 
@@ -8,17 +10,26 @@ const FETCH_TIMEOUT_MS = 10_000;
 
 type PublicationStatus = (typeof publicationStatusEnum.enumValues)[number];
 
-interface FicHubMeta {
-  title?: string;
-  author?: string;
-  description?: string;
-  status?: string;
-  words?: number;
-  chapters?: number;
-}
+/**
+ * FicHub's shape isn't contractually guaranteed -- a field can arrive as an
+ * object, an array, or absent entirely depending on the source site and
+ * FicHub's own scrape state for it. Parsing at this boundary (rather than
+ * ad-hoc `typeof` checks deeper in the code) means every field below is
+ * either the declared type or `undefined`, never "whatever FicHub sent".
+ */
+const ficHubMetaSchema = z.object({
+  author: z.string().optional(),
+  chapters: z.number().optional(),
+  description: z.string().optional(),
+  status: z.string().optional(),
+  title: z.string().optional(),
+  words: z.number().optional(),
+});
 
 /** FicHub has returned both a flat shape and one nested under `meta` at different times. */
-type FicHubResponse = { meta?: FicHubMeta } & FicHubMeta;
+const ficHubResponseSchema = ficHubMetaSchema.extend({
+  meta: ficHubMetaSchema.optional(),
+});
 
 export interface FetchedWorkMetadata {
   title: string | null;
@@ -30,24 +41,21 @@ export interface FetchedWorkMetadata {
 }
 
 /**
- * FicHub's shape isn't contractually guaranteed -- a field can arrive as an
- * object, an array, or absent entirely depending on the source site and
- * FicHub's own scrape state for it. Never trust it enough to hand a
- * non-string straight to a text field (that's how a form ends up showing
- * literal "[object Object]").
+ * `ficHubMetaSchema` already guarantees `raw` is `string | undefined` --
+ * this just collapses "absent" and "blank" into the same `null` result.
  */
-const pickString = (raw: unknown): string | null => {
-  if (typeof raw !== "string") {
+const pickString = (raw: string | undefined): string | null => {
+  if (raw === undefined) {
     return null;
   }
   const trimmed = raw.trim();
   return trimmed === "" ? null : trimmed;
 };
 
-const pickNumber = (raw: unknown): number | null =>
-  typeof raw === "number" && Number.isFinite(raw) ? raw : null;
+const pickNumber = (raw: number | undefined): number | null =>
+  raw !== undefined && Number.isFinite(raw) ? raw : null;
 
-const mapFicHubStatus = (raw: unknown): PublicationStatus | null => {
+const mapFicHubStatus = (raw: string | undefined): PublicationStatus | null => {
   const status = pickString(raw);
   if (!status) {
     return null;
@@ -102,8 +110,11 @@ export const fetchWorkMetadataAction = async (
       return null;
     }
 
-    const data = (await response.json()) as FicHubResponse;
-    const rawMeta = (data.meta ?? data) as Record<string, unknown>;
+    const parsed = ficHubResponseSchema.safeParse(await response.json());
+    if (!parsed.success) {
+      return null;
+    }
+    const rawMeta = parsed.data.meta ?? parsed.data;
 
     const title = pickString(rawMeta.title);
     const chapterCount = pickNumber(rawMeta.chapters);

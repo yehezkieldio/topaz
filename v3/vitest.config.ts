@@ -8,6 +8,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": `${rootDir}src`,
+      "next/cache": `${rootDir}test/stubs/next-cache.ts`,
+      "next/headers": `${rootDir}test/stubs/next-headers.ts`,
       "server-only": `${rootDir}test/stubs/server-only.ts`,
     },
   },

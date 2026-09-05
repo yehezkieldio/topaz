@@ -45,14 +45,31 @@ const LEADING_ARTICLE_PATTERN = /^(?:a|an|the)\s+/iu;
 export const deriveSortTitle = (title: string): string =>
   title.trim().replace(LEADING_ARTICLE_PATTERN, "").toLowerCase();
 
-const safeParseJsonArray = (raw: string): unknown[] => {
+const safeParseJsonArray = (raw: string): string[] => {
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
   } catch {
     return [];
   }
 };
+
+/**
+ * Shape of `createServerValidate`'s decoded FormData before the two
+ * server-only quirks below are normalized away. Everything except
+ * `isNsfw`/`taxonomyTermIds` already matches `WorkFormValues`, since those
+ * are the only two fields FormData's native encoding can't represent
+ * faithfully.
+ */
+export interface RawWorkFormData extends Omit<
+  WorkFormValues,
+  "isNsfw" | "taxonomyTermIds"
+> {
+  isNsfw?: boolean;
+  taxonomyTermIds: string[] | string;
+}
 
 /**
  * Normalizes raw FormData quirks that only ever show up on the server (the
@@ -71,15 +88,14 @@ const safeParseJsonArray = (raw: string): unknown[] => {
  * client-side `validators.onChange` typing.
  */
 export const normalizeRawWorkFormData = (
-  value: Record<string, unknown>
-): Record<string, unknown> => {
+  value: RawWorkFormData
+): WorkFormValues => {
   const { taxonomyTermIds } = value;
   return {
     ...value,
     isNsfw: value.isNsfw ?? false,
-    taxonomyTermIds:
-      typeof taxonomyTermIds === "string"
-        ? safeParseJsonArray(taxonomyTermIds)
-        : taxonomyTermIds,
+    taxonomyTermIds: Array.isArray(taxonomyTermIds)
+      ? taxonomyTermIds
+      : safeParseJsonArray(taxonomyTermIds),
   };
 };

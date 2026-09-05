@@ -15,11 +15,16 @@ export const buildConditions = <TInput extends object>(
 ): SQL[] => {
   const conditions: SQL[] = [];
 
+  // SAFETY: `spec` is typed as `FilterSpec<TInput>`, a mapped type over
+  // `keyof TInput`, so every own-enumerable key Object.keys sees on it is
+  // necessarily a member of `keyof TInput`, not an arbitrary string.
   for (const key of Object.keys(spec) as (keyof TInput)[]) {
     const value = input[key];
     if (value === undefined || value === null) {
       continue;
     }
+    // SAFETY: the guard above already excluded `undefined`/`null`, so
+    // `value` here is exactly `NonNullable<TInput[typeof key]>`.
     const condition = spec[key]?.(value as NonNullable<TInput[typeof key]>);
     if (condition) {
       conditions.push(condition);

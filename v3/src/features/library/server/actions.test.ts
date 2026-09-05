@@ -317,7 +317,13 @@ describe("library mutation Server Actions: audit_log trail", () => {
     expect(rows[0]?.action).toBe("toggle-favorite");
     expect(rows[0]?.actorId).toBe(admin.id);
     expect(rows[0]?.changedColumns).toEqual(["favorite"]);
+    // SAFETY: the audit_before_is_object CHECK constraint (audit.ts)
+    // guarantees this jsonb column is a JSON object whenever non-null, and
+    // this row was just written above.
     expect(Object.keys(rows[0]?.before as object)).toEqual(["favorite"]);
+    // SAFETY: the audit_after_is_object CHECK constraint (audit.ts)
+    // guarantees this jsonb column is a JSON object whenever non-null, and
+    // this row was just written above.
     expect(Object.keys(rows[0]?.after as object)).toEqual(["favorite"]);
     expect(JSON.stringify(rows[0]?.after).length).toBeLessThan(500);
   });

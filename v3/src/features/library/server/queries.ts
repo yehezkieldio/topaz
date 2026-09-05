@@ -171,6 +171,11 @@ const fetchLibraryList = async ({
       // mapper expects a Date, not the cursor's JSON-safe ISO string.
       cursor: decoded && {
         id: decoded.id,
+        // SAFETY: decodeCursor already rejected any cursor whose sortBy
+        // doesn't match SORT_BY ("updatedAt"); every cursor minted for that
+        // sort encodes libraryEntry.updatedAt.toISOString() as sortValue
+        // (see the mappedRows/paginateRows below), so it's always a string
+        // here even though CursorPayload's sortValue is a wider union.
         sortValue: new Date(decoded.sortValue as string),
       },
       direction: SORT_ORDER,
@@ -266,6 +271,10 @@ const fetchLibraryList = async ({
 
   const mappedRows: LibraryListRow[] = rows.map((row) => ({
     ...row,
+    // SAFETY: taxonomyAgg's raw sql`json_agg(json_build_object('id', ...,
+    // 'label', ...))` above builds this JSON itself with exactly
+    // TaxonomyChip's two fields (coalescing to '[]' when there are none),
+    // so the shape is guaranteed by the query, not by anything untrusted.
     taxonomyTerms: (row.taxonomyTerms as TaxonomyChip[] | null) ?? [],
     updatedAt:
       row.updatedAt instanceof Date

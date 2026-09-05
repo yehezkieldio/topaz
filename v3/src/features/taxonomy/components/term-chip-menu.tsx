@@ -253,6 +253,9 @@ const RelationsPopover = ({
         <div className="flex flex-col gap-2">
           <Select
             onValueChange={(value) =>
+              // SAFETY: every SelectItem below is rendered from
+              // `RELATION_TYPES.map(...)`, so onValueChange can only ever
+              // fire with a value that is itself a member of RELATION_TYPES.
               setRelationType(value as (typeof RELATION_TYPES)[number])
             }
             value={relationType}

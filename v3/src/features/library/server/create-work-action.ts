@@ -4,8 +4,10 @@ import {
   createServerValidate,
   ServerValidateError,
 } from "@tanstack/react-form-nextjs";
+import type { ServerFormState } from "@tanstack/react-form-nextjs";
 import { eq, inArray } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
+import { z } from "zod";
 
 import {
   deriveSortTitle,
@@ -13,6 +15,7 @@ import {
   workFormOpts,
   workFormSchema,
 } from "@/features/library/forms/work-form/shared-code";
+import type { WorkFormValues } from "@/features/library/forms/work-form/shared-code";
 import {
   libraryListTag,
   libraryStatsTag,
@@ -37,9 +40,15 @@ import {
 
 const normalize = (value: string) => value.trim().toLowerCase();
 
-/** Trimmed, non-negative-integer parse -- empty/invalid input means "not set", not zero. */
-const parseOptionalCount = (raw: FormDataEntryValue | null): number | null => {
-  if (typeof raw !== "string") {
+/**
+ * Trimmed, non-negative-integer parse -- empty/invalid input means "not set",
+ * not zero. Parses at the FormData boundary with zod: `raw` is a
+ * `FormDataEntryValue | null` (string | File | null), and a non-string entry
+ * (e.g. a stray File under this field name) fails the schema and yields
+ * `null`, same as any other unparsable input.
+ */
+const optionalCountSchema = z.union([z.string(), z.null()]).transform((raw) => {
+  if (raw === null) {
     return null;
   }
   const trimmed = raw.trim();
@@ -48,6 +57,11 @@ const parseOptionalCount = (raw: FormDataEntryValue | null): number | null => {
   }
   const parsed = Number(trimmed);
   return Number.isNaN(parsed) ? null : Math.max(0, Math.trunc(parsed));
+});
+
+const parseOptionalCount = (raw: FormDataEntryValue | null): number | null => {
+  const result = optionalCountSchema.safeParse(raw);
+  return result.success ? result.data : null;
 };
 
 const serverValidate = createServerValidate({
@@ -71,7 +85,10 @@ const serverValidate = createServerValidate({
 });
 
 export const createWorkAction = async (
-  _previousState: unknown,
+  // Unused: only present because useActionState/<form action> call this with
+  // (previousState, formData). Its real shape is whatever this action (or
+  // initialFormState) last returned -- a ServerFormState<WorkFormValues>.
+  _previousState: ServerFormState<WorkFormValues, undefined> | undefined,
   formData: FormData
 ) => {
   const session = await requireAdmin();

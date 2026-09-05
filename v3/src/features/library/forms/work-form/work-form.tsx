@@ -7,6 +7,7 @@ import {
   useTransform,
 } from "@tanstack/react-form-nextjs";
 import { useActionState, useEffect, useState, useTransition } from "react";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -45,6 +46,12 @@ const PUBLICATION_STATUSES = [
 ] as const;
 
 const formatOption = (value: string) => value.replaceAll("_", " ");
+
+// `errorMap.onServer` is typed `unknown` (useForm here has no `onServer`
+// validator of its own -- the shape only comes from mergeForm-ing in the
+// server action's `ServerValidateError` state at runtime), so parse it with
+// zod at this render boundary rather than assuming a shape with `typeof`.
+const serverErrorSchema = z.string().min(1);
 
 export const WorkForm = ({
   onDirtyChange,
@@ -143,18 +150,19 @@ export const WorkForm = ({
 
   return (
     <form
-      action={dispatchAction as never}
+      action={dispatchAction}
       className="flex flex-col gap-4"
       onSubmit={() => form.handleSubmit()}
     >
       <form.Subscribe selector={(state) => state.errorMap.onServer}>
-        {(serverError) =>
-          typeof serverError === "string" && serverError ? (
+        {(serverError) => {
+          const parsed = serverErrorSchema.safeParse(serverError);
+          return parsed.success ? (
             <p className="bg-destructive/10 text-destructive rounded-md p-2 text-xs">
-              {serverError}
+              {parsed.data}
             </p>
-          ) : null
-        }
+          ) : null;
+        }}
       </form.Subscribe>
 
       <form.Field name="title">
@@ -194,6 +202,8 @@ export const WorkForm = ({
               id={field.name}
               label="Content rating"
               onValueChange={(value) =>
+                // SAFETY: options above are built from CONTENT_RATINGS
+                // itself, so onValueChange can only fire with one of those.
                 field.handleChange(value as (typeof CONTENT_RATINGS)[number])
               }
               options={CONTENT_RATINGS.map((rating) => ({
@@ -211,6 +221,8 @@ export const WorkForm = ({
               id={field.name}
               label="Publication status"
               onValueChange={(value) =>
+                // SAFETY: options above are built from PUBLICATION_STATUSES
+                // itself, so onValueChange can only fire with one of those.
                 field.handleChange(
                   value as (typeof PUBLICATION_STATUSES)[number]
                 )

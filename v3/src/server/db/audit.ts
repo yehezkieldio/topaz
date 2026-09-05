@@ -5,6 +5,20 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 type AuditEntityType = (typeof auditLog.entityType.enumValues)[number];
 
+/**
+ * The jsonb `before`/`after` columns hold an allow-listed slice of a row's
+ * columns (see the callers, and audit_log's schema comment) -- their values
+ * are whatever plain-data shape a Postgres column can hold, i.e. any JSON
+ * value, never a function or class instance.
+ */
+type AuditValue =
+  | string
+  | number
+  | boolean
+  | null
+  | AuditValue[]
+  | { [key: string]: AuditValue };
+
 export interface AuditContext {
   actorId: string;
   action: string;
@@ -14,8 +28,8 @@ export interface AuditPlan {
   entityType: AuditEntityType;
   entityId: string;
   changedColumns: string[];
-  before: Record<string, unknown> | null;
-  after: Record<string, unknown> | null;
+  before: Record<string, AuditValue> | null;
+  after: Record<string, AuditValue> | null;
   version: number;
 }
 

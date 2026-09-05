@@ -10,7 +10,7 @@ import { plugin } from "bun";
  *
  * Load via `bun --preload ./scripts/lib/next-runtime-mock.ts <script>`.
  */
-export const headersRef: { current: Headers } = { current: new Headers() };
+export const headersRef = { current: new Headers() };
 
 plugin({
   name: "next-runtime-mock",

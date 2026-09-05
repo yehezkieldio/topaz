@@ -8,6 +8,8 @@
  *
  *   bun --preload ./scripts/lib/next-runtime-mock.ts scripts/verify-auth-roles.ts
  */
+import { ForbiddenError } from "@/server/auth/require-admin";
+
 import { headersRef } from "./lib/next-runtime-mock";
 import {
   check,
@@ -21,8 +23,8 @@ import {
   truncateAppData,
 } from "./lib/verify-env";
 
-const isForbidden = (error: unknown) =>
-  error instanceof Error && /forbidden/iu.test(error.message);
+const isForbidden = (error: unknown): error is ForbiddenError =>
+  error instanceof ForbiddenError;
 
 const main = async () => {
   await truncateAppData();

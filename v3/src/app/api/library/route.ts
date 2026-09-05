@@ -12,17 +12,25 @@ import {
 const isLibraryStatus = (
   value: string | null
 ): value is (typeof libraryStatusValues)[number] =>
+  // SAFETY: widening a readonly tuple of string literals to `readonly
+  // string[]` only relaxes the compile-time element type for `.includes`;
+  // it changes nothing about the tuple's actual runtime contents, so the
+  // membership check below is exactly as precise as the literal type.
   value !== null && (libraryStatusValues as readonly string[]).includes(value);
 
 const isContentRating = (
   value: string | null
 ): value is (typeof contentRatingEnum.enumValues)[number] =>
+  // SAFETY: same widening as isLibraryStatus above -- only relaxes the
+  // element type for `.includes`, not the enum's actual runtime values.
   value !== null &&
   (contentRatingEnum.enumValues as readonly string[]).includes(value);
 
 const isPublicationStatus = (
   value: string | null
 ): value is (typeof publicationStatusEnum.enumValues)[number] =>
+  // SAFETY: same widening as isLibraryStatus above -- only relaxes the
+  // element type for `.includes`, not the enum's actual runtime values.
   value !== null &&
   (publicationStatusEnum.enumValues as readonly string[]).includes(value);
 

@@ -3,33 +3,18 @@ import { afterAll, vi } from "vitest";
 import { closeDbConnection } from "@/server/db/client";
 
 /**
- * Registered in a Vitest `setupFiles` entry, which Vitest guarantees runs
- * to completion before any test file's own module graph is evaluated --
- * unlike putting vi.mock() calls in a plain helper module that test files
- * import, where the auto-formatter's fixed import-group ordering (aliased
- * "@/..." imports always sort before relative "../test/..." ones) can put a
- * transitive real `next/headers` import ahead of this mock's registration,
- * silently caching the real module instead of the mock.
+ * `next/headers` and `next/cache` are redirected to test/stubs/next-headers.ts
+ * and test/stubs/next-cache.ts via vitest.config.ts's resolve.alias (the same
+ * mechanism used for the "server-only" stub) rather than vi.mock() -- that
+ * redirect happens at module-resolution time, before any module graph is
+ * evaluated, so there's no module-registry interception and no import-order
+ * race with a transitive real `next/headers` import getting cached first.
+ * Both stubs read/write these exports, so this module must still be
+ * evaluated before them -- guaranteed by its listing in `setupFiles`, which
+ * Vitest runs to completion before any test file's own module graph.
  */
-export const headersRef: { current: Headers } = { current: new Headers() };
+export const headersRef = { current: new Headers() };
 export const revalidateTagMock = vi.fn();
-
-vi.mock("next/headers", () => ({
-  cookies: () => Promise.resolve({ get: () => null, getAll: () => [] }),
-  headers: () => Promise.resolve(headersRef.current),
-}));
-
-vi.mock("next/cache", () => ({
-  cacheLife: () => {
-    // no-op: cacheLife() requires a real "use cache" build transform, which
-    // plain vitest doesn't apply -- stubbed so "use cache" query functions
-    // (getLibraryList, getLibraryStats, ...) can be called directly in tests.
-  },
-  cacheTag: () => {
-    // no-op, see cacheLife() above.
-  },
-  revalidateTag: (...args: unknown[]) => revalidateTagMock(...args),
-}));
 
 afterAll(async () => {
   await closeDbConnection();

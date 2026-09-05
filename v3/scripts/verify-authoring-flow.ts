@@ -91,17 +91,11 @@ const main = async () => {
 
   await check(
     "createWorkAction returns success with a new work id",
-    () =>
-      typeof result === "object" &&
-      result !== null &&
-      "status" in result &&
-      result.status === "success" &&
-      "workPublicId" in result &&
-      typeof result.workPublicId === "string"
+    () => "status" in result && result.status === "success"
   );
 
   const workPublicId =
-    "workPublicId" in result && typeof result.workPublicId === "string"
+    "status" in result && result.status === "success"
       ? result.workPublicId
       : "";
 
@@ -207,9 +201,12 @@ const main = async () => {
   if (!otherTermRow) {
     throw new Error("Failed to look up the second term's internal id.");
   }
+  if (!createdWork) {
+    throw new Error("createWorkAction did not create a work row.");
+  }
   await db.insert(workTaxonomyAssignment).values({
     taxonomyTermId: otherTermRow.id,
-    workId: (createdWork as { id: string }).id,
+    workId: createdWork.id,
   });
 
   const mergeResult = await mergeTermsAction(
