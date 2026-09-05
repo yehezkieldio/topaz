@@ -1,5 +1,6 @@
 import { db } from "./client";
-import { sourcePlatform, taxonomyKind } from "./schema";
+import { sourcePlatform } from "./schema/catalog";
+import { taxonomyKind } from "./schema/taxonomy";
 
 const TAXONOMY_KINDS = [
   { name: "Fandom", slug: "fandom" },

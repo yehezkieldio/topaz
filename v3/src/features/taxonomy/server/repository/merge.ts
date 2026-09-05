@@ -34,9 +34,12 @@ export const mergeTerms = async (
   ]);
 
   const alreadyOnWinner = new Set(winningAssignments.map((row) => row.workId));
-  const workIdsToReassign = losingAssignments
-    .map((row) => row.workId)
-    .filter((workId) => !alreadyOnWinner.has(workId));
+  const workIdsToReassign: string[] = [];
+  for (const row of losingAssignments) {
+    if (!alreadyOnWinner.has(row.workId)) {
+      workIdsToReassign.push(row.workId);
+    }
+  }
 
   if (workIdsToReassign.length > 0) {
     await tx
@@ -86,14 +89,16 @@ export const mergeTerms = async (
       relationType: taxonomyRelation.relationType,
       toTermId: taxonomyRelation.toTermId,
     });
-  for (const edge of outgoing) {
+  if (outgoing.length > 0) {
     await tx
       .insert(taxonomyRelation)
-      .values({
-        fromTermId: winningTermId,
-        relationType: edge.relationType,
-        toTermId: edge.toTermId,
-      })
+      .values(
+        outgoing.map((edge) => ({
+          fromTermId: winningTermId,
+          relationType: edge.relationType,
+          toTermId: edge.toTermId,
+        }))
+      )
       .onConflictDoNothing();
   }
 
@@ -104,14 +109,16 @@ export const mergeTerms = async (
       fromTermId: taxonomyRelation.fromTermId,
       relationType: taxonomyRelation.relationType,
     });
-  for (const edge of incoming) {
+  if (incoming.length > 0) {
     await tx
       .insert(taxonomyRelation)
-      .values({
-        fromTermId: edge.fromTermId,
-        relationType: edge.relationType,
-        toTermId: winningTermId,
-      })
+      .values(
+        incoming.map((edge) => ({
+          fromTermId: edge.fromTermId,
+          relationType: edge.relationType,
+          toTermId: winningTermId,
+        }))
+      )
       .onConflictDoNothing();
   }
 

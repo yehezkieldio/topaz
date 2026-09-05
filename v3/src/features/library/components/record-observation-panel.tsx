@@ -58,10 +58,10 @@ export const RecordObservationPanel = ({
   const chapterId = useId();
   const wordId = useId();
   const [chapterCount, setChapterCount] = useState(
-    initialChapterCount?.toString() ?? ""
+    () => initialChapterCount?.toString() ?? ""
   );
   const [wordCount, setWordCount] = useState(
-    initialWordCount?.toString() ?? ""
+    () => initialWordCount?.toString() ?? ""
   );
   const [publicationStatus, setPublicationStatus] = useState<
     (typeof PUBLICATION_STATUSES)[number] | null

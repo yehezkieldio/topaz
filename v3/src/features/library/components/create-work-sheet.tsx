@@ -3,16 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -22,6 +12,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { DiscardChangesDialog } from "@/features/library/components/discard-changes-dialog";
 import { WorkForm } from "@/features/library/forms/work-form/work-form";
 import { useCloseGuard } from "@/hooks/use-close-guard";
 import { authClient } from "@/lib/auth-client";
@@ -98,24 +89,11 @@ export const CreateWorkSheet = ({
           </div>
         </SheetContent>
       </Sheet>
-      <AlertDialog open={pendingClose}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Closing now will lose what you&apos;ve entered in this form.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelClose}>
-              Keep editing
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmClose}>
-              Discard
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DiscardChangesDialog
+        onCancel={cancelClose}
+        onConfirm={confirmClose}
+        open={pendingClose}
+      />
     </>
   );
 };

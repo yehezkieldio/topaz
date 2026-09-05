@@ -203,6 +203,11 @@ const WorkCardComponent = ({
   );
 };
 
+// The React Compiler memoizes work done *inside* a render, but it doesn't
+// stop the parent virtualizer (library-list-virtualized.tsx) from
+// re-invoking every mounted row's render function on its own scroll-driven
+// state changes. With rows in the dozens during a fast scroll, skipping
+// unaffected rows via memo() is still load-bearing here -- keep it.
 export const WorkCard = memo(WorkCardComponent);
 
 export const WorkCardSkeleton = () => (

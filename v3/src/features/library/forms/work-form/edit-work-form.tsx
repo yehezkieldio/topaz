@@ -12,24 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { recordSourceObservationAction } from "@/features/catalog/server/observation-actions";
-import { ProgressInput } from "@/features/library/components/progress-input";
-import { RatingStars } from "@/features/library/components/rating-stars";
-import { RecordObservationPanel } from "@/features/library/components/record-observation-panel";
-import { StatusSelect } from "@/features/library/components/status-select";
-import {
-  updateProgressAction,
-  updateRatingAction,
-  updateStatusAction,
-} from "@/features/library/server/actions";
 import { TermMultiselect } from "@/features/taxonomy/components/term-multiselect";
 import { createTaxonomyCreatable } from "@/features/taxonomy/creatable";
 import {
@@ -40,7 +23,10 @@ import {
 import type { WorkEditDetail } from "../../server/update-work-action";
 import { updateWorkAction } from "../../server/update-work-action";
 import { detectSourcePlatform } from "./detect-source-platform";
+import { SelectField } from "./select-field";
 import { workFormOpts, workFormSchema } from "./shared-code";
+import { TextField } from "./text-field";
+import { WorkProgressSection } from "./work-progress-section";
 
 const taxonomyCreatable = createTaxonomyCreatable();
 
@@ -160,73 +146,18 @@ export const EditWorkForm = ({
         }
       </form.Subscribe>
 
-      <div className="flex flex-col gap-4 rounded-md border p-3">
-        <p className="text-sm font-medium">Progress</p>
-
-        <div>
-          <p className="text-muted-foreground mb-2 text-xs">Your progress</p>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="flex flex-col gap-2">
-              <Label>Status</Label>
-              <StatusSelect
-                libraryEntryPublicId={detail.libraryEntryPublicId}
-                status={detail.status}
-                updateStatusAction={updateStatusAction}
-                version={detail.libraryEntryVersion}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>Rating</Label>
-              <RatingStars
-                libraryEntryPublicId={detail.libraryEntryPublicId}
-                rating={detail.rating}
-                updateRatingAction={updateRatingAction}
-                version={detail.readingStateVersion ?? 0}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>Current chapter</Label>
-              <ProgressInput
-                currentChapter={detail.currentChapter}
-                libraryEntryPublicId={detail.libraryEntryPublicId}
-                updateProgressAction={updateProgressAction}
-                version={detail.readingStateVersion ?? 0}
-              />
-            </div>
-          </div>
-        </div>
-
-        {detail.workSourcePublicId && (
-          <div className="border-t pt-4">
-            <RecordObservationPanel
-              initialChapterCount={detail.latestChapterCount}
-              initialPublicationStatus={detail.latestPublicationStatus}
-              initialWordCount={detail.latestWordCount}
-              recordAction={recordSourceObservationAction}
-              workSourcePublicId={detail.workSourcePublicId}
-            />
-          </div>
-        )}
-      </div>
+      <WorkProgressSection detail={detail} />
 
       <form.Field name="title">
         {(field) => (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={field.name}>Title</Label>
-            <Input
-              className="rounded-md"
-              id={field.name}
-              name={field.name}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              value={field.state.value}
-            />
-            {field.state.meta.errors.map((error) => (
-              <p className="text-destructive text-xs" key={String(error)}>
-                {String(error)}
-              </p>
-            ))}
-          </div>
+          <TextField
+            errors={field.state.meta.errors}
+            id={field.name}
+            label="Title"
+            onBlur={field.handleBlur}
+            onChange={field.handleChange}
+            value={field.state.value}
+          />
         )}
       </form.Field>
 
@@ -250,63 +181,37 @@ export const EditWorkForm = ({
       <div className="grid grid-cols-2 gap-4">
         <form.Field name="contentRating">
           {(field) => (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor={field.name}>Content rating</Label>
-              <input
-                name={field.name}
-                type="hidden"
-                value={field.state.value}
-              />
-              <Select
-                onValueChange={(value) =>
-                  field.handleChange(value as (typeof CONTENT_RATINGS)[number])
-                }
-                value={field.state.value}
-              >
-                <SelectTrigger className="w-full rounded-md" id={field.name}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CONTENT_RATINGS.map((rating) => (
-                    <SelectItem key={rating} value={rating}>
-                      {formatOption(rating)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SelectField
+              id={field.name}
+              label="Content rating"
+              onValueChange={(value) =>
+                field.handleChange(value as (typeof CONTENT_RATINGS)[number])
+              }
+              options={CONTENT_RATINGS.map((rating) => ({
+                label: formatOption(rating),
+                value: rating,
+              }))}
+              value={field.state.value}
+            />
           )}
         </form.Field>
 
         <form.Field name="publicationStatus">
           {(field) => (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor={field.name}>Publication status</Label>
-              <input
-                name={field.name}
-                type="hidden"
-                value={field.state.value}
-              />
-              <Select
-                onValueChange={(value) =>
-                  field.handleChange(
-                    value as (typeof PUBLICATION_STATUSES)[number]
-                  )
-                }
-                value={field.state.value}
-              >
-                <SelectTrigger className="w-full rounded-md" id={field.name}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PUBLICATION_STATUSES.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {formatOption(status)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SelectField
+              id={field.name}
+              label="Publication status"
+              onValueChange={(value) =>
+                field.handleChange(
+                  value as (typeof PUBLICATION_STATUSES)[number]
+                )
+              }
+              options={PUBLICATION_STATUSES.map((status) => ({
+                label: formatOption(status),
+                value: status,
+              }))}
+              value={field.state.value}
+            />
           )}
         </form.Field>
       </div>
@@ -332,56 +237,32 @@ export const EditWorkForm = ({
 
       <form.Field name="authorName">
         {(field) => (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={field.name}>Author</Label>
-            <Input
-              className="rounded-md"
-              id={field.name}
-              name={field.name}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              value={field.state.value}
-            />
-            {field.state.meta.errors.map((error) => (
-              <p className="text-destructive text-xs" key={String(error)}>
-                {String(error)}
-              </p>
-            ))}
-          </div>
+          <TextField
+            errors={field.state.meta.errors}
+            id={field.name}
+            label="Author"
+            onBlur={field.handleBlur}
+            onChange={field.handleChange}
+            value={field.state.value}
+          />
         )}
       </form.Field>
 
       <div className="grid grid-cols-2 gap-4">
         <form.Field name="sourcePlatformId">
           {(field) => (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor={field.name}>Source platform</Label>
-              <input
-                name={field.name}
-                type="hidden"
-                value={field.state.value}
-              />
-              <Select
-                onValueChange={field.handleChange}
-                value={field.state.value}
-              >
-                <SelectTrigger className="w-full rounded-md" id={field.name}>
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {sourcePlatforms.map((platform) => (
-                    <SelectItem key={platform.id} value={platform.id}>
-                      {platform.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {field.state.meta.errors.map((error) => (
-                <p className="text-destructive text-xs" key={String(error)}>
-                  {String(error)}
-                </p>
-              ))}
-            </div>
+            <SelectField
+              errors={field.state.meta.errors}
+              id={field.name}
+              label="Source platform"
+              onValueChange={field.handleChange}
+              options={sourcePlatforms.map((platform) => ({
+                label: platform.name,
+                value: platform.id,
+              }))}
+              placeholder="Select..."
+              value={field.state.value}
+            />
           )}
         </form.Field>
 

@@ -1,7 +1,13 @@
 "use client";
 
 import { MoreHorizontalIcon, TrashIcon } from "lucide-react";
-import { startTransition, useActionState, useEffect, useState } from "react";
+import {
+  startTransition,
+  useActionState,
+  useEffect,
+  useState,
+  useTransition,
+} from "react";
 
 import {
   AlertDialog,
@@ -93,24 +99,24 @@ const EditTermPopover = ({
     };
   }, [termId]);
 
-  const [state, dispatch, isPending] = useActionState(
-    async () =>
-      version === null ? null : await renameTermAction(termId, version, name),
-    null
-  );
+  const [state, setState] = useState<Awaited<
+    ReturnType<typeof renameTermAction>
+  > | null>(null);
+  const [isPending, startRenameTransition] = useTransition();
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    startTransition(() => {
-      dispatch();
+    if (version === null) {
+      return;
+    }
+    startRenameTransition(async () => {
+      const result = await renameTermAction(termId, version, name);
+      setState(result);
+      if (result.status === "success") {
+        onClose();
+      }
     });
   };
-
-  useEffect(() => {
-    if (state?.status === "success") {
-      onClose();
-    }
-  }, [state, onClose]);
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open>
@@ -466,19 +472,23 @@ const ChangeKindPopover = ({
     };
   }, [termId]);
 
-  const [state, dispatch, isPending] = useActionState(
-    async () =>
-      version === null || selectedSlug === ""
-        ? null
-        : await changeTermKindAction(termId, version, selectedSlug),
-    null
-  );
+  const [state, setState] = useState<Awaited<
+    ReturnType<typeof changeTermKindAction>
+  > | null>(null);
+  const [isPending, startChangeKindTransition] = useTransition();
 
-  useEffect(() => {
-    if (state?.status === "success") {
-      onClose();
+  const handleSave = () => {
+    if (version === null || selectedSlug === "") {
+      return;
     }
-  }, [state, onClose]);
+    startChangeKindTransition(async () => {
+      const result = await changeTermKindAction(termId, version, selectedSlug);
+      setState(result);
+      if (result.status === "success") {
+        onClose();
+      }
+    });
+  };
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open>
@@ -511,11 +521,7 @@ const ChangeKindPopover = ({
           )}
           <Button
             disabled={isPending || version === null || selectedSlug === ""}
-            onClick={() => {
-              startTransition(() => {
-                dispatch();
-              });
-            }}
+            onClick={handleSave}
             size="sm"
           >
             Save

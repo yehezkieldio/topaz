@@ -71,6 +71,7 @@ export const TermMultiselect = ({
           </Badge>
         ))}
         <input
+          aria-label="Add tags"
           className="placeholder:text-muted-foreground min-w-24 flex-1 bg-transparent text-sm outline-none"
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => setIsOpen(true)}

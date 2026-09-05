@@ -6,20 +6,11 @@ import {
   useForm,
   useTransform,
 } from "@tanstack/react-form-nextjs";
-import { WandSparklesIcon } from "lucide-react";
 import { useActionState, useEffect, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchWorkMetadataAction } from "@/features/catalog/server/fetch-metadata-action";
 import { createWorkAction } from "@/features/library/server/create-work-action";
@@ -31,7 +22,11 @@ import {
 } from "@/features/taxonomy/server/actions";
 
 import { detectSourcePlatform } from "./detect-source-platform";
+import { NewWorkTotalsSection } from "./new-work-totals-section";
+import { SelectField } from "./select-field";
 import { workFormOpts, workFormSchema } from "./shared-code";
+import { SourceUrlField } from "./source-url-field";
+import { TextField } from "./text-field";
 
 const taxonomyCreatable = createTaxonomyCreatable();
 
@@ -57,7 +52,7 @@ export const WorkForm = ({
   sourcePlatforms,
 }: {
   sourcePlatforms: { id: string; name: string; baseUrl: string | null }[];
-  onSuccess: (workPublicId: string) => void;
+  onSuccess: () => void;
   onDirtyChange: (isDirty: boolean) => void;
 }) => {
   const [actionState, dispatchAction, isActionPending] = useActionState(
@@ -100,7 +95,7 @@ export const WorkForm = ({
 
   useEffect(() => {
     if (actionState && "workPublicId" in actionState) {
-      onSuccess(actionState.workPublicId as string);
+      onSuccess();
     }
   }, [actionState, onSuccess]);
 
@@ -164,22 +159,14 @@ export const WorkForm = ({
 
       <form.Field name="title">
         {(field) => (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={field.name}>Title</Label>
-            <Input
-              className="rounded-md"
-              id={field.name}
-              name={field.name}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              value={field.state.value}
-            />
-            {field.state.meta.errors.map((error) => (
-              <p className="text-destructive text-xs" key={String(error)}>
-                {String(error)}
-              </p>
-            ))}
-          </div>
+          <TextField
+            errors={field.state.meta.errors}
+            id={field.name}
+            label="Title"
+            onBlur={field.handleBlur}
+            onChange={field.handleChange}
+            value={field.state.value}
+          />
         )}
       </form.Field>
 
@@ -203,63 +190,37 @@ export const WorkForm = ({
       <div className="grid grid-cols-2 gap-4">
         <form.Field name="contentRating">
           {(field) => (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor={field.name}>Content rating</Label>
-              <input
-                name={field.name}
-                type="hidden"
-                value={field.state.value}
-              />
-              <Select
-                onValueChange={(value) =>
-                  field.handleChange(value as (typeof CONTENT_RATINGS)[number])
-                }
-                value={field.state.value}
-              >
-                <SelectTrigger className="w-full rounded-md" id={field.name}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CONTENT_RATINGS.map((rating) => (
-                    <SelectItem key={rating} value={rating}>
-                      {formatOption(rating)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SelectField
+              id={field.name}
+              label="Content rating"
+              onValueChange={(value) =>
+                field.handleChange(value as (typeof CONTENT_RATINGS)[number])
+              }
+              options={CONTENT_RATINGS.map((rating) => ({
+                label: formatOption(rating),
+                value: rating,
+              }))}
+              value={field.state.value}
+            />
           )}
         </form.Field>
 
         <form.Field name="publicationStatus">
           {(field) => (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor={field.name}>Publication status</Label>
-              <input
-                name={field.name}
-                type="hidden"
-                value={field.state.value}
-              />
-              <Select
-                onValueChange={(value) =>
-                  field.handleChange(
-                    value as (typeof PUBLICATION_STATUSES)[number]
-                  )
-                }
-                value={field.state.value}
-              >
-                <SelectTrigger className="w-full rounded-md" id={field.name}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PUBLICATION_STATUSES.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {formatOption(status)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SelectField
+              id={field.name}
+              label="Publication status"
+              onValueChange={(value) =>
+                field.handleChange(
+                  value as (typeof PUBLICATION_STATUSES)[number]
+                )
+              }
+              options={PUBLICATION_STATUSES.map((status) => ({
+                label: formatOption(status),
+                value: status,
+              }))}
+              value={field.state.value}
+            />
           )}
         </form.Field>
       </div>
@@ -285,146 +246,62 @@ export const WorkForm = ({
 
       <form.Field name="authorName">
         {(field) => (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={field.name}>Author</Label>
-            <Input
-              className="rounded-md"
-              id={field.name}
-              name={field.name}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              value={field.state.value}
-            />
-            {field.state.meta.errors.map((error) => (
-              <p className="text-destructive text-xs" key={String(error)}>
-                {String(error)}
-              </p>
-            ))}
-          </div>
+          <TextField
+            errors={field.state.meta.errors}
+            id={field.name}
+            label="Author"
+            onBlur={field.handleBlur}
+            onChange={field.handleChange}
+            value={field.state.value}
+          />
         )}
       </form.Field>
 
       <div className="grid grid-cols-2 gap-4">
         <form.Field name="sourcePlatformId">
           {(field) => (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor={field.name}>Source platform</Label>
-              <input
-                name={field.name}
-                type="hidden"
-                value={field.state.value}
-              />
-              <Select
-                onValueChange={field.handleChange}
-                value={field.state.value}
-              >
-                <SelectTrigger className="w-full rounded-md" id={field.name}>
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {sourcePlatforms.map((platform) => (
-                    <SelectItem key={platform.id} value={platform.id}>
-                      {platform.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {field.state.meta.errors.map((error) => (
-                <p className="text-destructive text-xs" key={String(error)}>
-                  {String(error)}
-                </p>
-              ))}
-            </div>
+            <SelectField
+              errors={field.state.meta.errors}
+              id={field.name}
+              label="Source platform"
+              onValueChange={field.handleChange}
+              options={sourcePlatforms.map((platform) => ({
+                label: platform.name,
+                value: platform.id,
+              }))}
+              placeholder="Select..."
+              value={field.state.value}
+            />
           )}
         </form.Field>
 
         <form.Field name="sourceUrl">
           {(field) => (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor={field.name}>Source URL</Label>
-              <div className="flex gap-2">
-                <Input
-                  className="rounded-md"
-                  id={field.name}
-                  name={field.name}
-                  onBlur={(event) => {
-                    field.handleBlur();
-                    handleSourceUrlBlur(event.target.value);
-                  }}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  value={field.state.value}
-                />
-                <Button
-                  aria-label="Fetch story info from URL"
-                  className="shrink-0 rounded-md"
-                  disabled={isFetchingMetadata || !field.state.value}
-                  onClick={handleFetchMetadata}
-                  size="icon"
-                  type="button"
-                  variant="outline"
-                >
-                  <WandSparklesIcon className="size-4" />
-                </Button>
-              </div>
-              {fetchError && (
-                <p className="text-destructive text-xs">{fetchError}</p>
-              )}
-              {field.state.meta.errors.map((error) => (
-                <p className="text-destructive text-xs" key={String(error)}>
-                  {String(error)}
-                </p>
-              ))}
-            </div>
+            <SourceUrlField
+              errors={field.state.meta.errors}
+              fetchError={fetchError}
+              id={field.name}
+              isFetchingMetadata={isFetchingMetadata}
+              onBlur={(url) => {
+                field.handleBlur();
+                handleSourceUrlBlur(url);
+              }}
+              onChange={field.handleChange}
+              onFetchMetadata={handleFetchMetadata}
+              value={field.state.value}
+            />
           )}
         </form.Field>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-md border p-3">
-        <div>
-          <p className="text-sm font-medium">Progress &amp; totals</p>
-          <p className="text-muted-foreground text-xs">
-            Optional -- fill these in now to skip editing the entry afterward.
-          </p>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="currentChapter">Current chapter</Label>
-            <Input
-              className="no-spinner rounded-md"
-              id="currentChapter"
-              inputMode="numeric"
-              name="currentChapter"
-              onChange={(event) => setCurrentChapter(event.target.value)}
-              type="number"
-              value={currentChapter}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="chapterCount">Chapters</Label>
-            <Input
-              className="no-spinner rounded-md"
-              id="chapterCount"
-              inputMode="numeric"
-              name="chapterCount"
-              onChange={(event) => setChapterCount(event.target.value)}
-              type="number"
-              value={chapterCount}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="wordCount">Words</Label>
-            <Input
-              className="no-spinner rounded-md"
-              id="wordCount"
-              inputMode="numeric"
-              name="wordCount"
-              onChange={(event) => setWordCount(event.target.value)}
-              type="number"
-              value={wordCount}
-            />
-          </div>
-        </div>
-      </div>
+      <NewWorkTotalsSection
+        chapterCount={chapterCount}
+        currentChapter={currentChapter}
+        onChapterCountChange={setChapterCount}
+        onCurrentChapterChange={setCurrentChapter}
+        onWordCountChange={setWordCount}
+        wordCount={wordCount}
+      />
 
       <form.Field name="taxonomyTermIds">
         {(field) => (

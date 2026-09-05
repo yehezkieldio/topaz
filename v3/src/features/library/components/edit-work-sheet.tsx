@@ -4,16 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -21,6 +11,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { DiscardChangesDialog } from "@/features/library/components/discard-changes-dialog";
 import { EditWorkForm } from "@/features/library/forms/work-form/edit-work-form";
 import { getWorkEditDetailAction } from "@/features/library/server/update-work-action";
 import type { WorkEditDetail } from "@/features/library/server/update-work-action";
@@ -151,24 +142,11 @@ export const EditWorkSheet = ({
           </div>
         </SheetContent>
       </Sheet>
-      <AlertDialog open={pendingClose}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Closing now will lose what you&apos;ve entered in this form.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelClose}>
-              Keep editing
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmClose}>
-              Discard
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DiscardChangesDialog
+        onCancel={cancelClose}
+        onConfirm={confirmClose}
+        open={pendingClose}
+      />
     </>
   );
 };

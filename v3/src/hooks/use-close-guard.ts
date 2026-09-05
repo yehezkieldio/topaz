@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 /**
  * Guards a sheet/dialog's close against discarding unsaved changes.
@@ -15,22 +15,22 @@ export const useCloseGuard = (
 ) => {
   const [pendingClose, setPendingClose] = useState(false);
 
-  const requestClose = useCallback(() => {
+  const requestClose = () => {
     if (enabled && isDirty) {
       setPendingClose(true);
       return;
     }
     onConfirmedClose();
-  }, [enabled, isDirty, onConfirmedClose]);
+  };
 
-  const confirmClose = useCallback(() => {
+  const confirmClose = () => {
     setPendingClose(false);
     onConfirmedClose();
-  }, [onConfirmedClose]);
+  };
 
-  const cancelClose = useCallback(() => {
+  const cancelClose = () => {
     setPendingClose(false);
-  }, []);
+  };
 
   return { cancelClose, confirmClose, pendingClose, requestClose };
 };

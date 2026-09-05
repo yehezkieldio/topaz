@@ -76,6 +76,13 @@ export const OptionResultsList = ({
   creatable?: CreatableOptionPicker;
   query: string;
 }) => {
+  // TanStack Virtual's useVirtualizer relies on interior mutability (its
+  // returned instance is a mutable object the library updates in place),
+  // which the React Compiler can't safely memoize -- there's no memo-safe
+  // replacement upstream yet, so this component opts out of compilation
+  // rather than risk the compiler caching a stale virtualizer snapshot.
+  "use no memo";
+
   const parentRef = useRef<HTMLDivElement>(null);
   const displayed = isQueryEmpty ? hotTerms : results;
   const trimmedQuery = query.trim();
