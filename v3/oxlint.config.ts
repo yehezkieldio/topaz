@@ -2,9 +2,10 @@ import { defineConfig } from "oxlint";
 import core from "ultracite/oxlint/core";
 import next from "ultracite/oxlint/next";
 import react from "ultracite/oxlint/react";
+import antiSlop from "ultracite/oxlint/anti-slop";
 
 export default defineConfig({
-  extends: [core, react, next],
+  extends: [core, react, next, antiSlop],
   ignorePatterns: [...(core.ignorePatterns ?? []), "drizzle/**"],
   overrides: [
     {
