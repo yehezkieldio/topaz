@@ -26,6 +26,7 @@ export const libraryEntryStatusEnum = pgEnum("library_entry_status", [
   "dropped",
   "plan_to_read",
   "dropped_as_abandoned",
+  "completed_as_axed",
 ]);
 
 export const readingEventTypeEnum = pgEnum("reading_event_type", [

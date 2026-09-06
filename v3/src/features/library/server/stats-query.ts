@@ -40,7 +40,7 @@ const fetchAggregateStats = () => {
   return db
     .select({
       averageRating: sql<string>`coalesce(avg(${readingState.rating}), 0)`,
-      completedCount: sql<number>`count(*) filter (where ${libraryEntry.status} = 'completed')`,
+      completedCount: sql<number>`count(*) filter (where ${libraryEntry.status} in ('completed', 'completed_as_axed'))`,
       droppedCount: sql<number>`count(*) filter (where ${libraryEntry.status} in ('dropped', 'dropped_as_abandoned'))`,
       favoriteCount: sql<number>`count(*) filter (where ${libraryEntry.favorite})`,
       pausedCount: sql<number>`count(*) filter (where ${libraryEntry.status} = 'paused')`,

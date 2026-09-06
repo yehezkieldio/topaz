@@ -7,7 +7,8 @@ type LibraryEntryStatus =
   | "completed"
   | "dropped"
   | "plan_to_read"
-  | "dropped_as_abandoned";
+  | "dropped_as_abandoned"
+  | "completed_as_axed";
 
 export type ReadingEventType = (typeof readingEventTypeEnum.enumValues)[number];
 
@@ -69,7 +70,7 @@ const statusEventType = (
   if (to === "reading" && !hasStartedBefore) {
     return "started";
   }
-  if (to === "completed") {
+  if (to === "completed" || to === "completed_as_axed") {
     return "completed";
   }
   if (to === "dropped" || to === "dropped_as_abandoned") {

@@ -139,10 +139,14 @@ export const WorkForm = ({
   };
 
   const handleSourceUrlBlur = (url: string) => {
+    const trimmed = url.trim();
+    if (trimmed !== url) {
+      form.setFieldValue("sourceUrl", trimmed);
+    }
     if (form.getFieldValue("sourcePlatformId")) {
       return;
     }
-    const detected = detectSourcePlatform(url, sourcePlatforms);
+    const detected = detectSourcePlatform(trimmed, sourcePlatforms);
     if (detected) {
       form.setFieldValue("sourcePlatformId", detected);
     }

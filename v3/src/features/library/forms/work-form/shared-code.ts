@@ -13,7 +13,7 @@ export const workFormSchema = z.object({
   isNsfw: z.boolean(),
   publicationStatus: z.enum(publicationStatusEnum.enumValues),
   sourcePlatformId: z.string().trim().min(1, "Choose a source platform"),
-  sourceUrl: z.url("Enter a valid URL"),
+  sourceUrl: z.string().trim().pipe(z.url("Enter a valid URL")),
   taxonomyTermIds: z.array(z.string()),
   title: z.string().trim().min(1, "Title is required").max(300),
 });

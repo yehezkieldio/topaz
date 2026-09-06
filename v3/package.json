@@ -23,7 +23,8 @@
     "verify:authoring-flow": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/verify-authoring-flow.ts",
     "verify": "bun run verify:auth-roles && bun run verify:authoring-flow",
     "export-stats": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/export-stats.ts",
-    "prune-observations": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/prune-observations.ts"
+    "prune-observations": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/prune-observations.ts",
+    "import:reading-tracker": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/import-reading-tracker.ts"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^3.3.0",
@@ -71,7 +72,8 @@
     "tailwindcss": "^4",
     "typescript": "^7.0.2",
     "ultracite": "^7.10.8",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "xlsx": "^0.18.5"
   },
   "packageManager": "bun@1.4.1",
   "ignoreScripts": [

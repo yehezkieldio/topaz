@@ -7,6 +7,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { formatFieldErrors } from "./field-error";
+
 interface SelectFieldOption {
   value: string;
   label: string;
@@ -49,9 +51,9 @@ export const SelectField = ({
         ))}
       </SelectContent>
     </Select>
-    {errors?.map((error) => (
-      <p className="text-destructive text-xs" key={String(error)}>
-        {String(error)}
+    {formatFieldErrors(errors).map((message, index) => (
+      <p className="text-destructive text-xs" key={`${index}-${message}`}>
+        {message}
       </p>
     ))}
   </div>

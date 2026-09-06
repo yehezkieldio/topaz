@@ -4,6 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { formatFieldErrors } from "./field-error";
+import {
+  cleanSingleLinePaste,
+  insertTextAtSelection,
+} from "./source-url-utils";
+
 /** The create form's Source URL field, paired with its metadata-fetch button. */
 export const SourceUrlField = ({
   errors,
@@ -33,6 +39,15 @@ export const SourceUrlField = ({
         name={id}
         onBlur={(event) => onBlur(event.target.value)}
         onChange={(event) => onChange(event.target.value)}
+        onPaste={(event) => {
+          event.preventDefault();
+          const pasted = cleanSingleLinePaste(
+            event.clipboardData.getData("text")
+          );
+          const next = insertTextAtSelection(event.currentTarget, pasted);
+          onChange(next);
+          onBlur(next);
+        }}
         value={value}
       />
       <Button
@@ -48,9 +63,9 @@ export const SourceUrlField = ({
       </Button>
     </div>
     {fetchError && <p className="text-destructive text-xs">{fetchError}</p>}
-    {errors?.map((error) => (
-      <p className="text-destructive text-xs" key={String(error)}>
-        {String(error)}
+    {formatFieldErrors(errors).map((message, index) => (
+      <p className="text-destructive text-xs" key={`${index}-${message}`}>
+        {message}
       </p>
     ))}
   </div>

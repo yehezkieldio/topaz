@@ -24,8 +24,13 @@ import {
 import type { WorkEditDetail } from "../../server/update-work-action";
 import { updateWorkAction } from "../../server/update-work-action";
 import { detectSourcePlatform } from "./detect-source-platform";
+import { formatFieldErrors } from "./field-error";
 import { SelectField } from "./select-field";
 import { workFormOpts, workFormSchema } from "./shared-code";
+import {
+  cleanSingleLinePaste,
+  insertTextAtSelection,
+} from "./source-url-utils";
 import { TextField } from "./text-field";
 import { WorkProgressSection } from "./work-progress-section";
 
@@ -121,10 +126,14 @@ export const EditWorkForm = ({
       : null;
 
   const handleSourceUrlBlur = (url: string) => {
+    const trimmed = url.trim();
+    if (trimmed !== url) {
+      form.setFieldValue("sourceUrl", trimmed);
+    }
     if (form.getFieldValue("sourcePlatformId")) {
       return;
     }
-    const detected = detectSourcePlatform(url, sourcePlatforms);
+    const detected = detectSourcePlatform(trimmed, sourcePlatforms);
     if (detected) {
       form.setFieldValue("sourcePlatformId", detected);
     }
@@ -291,13 +300,30 @@ export const EditWorkForm = ({
                   handleSourceUrlBlur(event.target.value);
                 }}
                 onChange={(event) => field.handleChange(event.target.value)}
+                onPaste={(event) => {
+                  event.preventDefault();
+                  const pasted = cleanSingleLinePaste(
+                    event.clipboardData.getData("text")
+                  );
+                  const next = insertTextAtSelection(
+                    event.currentTarget,
+                    pasted
+                  );
+                  field.handleChange(next);
+                  handleSourceUrlBlur(next);
+                }}
                 value={field.state.value}
               />
-              {field.state.meta.errors.map((error) => (
-                <p className="text-destructive text-xs" key={String(error)}>
-                  {String(error)}
-                </p>
-              ))}
+              {formatFieldErrors(field.state.meta.errors).map(
+                (message, index) => (
+                  <p
+                    className="text-destructive text-xs"
+                    key={`${index}-${message}`}
+                  >
+                    {message}
+                  </p>
+                )
+              )}
             </div>
           )}
         </form.Field>
