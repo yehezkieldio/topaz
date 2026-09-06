@@ -99,6 +99,10 @@ export const OptionResultsList = ({
   const virtualizer = useVirtualizer({
     count: displayed.length,
     estimateSize: () => ROW_HEIGHT,
+    // Same flushSync-in-lifecycle guard as the library list: the virtualizer
+    // calls flushSync on synchronous updates by default, which React 19
+    // rejects during commit. Schedule those rerenders normally instead.
+    useFlushSync: false,
     getScrollElement: () => parentRef.current,
   });
   const virtualItems = virtualizer.getVirtualItems();

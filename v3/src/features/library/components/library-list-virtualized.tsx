@@ -111,6 +111,12 @@ export const LibraryListVirtualized = ({
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? rows.length + 1 : rows.length,
     estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    // measureElement fires during commit (as a ref callback) and the
+    // virtualizer then calls flushSync to apply the measurement
+    // synchronously. React 19 forbids flushSync inside a lifecycle/commit
+    // ("flushSync was called from inside a lifecycle method"), so opt out
+    // and let the measurement rerender schedule normally instead.
+    useFlushSync: false,
     // Keyed by the row's own stable id (not index) so a row that's already
     // been measured keeps its cached size across re-renders/pagination
     // instead of every index silently inheriting whatever the previous
