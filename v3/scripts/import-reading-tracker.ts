@@ -321,14 +321,23 @@ const main = async () => {
     return created.id;
   };
 
-  const findOrCreateFandomTermId = async (name: string): Promise<string> => {
+  type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+  // Runs against whatever executor (`db`, or a `tx` from an in-flight
+  // transaction) it's given -- the pool is `max: 1`, so calling `db.*` from
+  // *inside* a `db.transaction()` callback would deadlock (the transaction
+  // holds the only connection while this waits for one to free up).
+  const findOrCreateFandomTermId = async (
+    executor: Tx | typeof db,
+    name: string
+  ): Promise<string> => {
     const normalized = normalizeName(name);
     const cached = termIdByNormalizedName.get(normalized);
     if (cached) {
       return cached;
     }
 
-    const [existing] = await db
+    const [existing] = await executor
       .select({ id: taxonomyTerm.id })
       .from(taxonomyTerm)
       .where(
@@ -340,13 +349,7 @@ const main = async () => {
       return existing.id;
     }
 
-    if (dryRun) {
-      const placeholder = `dry-run:${normalized}`;
-      termIdByNormalizedName.set(normalized, placeholder);
-      return placeholder;
-    }
-
-    const [created] = await db
+    const [created] = await executor
       .insert(taxonomyTerm)
       .values({
         name,
@@ -365,7 +368,7 @@ const main = async () => {
     }
 
     // Lost a slug race against an earlier row in this same run -- re-select.
-    const [reselected] = await db
+    const [reselected] = await executor
       .select({ id: taxonomyTerm.id })
       .from(taxonomyTerm)
       .where(
@@ -385,7 +388,20 @@ const main = async () => {
   const statusCounts = new Map<LibraryStatus, number>();
   const errors: { row: SheetRow; error: unknown }[] = [];
 
+  const PROGRESS_INTERVAL = 25;
+  let processed = 0;
+  const startedAt = Date.now();
+
   for (const row of rows) {
+    processed += 1;
+    if (processed % PROGRESS_INTERVAL === 0 || processed === rows.length) {
+      const elapsedSeconds = ((Date.now() - startedAt) / 1000).toFixed(1);
+      log(
+        `  [${processed}/${rows.length}] ${elapsedSeconds}s elapsed -- ` +
+          `imported ${imported}, skipped ${skippedExisting + skippedUnknownPlatform}, errors ${errors.length}`
+      );
+    }
+
     if (!row.platformCode || !PLATFORM_BY_CODE[row.platformCode]) {
       skippedUnknownPlatform += 1;
       log(
@@ -439,9 +455,10 @@ const main = async () => {
         });
 
         if (row.fandoms.length > 0) {
-          const termIds = await Promise.all(
-            row.fandoms.map((name) => findOrCreateFandomTermId(name))
-          );
+          const termIds: string[] = [];
+          for (const name of row.fandoms) {
+            termIds.push(await findOrCreateFandomTermId(tx, name));
+          }
           await tx.insert(workTaxonomyAssignment).values(
             [...new Set(termIds)].map((taxonomyTermId) => ({
               taxonomyTermId,
