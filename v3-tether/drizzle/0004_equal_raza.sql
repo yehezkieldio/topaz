@@ -1,0 +1,3 @@
+ALTER TABLE "reading_state" DROP CONSTRAINT "reading_state_rating_range";--> statement-breakpoint
+ALTER TABLE "reading_state" ALTER COLUMN "rating" SET DATA TYPE numeric(3, 1);--> statement-breakpoint
+ALTER TABLE "reading_state" ADD CONSTRAINT "reading_state_rating_range" CHECK ("reading_state"."rating" is null or ("reading_state"."rating" >= 1 and "reading_state"."rating" <= 10 and ("reading_state"."rating" * 2) = floor("reading_state"."rating" * 2)));
