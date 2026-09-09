@@ -4,4 +4,5 @@ export * from "./catalog";
 export * from "./library";
 export * from "./observations";
 export * from "./relations";
+export * from "./sync";
 export * from "./taxonomy";

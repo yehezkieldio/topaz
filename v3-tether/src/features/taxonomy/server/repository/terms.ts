@@ -3,6 +3,7 @@ import { eq, sql } from "drizzle-orm";
 
 import type { db as dbClient } from "@/server/db/client";
 import { taxonomyKind, taxonomyTerm } from "@/server/db/schema";
+import { appendOplogEntry } from "@/server/sync/oplog";
 
 type Tx = Parameters<Parameters<typeof dbClient.transaction>[0]>[0] | typeof dbClient;
 
@@ -73,14 +74,12 @@ export const renameTerm = async (
   name: string
 ) => {
   const trimmed = name.trim();
+  const normalizedName = normalize(trimmed);
+  const slug = slugify(trimmed);
+  const version = currentVersion + 1;
   const rows = await tx
     .update(taxonomyTerm)
-    .set({
-      name: trimmed,
-      normalizedName: normalize(trimmed),
-      slug: slugify(trimmed),
-      version: currentVersion + 1,
-    })
+    .set({ name: trimmed, normalizedName, slug, version })
     .where(eq(taxonomyTerm.id, termId))
     .returning({
       id: taxonomyTerm.publicId,
@@ -88,6 +87,11 @@ export const renameTerm = async (
       version: taxonomyTerm.version,
     });
   await indexTermFts(tx, termId, trimmed);
+  await appendOplogEntry(tx, {
+    columnDiffs: { name: trimmed, normalizedName, slug, version },
+    rowId: termId,
+    tableName: "taxonomy_term",
+  });
   return rows;
 };
 

@@ -18,6 +18,7 @@ import {
   sanitizeSearchText,
   toFtsPhraseQuery,
 } from "@/server/query/search-text";
+import { appendOplogEntry } from "@/server/sync/oplog";
 
 import { taxonomyTermTag, workTaxonomyEffectiveTag } from "./cache-tags";
 import { rebuildEffectiveTaxonomyForWorks } from "./repository/effective-taxonomy";
@@ -276,6 +277,16 @@ export const createTaxonomyTermAction = async (
   }
 
   await indexTermFts(db, created.internalId, trimmed);
+  await appendOplogEntry(db, {
+    columnDiffs: {
+      name: trimmed,
+      normalizedName,
+      slug,
+      taxonomyKindId: kind.id,
+    },
+    rowId: created.internalId,
+    tableName: "taxonomy_term",
+  });
 
   return {
     data: { id: created.id, kind: kind.slug, label: created.label },
