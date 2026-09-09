@@ -37,6 +37,7 @@ import {
   workSourceObservation,
   workTaxonomyAssignment,
 } from "@/server/db/schema";
+import { appendOplogEntry } from "@/server/sync/oplog";
 
 const normalize = (value: string) => value.trim().toLowerCase();
 
@@ -127,6 +128,19 @@ export const createWorkAction = async (
       if (!createdWork) {
         throw new Error("Failed to create work.");
       }
+
+      await appendOplogEntry(tx, {
+        columnDiffs: {
+          contentRating: value.contentRating,
+          description: value.description?.trim() || null,
+          isNsfw: value.isNsfw,
+          publicationStatus: value.publicationStatus,
+          sortTitle: deriveSortTitle(value.title),
+          title: value.title,
+        },
+        rowId: createdWork.id,
+        tableName: "work",
+      });
 
       const [platform] = await tx
         .select({ id: sourcePlatform.id })
@@ -219,6 +233,18 @@ export const createWorkAction = async (
           workId: createdWork.id,
         })
         .returning({ id: libraryEntry.id });
+
+      if (createdEntry) {
+        await appendOplogEntry(tx, {
+          columnDiffs: {
+            status: "plan_to_read",
+            userId: session.user.id,
+            workId: createdWork.id,
+          },
+          rowId: createdEntry.id,
+          tableName: "library_entry",
+        });
+      }
 
       if (createdEntry && currentChapter !== null) {
         const now = new Date();
