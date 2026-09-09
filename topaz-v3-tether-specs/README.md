@@ -1,10 +1,11 @@
-# Topaz V3 Canonical Specification
+# Topaz V3 Tether Canonical Specification
 
 **Status:** actionable rewrite contract
-**Canonical location:** `topaz/topaz-v3-specs`
+**Canonical location:** `topaz/topaz-v3-tether-specs`
+**Forked from:** `topaz/topaz-v3-specs` (the Vercel/Supabase-hosted design) -- see `10_adr/ADR-0006` onward for what changed and why
 **Intended reader:** human implementer, AI coding agent, reviewer
 
-Topaz is a single-user, self-hosted reading tracker for fanfiction, webnovels, and online fiction, engineered from the ground up. No data migration path exists or is needed. Nothing in this spec references or depends on an earlier codebase.
+Topaz is a single-user, local-first reading tracker for fanfiction, webnovels, and online fiction, engineered from the ground up. No data migration path exists or is needed. Nothing in this spec references or depends on an earlier codebase beyond the explicit fork note above.
 
 The target product shape:
 
@@ -15,7 +16,9 @@ personal fiction library
 + a taxonomy graph with typed relations and effective inferred tags
 + per-user library state and an append-only reading-event history
 + cheap, non-blocking aggregate stats
-+ mounted at /library inside a personal website, on Vercel Free + Supabase Free
++ runs as a local Bun binary on each of the admin's own devices, one SQLite
+  file per device, reconciled via store-and-forward sync over Tailscale --
+  no shared server, no always-online requirement
 ```
 
 The engineering posture: this is deliberately over-engineered for its traffic. Correctness under concurrency, referential stability under virtualization, precise cache boundaries, and a real selection-state model are treated as first-class requirements, not nice-to-haves for a "just a personal app."
@@ -48,10 +51,14 @@ The engineering posture: this is deliberately over-engineered for its traffic. C
 23. 07_backend/02_connections_and_scaling_limits.md
 24. 07_backend/03_search_and_filtering.md
 25. 07_backend/04_audit_logging.md
-26. 04_implementation/00_roadmap.md
-27. 04_implementation/01_acceptance_criteria.md
-28. 05_quality/00_gates.md
-29. 10_adr/ADR-0001-hard-cut-v3.md
+26. 08_sync/00_oplog_and_clock.md
+27. 08_sync/01_transport_and_pairing.md
+28. 08_sync/02_packaging_and_lifecycle.md
+29. 09_fetch/00_metadata_fetch_tiers.md
+30. 04_implementation/00_roadmap.md
+31. 04_implementation/01_acceptance_criteria.md
+32. 05_quality/00_gates.md
+33. 10_adr/ADR-0001-hard-cut-v3.md
 ```
 
 Load remaining ADRs after that.
@@ -66,8 +73,11 @@ Load remaining ADRs after that.
 03_data/           Schema contract
 06_library/         The library feature's architecture: providers, component tree,
                     sheets/dialogs, and the multiselect state model
-07_backend/         Server-side composition, N+1 policy, connection limits,
+07_backend/         Server-side composition, N+1 policy, local resource budget,
                     search/filter/pagination architecture
+08_sync/            Oplog, Hybrid Logical Clock, sync transport, device
+                    pairing/trust, and the "opened on demand" lifecycle
+09_fetch/           Tiered fanfiction metadata fetch (Obscura, then FicHub)
 04_implementation/ Roadmap and acceptance criteria
 05_quality/        Validation gates
 10_adr/            Accepted architecture decisions
@@ -97,9 +107,23 @@ Load remaining ADRs after that.
   through a single shared loader -- never per-row.
 - Cursor (keyset) pagination everywhere, never OFFSET/LIMIT page-number
   pagination, with a stable-id tie-breaker on every sort.
-- All DB access goes through the Supavisor pooler in transaction mode, with a
-  minimal per-invocation connection pool -- never a direct connection from a
-  serverless function.
+- No shared server or shared database. Each device runs its own copy of the app
+  against its own local SQLite (bun:sqlite) file; data is reconciled between
+  the admin's own devices via an oplog-based sync protocol, not shared at
+  query time.
+- Sync is store-and-forward, not real-time: an append-only oplog, a per-device
+  Hybrid Logical Clock, and last-write-wins conflict resolution -- no CRDTs
+  (there is one user, not concurrent multi-actor edits) and no persistent
+  socket (an ordinary Route Handler, run opportunistically on app open/close).
+  Devices are paired once (Ed25519 key exchange) and discovered via Tailscale;
+  no custom discovery service.
+- The app is packaged via next-bun-compile into one self-contained Bun binary
+  per device, run "opened on demand" -- started when the admin wants to use
+  it, no always-on background daemon.
+- Auth is local credential/passkey only, no social OAuth -- a device must be
+  able to unlock its own library with no internet reachable.
+- Fanfiction metadata fetch is tiered: a local Obscura (CDP-driven headless
+  browser) process first, FicHub's public API as fallback.
 - A version conflict is a distinct, recoverable UI state, never folded into a
   generic error toast. Every mutation follows one fixed success sequence with
   no incidental side effects on unrelated state (e.g. clearing search on save).

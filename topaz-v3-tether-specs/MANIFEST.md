@@ -29,6 +29,10 @@
 | `07_backend/02_connections_and_scaling_limits.md` | Pooler config and free-tier-conscious query posture |
 | `07_backend/03_search_and_filtering.md` | Filter builder, trigram search, direct-vs-effective taxonomy filtering, cursor pagination |
 | `07_backend/04_audit_logging.md` | Proxy-enforced audit-context pattern for version-tracked tables, added when the need arises |
+| `08_sync/00_oplog_and_clock.md` | The append-only oplog, the per-device Hybrid Logical Clock, and last-write-wins conflict resolution |
+| `08_sync/01_transport_and_pairing.md` | The Route-Handler sync transport, Tailscale-based discovery, and Ed25519 device pairing/trust |
+| `08_sync/02_packaging_and_lifecycle.md` | The "opened on demand" process model: no daemon, sync on open/close |
+| `09_fetch/00_metadata_fetch_tiers.md` | Tiered fanfiction metadata fetch: Obscura first, FicHub fallback |
 | `04_implementation/00_roadmap.md` | Implementation slices |
 | `04_implementation/01_acceptance_criteria.md` | P0-P3 acceptance criteria |
 | `05_quality/00_gates.md` | Check commands and manual verification flow |
@@ -37,4 +41,8 @@
 | `10_adr/ADR-0003-better-auth-over-nextauth.md` | Decision on the auth library |
 | `10_adr/ADR-0004-tanstack-form-over-react-hook-form.md` | Decision on the form library |
 | `10_adr/ADR-0005-granular-cache-tags.md` | Decision on cache invalidation granularity |
+| `10_adr/ADR-0006-sqlite-over-postgres.md` | Decision to move to per-device SQLite over shared Postgres |
+| `10_adr/ADR-0007-oplog-hlc-over-crdt.md` | Decision on the sync/conflict-resolution model |
+| `10_adr/ADR-0008-next-bun-compile-packaging.md` | Decision on packaging and the sync transport shape |
+| `10_adr/ADR-0009-tiered-obscura-fichub-fetch.md` | Decision on the metadata-fetch tier order |
 | `GLOSSARY.md` | Canonical vocabulary |

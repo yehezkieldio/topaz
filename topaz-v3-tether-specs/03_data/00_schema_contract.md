@@ -1,6 +1,54 @@
 # Schema Contract
 
-Postgres via Drizzle ORM. Every table gets a `uuid` primary key plus a `publicId` (cuid2) exposed to clients instead of the raw UUID, and `created_at`/`updated_at` timestamps. `relations()` is defined alongside every table so Drizzle's relational query API (`db.query.work.findMany({ with: {...} })`) is available from the first migration, not retrofitted later.
+SQLite (`bun:sqlite`) via Drizzle ORM, one file per device. Every table gets a `text` primary key (a generated id, stored as a string -- SQLite has no native UUID type) plus a `publicId` (cuid2) exposed to clients instead of the raw id, and `created_at`/`updated_at` timestamps. `relations()` is defined alongside every table so Drizzle's relational query API (`db.query.work.findMany({ with: {...} })`) is available from the first migration, not retrofitted later.
+
+## Postgres -> SQLite Type Translation
+
+This is a straight port from the original Postgres-shaped contract, table structure and constraints unchanged, with these type-level substitutions applied everywhere the Postgres type appeared:
+
+```text
+citext                 -> text with an explicit COLLATE NOCASE on the column
+                          declaration. Matches the existing "no function-wrapped
+                          index lookups" discipline below -- COLLATE is part of
+                          the column, not a runtime lower()/cast at query time.
+                          Accepted tradeoff: NOCASE folds ASCII case only, not
+                          full Unicode case-folding the way citext's ICU-backed
+                          comparison does. Fine for this library's actual content.
+
+jsonb + CHECK           -> text with CHECK (json_valid(x)), read/written via
+  jsonb_typeof = 'object'  JSON.parse/JSON.stringify at the Drizzle schema
+                          boundary (a custom Drizzle column type), never passed
+                          through as an unvalidated string.
+
+pg_trgm GIN indexes on   -> SQLite FTS5 virtual tables using the `trigram`
+title/description/         tokenizer, external-content mode (references the
+summary                    base table's rowid rather than duplicating text).
+                          See 07_backend/03_search_and_filtering.md for the
+                          full rework -- this is the one place the port is a
+                          genuine redesign, not a type substitution.
+
+uuid primary keys        -> text primary keys (generated id string). No
+                          behavioral difference; SQLite has no native UUID type.
+```
+
+CHECK constraints, partial unique indexes, and composite primary keys are all supported natively in SQLite and port over unchanged. Recursive taxonomy inference (`WITH RECURSIVE`, bounded to maxDepth = 4) also ports unchanged -- SQLite's recursive CTE support is equivalent to Postgres's for this query shape.
+
+## Sync-Related Additions
+
+Two things exist in this schema that had no Postgres-era equivalent, specified fully in `08_sync/00_oplog_and_clock.md`:
+
+```text
+oplog          - append-only: (seq, device_id, table_name, row_id,
+                 column_diffs (json), hlc_timestamp, tombstone). Every mutation
+                 in a feature's actions.ts appends here in the same transaction
+                 as the row write -- one commit, not two.
+
+known_peer     - per-device table of paired peers: device_id, tailnet hostname,
+                 public key fingerprint, last_synced_seq. Never synced itself
+                 (each device's peer list is its own local configuration).
+```
+
+`version` columns (below) are unchanged in purpose but now also double as sync-relevant state: a bumped `version` is itself an oplog-recorded change, and the oplog's HLC timestamp -- not the `version` integer -- is what actually orders conflicting writes across devices during a sync round.
 
 ## Auth
 
@@ -104,6 +152,7 @@ reading_event            - append-only history log: event_type enum
 ## Extensions Required
 
 ```text
-citext
-pg_trgm
+None. citext and pg_trgm were Postgres extensions this design no longer needs --
+COLLATE NOCASE and FTS5 (bundled with SQLite, no separate install) cover the
+same ground. See the type-translation table above.
 ```

@@ -31,9 +31,29 @@ Explicitly out of scope for V3. Listed so an agent does not "helpfully" add them
   dedicated browse-all-terms view arises, it is a new scoped feature request,
   not a default.
 
-- Real-time/subscription features (live co-reading, presence, websockets). Nothing
-  in the current feature set needs push updates; TanStack Query's refetch/staleness
-  model is sufficient.
+- Real-time/subscription features (live co-reading, presence, websockets, a
+  persistent socket between devices). This is unchanged by the sync design in
+  08_sync/ -- device sync is a bounded, request/response pull over an ordinary
+  Route Handler, run opportunistically on open/close, not a live channel.
+  Nothing in the feature set needs push updates; TanStack Query's
+  refetch/staleness model is sufficient for the UI, and store-and-forward is
+  sufficient for cross-device state.
+
+- CRDTs. The only conflict shape that exists is one user editing from a
+  different device, not concurrently with themselves. Last-write-wins by a
+  per-device Hybrid Logical Clock (08_sync/00_oplog_and_clock.md) resolves
+  that correctly; a CRDT library solves a harder problem (concurrent
+  multi-actor merge) this app does not have.
+
+- General-purpose peer-to-peer networking (arbitrary peer discovery, NAT
+  traversal, a public rendezvous/relay service). Sync is between a small,
+  explicitly paired, fixed set of the admin's own devices over Tailscale --
+  not an open peer network.
+
+- A custom discovery service, mDNS, or Bluetooth transport for sync. Tailscale
+  already covers "reach my other device, wherever it is" for this fixed set of
+  trusted devices; building a second discovery mechanism on top adds a
+  hosting/networking surface this rework exists to remove.
 
 - Data migration tooling. There is no production data to migrate from anywhere.
 ```

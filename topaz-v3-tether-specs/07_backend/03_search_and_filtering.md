@@ -27,20 +27,38 @@ A feature defines its own `FilterSpec` (e.g. `libraryFilterSpec = { status: (s) 
 
 ## Free-Text Search
 
+Ported from pg_trgm to SQLite's built-in **FTS5 with the `trigram` tokenizer**, which indexes 3-character shingles the same way pg_trgm's GIN index did. Worth being precise about what changed in meaning, not just mechanism: pg_trgm's `%` operator did *similarity-threshold fuzzy matching* (typo-tolerant); FTS5's trigram tokenizer does *substring matching* (finds "airbend" inside "The Last Airbender"), ranked by `bm25()`. For a single-user library search box this covers the actual use case -- typo tolerance is the one thing being traded away, not silently, and not because it was free to keep.
+
 ```text
-- Trigram (pg_trgm) similarity/ILIKE search against citext columns, using the
-  GIN indexes defined in 03_data/00_schema_contract.md -- no external search
-  service at this scale.
+- One FTS5 external-content virtual table per searchable surface (work_fts over
+  title/description/summary), created with tokenize = 'trigram case_sensitive=0'
+  and referencing the base table's rowid rather than duplicating its text --
+  keeps this cheap on the memory/storage budget in
+  07_backend/02_connections_and_scaling_limits.md instead of doubling storage
+  for every indexed column.
+- The FTS index is kept in sync explicitly, in the same transaction as the row
+  write and the oplog append (08_sync/00_oplog_and_clock.md) -- one write path
+  updates the row, the oplog, and the FTS index together in one commit, rather
+  than relying on SQLite triggers to do it implicitly out of view of that
+  transaction boundary.
+- Query shape: `work JOIN work_fts ON work_fts.rowid = work.rowid WHERE
+  work_fts MATCH ? ORDER BY bm25(work_fts), id` -- bm25 rank is just one more
+  sortable column, subject to the same stable-id tie-breaker every other sort
+  already requires (see "Multi-Column Sort Requires a Tie-Breaker" below).
 - Input sanitization (strip control characters, cap length, collapse
   whitespace) happens once, in one shared function, applied identically
   wherever free-text search is accepted -- not reimplemented per feature.
-- A minimum query length (2+ characters) is enforced before a search actually
-  hits the database; shorter queries return an empty result immediately
-  without a query, both because a 1-character trigram search is expensive and
-  because it's rarely a useful result for the user.
+- A minimum query length of 3+ characters is required to actually MATCH
+  against the trigram index (a 1-2 character query can't form a full
+  trigram). Rather than reject short queries outright, they fall back to a
+  plain `LIKE '%term%'` full scan: at this library's row count (hundreds to
+  low thousands), a full scan is genuinely cheaper than a second index built
+  solely to serve two-letter queries, and it keeps short-title/abbreviation
+  search from silently degrading to "no results."
 - Search combines with structural filters (status, taxonomy, rating) in the
   same WHERE clause via the same filter-builder composition -- search is not a
-  separate code path from filtering, it's one more entry in the same spec.
+  separate code path from filtering, it's one more entry in the same spec,
+  and it additionally selects the ORDER BY (bm25) when the FTS path is taken.
 ```
 
 ## Taxonomy Filtering: Direct vs. Effective

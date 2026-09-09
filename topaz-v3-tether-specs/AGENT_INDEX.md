@@ -59,4 +59,27 @@ Read files in the order given in `README.md`. This file states the implementatio
 
 15. Every filter set is a declarative FilterSpec (07_backend/03_search_and_filtering.md),
     not an imperative chain of if-statements building a conditions array by hand.
+
+16. This is local-first, not client-server. There is no shared database and no
+    "the server" -- every device runs its own full copy of the app against its
+    own SQLite file. Do not write code that assumes a single always-reachable
+    database or a single source of truth other than "the local device's own
+    file, reconciled via sync."
+
+17. Every mutation that writes to a synced table appends exactly one oplog row
+    (08_sync/00_oplog_and_clock.md) in the same transaction as the write. A
+    Server Action that writes to the database without also appending to the
+    oplog is incomplete, not just under-tested.
+
+18. Never hard-DELETE a row in a synced table. Use a tombstone. A hard delete
+    can be silently resurrected by a late-arriving update from another device.
+
+19. Do not reach for a CRDT library, a vector clock, or a WebSocket/persistent
+    socket for sync. The conflict model is last-write-wins by HLC timestamp
+    over a plain Route Handler (08_sync/) -- reintroducing either is solving a
+    problem (concurrent multi-actor merge, live push) this app doesn't have.
+
+20. Do not reintroduce Discord OAuth or any social-login provider. Auth is
+    local credential/passkey only (02_stack/04_auth_and_authorization.md), so
+    a device can unlock its own library with no internet reachable.
 ```

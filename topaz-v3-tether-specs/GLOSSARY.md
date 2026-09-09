@@ -60,4 +60,32 @@ Effective taxonomy          The materialized, graph-inferred set of taxonomy ter
                           apply to a work (direct assignment + inferred via relations),
                           stored in work_taxonomy_effective and rebuilt on assignment
                           or relation change.
+
+Local-first                An architecture where each device holds a full, independently
+                          usable replica of the data, with sync as a background
+                          reconciliation process rather than a requirement for the app
+                          to function. See 00_context/00_project_summary.md.
+
+Store-and-forward           A replication model where devices exchange changes
+  replication                whenever they happen to be reachable, with no requirement
+                          that any two devices be online at the same time.
+
+Oplog                     The append-only table of row-level changes (08_sync/00_oplog_and_clock.md)
+                          that sync exchanges between devices, instead of diffing full
+                          tables at sync time.
+
+HLC (Hybrid Logical         A clock combining physical time and a logical counter,
+  Clock)                    giving a total, monotonic order across events from
+                          different devices even when their wall clocks disagree.
+                          Used to order oplog rows for last-write-wins resolution.
+
+Tombstone                  A row marked deleted (rather than physically removed) so a
+                          late-arriving update from another device can't silently
+                          resurrect it during sync.
+
+Known peer                 A device the admin has explicitly paired with (Ed25519 key
+                          exchange), stored locally per device, never itself synced.
+
+Tether                     This fork's working name (topaz-v3-tether) -- the sync layer
+                          is what tethers the admin's devices together over Tailscale.
 ```
