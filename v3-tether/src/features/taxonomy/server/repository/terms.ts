@@ -1,10 +1,10 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import type { db as dbClient } from "@/server/db/client";
 import { taxonomyKind, taxonomyTerm } from "@/server/db/schema";
 
-type Tx = Parameters<Parameters<typeof dbClient.transaction>[0]>[0];
+type Tx = Parameters<Parameters<typeof dbClient.transaction>[0]>[0] | typeof dbClient;
 
 const normalize = (value: string) => value.trim().toLowerCase();
 
@@ -12,6 +12,28 @@ const slugify = (value: string) =>
   normalize(value)
     .replaceAll(/[^a-z0-9]+/gu, "-")
     .replaceAll(/^-+|-+$/gu, "");
+
+/**
+ * Keeps taxonomy_term_fts (src/server/db/search-index.ts) in step with a
+ * single term's name, delete-then-insert rather than UPDATE -- the simplest
+ * approach that's correct regardless of the running SQLite build's FTS5
+ * UPDATE-on-virtual-table support. Called from the same write path as the
+ * row mutation itself (07_backend/03_search_and_filtering.md's "explicit,
+ * not a trigger" rule), though not yet inside the same transaction/oplog
+ * append -- that lands with 08_sync/00_oplog_and_clock.md's write pipeline.
+ */
+export const indexTermFts = async (
+  tx: Tx,
+  termId: string,
+  name: string
+): Promise<void> => {
+  await tx.run(
+    sql`delete from taxonomy_term_fts where rowid = (select rowid from taxonomy_term where id = ${termId})`
+  );
+  await tx.run(
+    sql`insert into taxonomy_term_fts(rowid, name) select rowid, ${name} from taxonomy_term where id = ${termId}`
+  );
+};
 
 export interface TermRow {
   id: string;
@@ -51,7 +73,7 @@ export const renameTerm = async (
   name: string
 ) => {
   const trimmed = name.trim();
-  return await tx
+  const rows = await tx
     .update(taxonomyTerm)
     .set({
       name: trimmed,
@@ -65,6 +87,8 @@ export const renameTerm = async (
       label: taxonomyTerm.name,
       version: taxonomyTerm.version,
     });
+  await indexTermFts(tx, termId, trimmed);
+  return rows;
 };
 
 export const changeTermKind = async (

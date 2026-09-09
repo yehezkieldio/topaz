@@ -80,7 +80,7 @@ describe("taxonomy Server Actions: authorization", () => {
 });
 
 describe("taxonomy Server Actions: admin success path", () => {
-  it("creates a term and lets an admin search for it via trigram similarity", async () => {
+  it("creates a term and lets an admin search for it via FTS5 substring search", async () => {
     const admin = await createTestUser("admin");
     headersRef.current = await createAuthHeaders(admin.id);
 

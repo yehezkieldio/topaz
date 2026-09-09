@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/bun-sqlite";
 
 import { env } from "@/lib/env";
 
+import { ensureSearchIndexes } from "./search-index";
 import * as schema from "./schema";
 
 const sqlite = new Database(env.DATABASE_PATH, { create: true });
@@ -17,6 +18,8 @@ sqlite.exec("PRAGMA synchronous = NORMAL;");
 sqlite.exec("PRAGMA cache_size = -20000;"); // ~20MB page cache
 sqlite.exec("PRAGMA mmap_size = 67108864;"); // 64MB
 sqlite.exec("PRAGMA foreign_keys = ON;");
+
+ensureSearchIndexes(sqlite);
 
 export const db = drizzle(sqlite, { casing: "snake_case", schema });
 

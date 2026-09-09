@@ -12,6 +12,12 @@ import {
   workTaxonomyAssignment,
 } from "@/server/db/schema";
 import type { MutationResult } from "@/server/query/mutation-result";
+import {
+  escapeLikeWildcards,
+  FTS_MATCH_MIN_LENGTH,
+  sanitizeSearchText,
+  toFtsPhraseQuery,
+} from "@/server/query/search-text";
 
 import { taxonomyTermTag, workTaxonomyEffectiveTag } from "./cache-tags";
 import { rebuildEffectiveTaxonomyForWorks } from "./repository/effective-taxonomy";
@@ -34,6 +40,7 @@ import {
   changeTermKind,
   findKindBySlug,
   findTermByPublicId,
+  indexTermFts,
   renameTerm,
 } from "./repository/terms";
 
@@ -53,7 +60,6 @@ const rebuildAndRevalidate = async (
   return await findWorkPublicIds(tx, workIds);
 };
 
-const MIN_QUERY_LENGTH = 2;
 const MAX_RESULTS = 10;
 
 /**
@@ -87,9 +93,58 @@ const slugify = (value: string) =>
     .replaceAll(/[^a-z0-9]+/gu, "-")
     .replaceAll(/^-+|-+$/gu, "");
 
+interface TaxonomySearchRow {
+  id: string;
+  kind: string;
+  label: string;
+}
+
 /**
- * Trigram similarity search over active taxonomy terms -- surfaced by the
- * taxonomy picker before a duplicate term is created, per the roadmap's
+ * FTS5 trigram-tokenizer substring search (07_backend/03_search_and_filtering.md)
+ * over active taxonomy terms, for queries long enough to form a full
+ * trigram. Queries the taxonomy_term_fts external-content virtual table
+ * (src/server/db/search-index.ts) and joins back to the real row by rowid.
+ */
+const searchTaxonomyTermsByFts = async (
+  trimmed: string,
+  kindSlug: string | undefined
+): Promise<TaxonomySearchRow[]> =>
+  await db.all<TaxonomySearchRow>(sql`
+    select tt.public_id as id, tk.slug as kind, tt.name as label
+    from taxonomy_term_fts fts
+    join taxonomy_term tt on tt.rowid = fts.rowid
+    join taxonomy_kind tk on tk.id = tt.taxonomy_kind_id
+    where fts match ${toFtsPhraseQuery(trimmed)}
+      and tt.status = 'active'
+      ${kindSlug ? sql`and tk.slug = ${kindSlug}` : sql``}
+    order by bm25(fts)
+    limit ${MAX_RESULTS}
+  `);
+
+/**
+ * Below FTS_MATCH_MIN_LENGTH a trigram MATCH can't be formed at all -- a
+ * plain LIKE scan over this table's actual row count (a personal library's
+ * taxonomy terms, at most a few thousand) is cheaper than standing up a
+ * second index just to serve two-letter queries.
+ */
+const searchTaxonomyTermsByLike = async (
+  trimmed: string,
+  kindSlug: string | undefined
+): Promise<TaxonomySearchRow[]> =>
+  await db.all<TaxonomySearchRow>(sql`
+    select tt.public_id as id, tk.slug as kind, tt.name as label
+    from taxonomy_term tt
+    join taxonomy_kind tk on tk.id = tt.taxonomy_kind_id
+    where tt.status = 'active'
+      and tt.name like ${`%${escapeLikeWildcards(trimmed)}%`} escape '\\'
+      ${kindSlug ? sql`and tk.slug = ${kindSlug}` : sql``}
+    order by tt.name
+    limit ${MAX_RESULTS}
+  `);
+
+/**
+ * Free-text search over active taxonomy terms -- surfaced by the taxonomy
+ * picker before a duplicate term is created, per the roadmap's
  * "taxonomy-suggestion" requirement. Admin-only: the picker only ever
  * renders inside an authoring form. `kindSlug` scopes the search to one
  * taxonomy kind (topaz-v3-specs/06_library/04_taxonomy_picker.md); omit it
@@ -101,30 +156,14 @@ export const searchTaxonomyTermsAction = async (
 ): Promise<TaxonomyOption[]> => {
   await requireAdmin();
 
-  const trimmed = query.trim();
-  if (trimmed.length < MIN_QUERY_LENGTH) {
+  const trimmed = sanitizeSearchText(query);
+  if (!trimmed) {
     return [];
   }
 
-  const rows = await db
-    .select({
-      id: taxonomyTerm.publicId,
-      kind: taxonomyKind.slug,
-      label: taxonomyTerm.name,
-    })
-    .from(taxonomyTerm)
-    .innerJoin(taxonomyKind, eq(taxonomyKind.id, taxonomyTerm.taxonomyKindId))
-    .where(
-      and(
-        eq(taxonomyTerm.status, "active"),
-        sql`${taxonomyTerm.name} % ${trimmed}`,
-        kindSlug ? eq(taxonomyKind.slug, kindSlug) : undefined
-      )
-    )
-    .orderBy(sql`similarity(${taxonomyTerm.name}, ${trimmed}) desc`)
-    .limit(MAX_RESULTS);
-
-  return rows;
+  return trimmed.length >= FTS_MATCH_MIN_LENGTH
+    ? await searchTaxonomyTermsByFts(trimmed, kindSlug)
+    : await searchTaxonomyTermsByLike(trimmed, kindSlug);
 };
 
 const MAX_HOT_TERMS = 20;
@@ -226,13 +265,22 @@ export const createTaxonomyTermAction = async (
       slug,
       taxonomyKindId: kind.id,
     })
-    .returning({ id: taxonomyTerm.publicId, label: taxonomyTerm.name });
+    .returning({
+      id: taxonomyTerm.publicId,
+      internalId: taxonomyTerm.id,
+      label: taxonomyTerm.name,
+    });
 
   if (!created) {
     throw new Error("Failed to create taxonomy term.");
   }
 
-  return { data: { ...created, kind: kind.slug }, status: "success" };
+  await indexTermFts(db, created.internalId, trimmed);
+
+  return {
+    data: { id: created.id, kind: kind.slug, label: created.label },
+    status: "success",
+  };
 };
 
 export interface TermMutationResult {
