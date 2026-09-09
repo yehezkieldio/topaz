@@ -29,26 +29,23 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Running It
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Topaz is local-first (see `topaz-v3-tether-specs/00_context/00_project_summary.md`): there is no shared server or hosted database. Each device runs its own copy of this app against its own local SQLite file (`bun:sqlite`), started when you want to use it, not as an always-on service. `bun run build` (via `next-bun-compile`, `next.config.ts`) produces a single self-contained Bun executable per device -- that binary is what actually ships, not a Vercel deployment.
 
 ## Analytics log tables: storage & retention
 
-Three append-only log tables back the statistics ladder (`src/features/stats`): `reading_event`, `work_source_observation`, and `audit_log`. All three write only when a value actually changes -- a refresh or edit that finds nothing different writes zero rows. See `v3/plan-work.md` §3 for the full design rationale and per-row size math (~64-250 bytes/row, <5 MB/year at personal scale).
+Three append-only log tables back the statistics ladder (`src/features/stats`): `reading_event`, `work_source_observation`, and `audit_log`. All three write only when a value actually changes -- a refresh or edit that finds nothing different writes zero rows. See `v3-tether/plan-work.md` §3 for the full design rationale and per-row size math (~64-250 bytes/row, <5 MB/year at personal scale).
 
-**Check current size** (Supabase dashboard, or run against any environment):
+**Check current size** (run against the local SQLite file):
 
 ```sql
-select pg_size_pretty(pg_database_size(current_database()));
-select
-  relname,
-  pg_size_pretty(pg_total_relation_size(relid))
-from pg_catalog.pg_statio_user_tables
-where relname in ('reading_event', 'work_source_observation', 'audit_log')
-order by pg_total_relation_size(relid) desc;
+select page_count * page_size as size_bytes from pragma_page_count(), pragma_page_size();
+select name, sum("pgsize") as size_bytes
+from dbstat
+where name in ('reading_event', 'work_source_observation', 'audit_log')
+group by name
+order by size_bytes desc;
 ```
 
 **When to prune:** `work_source_observation` is the only log table that's safe to prune -- it's rebuildable from the current `work_source` row plus future refreshes. Never prune `reading_event` (irreplaceable user history) or `audit_log` (edit provenance). Run:
@@ -57,9 +54,9 @@ order by pg_total_relation_size(relid) desc;
 bun run prune-observations
 ```
 
-This deletes `work_source_observation` rows older than 2 years, but only runs the delete once the table has grown past a 10 MB threshold (logs and exits 0 otherwise). It never runs on a schedule -- no `pg_cron`, no background worker -- and it never calls `VACUUM` itself; run `VACUUM (ANALYZE) work_source_observation;` manually afterward to reclaim space.
+This deletes `work_source_observation` rows older than 2 years, but only runs the delete once the table has grown past a 10 MB threshold (logs and exits 0 otherwise). It never runs on a schedule -- no background worker -- and it never runs `VACUUM` itself; run `VACUUM;` manually afterward to reclaim space (SQLite's `VACUUM` operates on the whole file, not per-table, unlike Postgres's `VACUUM (ANALYZE) table_name`).
 
-**`audit_log.before`/`after` must stay allow-listed.** Callers (`src/server/db/audit.ts`) pass only the specific changed columns, never a full-row dump or `raw_metadata` -- that's what keeps rows under ~500 bytes and keeps egress cheap on Supabase's Free tier.
+**`audit_log.before`/`after` must stay allow-listed.** Callers (`src/server/db/audit.ts`) pass only the specific changed columns, never a full-row dump or `raw_metadata` -- that's what keeps rows small on the local resource budget (`topaz-v3-tether-specs/07_backend/02_connections_and_scaling_limits.md`).
 
 **L4 export** for notebook/ML exploration:
 

@@ -1,1 +1,0 @@
-ALTER TYPE "public"."library_entry_status" ADD VALUE 'completed_as_axed';

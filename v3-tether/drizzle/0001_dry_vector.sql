@@ -1,2 +1,0 @@
-ALTER TABLE "reading_state" ADD COLUMN "version" integer DEFAULT 1 NOT NULL;--> statement-breakpoint
-ALTER TABLE "reading_state" ADD CONSTRAINT "reading_state_rating_range" CHECK ("reading_state"."rating" is null or ("reading_state"."rating" >= 1 and "reading_state"."rating" <= 5));
