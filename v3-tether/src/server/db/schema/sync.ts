@@ -3,13 +3,19 @@ import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core
 import { jsonText } from "./_shared";
 
 /**
- * This device's own stable identity (08_sync/00_oplog_and_clock.md,
- * 01_transport_and_pairing.md) -- generated once on first run and never
- * regenerated, so oplog rows and sync pairing keep referring to the same
- * device across restarts. Deliberately a single-row table rather than a
- * config file alongside the SQLite database: everything this app needs
- * lives in the one per-device file (00_context/00_project_summary.md).
- * `id` is always the literal "self" -- there is exactly one row, ever.
+ * This device's own stable identity and Ed25519 keypair
+ * (08_sync/00_oplog_and_clock.md, 01_transport_and_pairing.md) -- generated
+ * once on first run and never regenerated, so oplog rows and sync pairing
+ * keep referring to the same device across restarts. Deliberately a
+ * single-row table rather than a config file alongside the SQLite
+ * database: everything this app needs lives in the one per-device file
+ * (00_context/00_project_summary.md). `id` is always the literal "self" --
+ * there is exactly one row, ever.
+ *
+ * `privateKeyPkcs8` never leaves this device -- it isn't part of pairing or
+ * sync payloads, only used locally to sign outgoing /api/sync requests.
+ * `publicKeyRaw` is what gets shared with a peer during pairing (stored on
+ * the *peer's* side in that peer's own known_peer row, not here).
  */
 export const deviceIdentity = sqliteTable("device_identity", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
@@ -17,6 +23,8 @@ export const deviceIdentity = sqliteTable("device_identity", {
     .$defaultFn(() => new Date()),
   deviceId: text("device_id").notNull().unique(),
   id: text("id").primaryKey().default("self"),
+  privateKeyPkcs8: text("private_key_pkcs8").notNull(),
+  publicKeyRaw: text("public_key_raw").notNull(),
 });
 
 /**
@@ -48,10 +56,13 @@ export const oplog = sqliteTable("oplog", {
 /**
  * A device the admin has explicitly paired with (Ed25519 key exchange,
  * 08_sync/01_transport_and_pairing.md) -- never itself synced; each
- * device's peer list is its own local configuration. `lastSyncedSeq` is
- * this device's sync checkpoint against that peer's oplog history (the
- * highest `oplog.seq` of theirs already applied) -- not their whole clock
- * state, just where the next pull should resume from.
+ * device's peer list is its own local configuration. `lastSyncedHlc` is
+ * this device's sync checkpoint against that peer's oplog history: the
+ * highest `oplog.hlc_timestamp` already received from them. Deliberately
+ * not a seq number -- `seq` is per-device-file and isn't comparable across
+ * devices (08_sync/00_oplog_and_clock.md's Checkpointing), so only the
+ * globally-ordered HLC timestamp can serve as the cross-device cursor.
+ * Null means "never synced with this peer yet."
  */
 export const knownPeer = sqliteTable(
   "known_peer",
@@ -61,7 +72,8 @@ export const knownPeer = sqliteTable(
       .$defaultFn(() => new Date()),
     // Populated during pairing, not sync -- see 01_transport_and_pairing.md.
     deviceId: text("device_id").notNull(),
-    lastSyncedSeq: integer("last_synced_seq").notNull().default(0),
+    lastSyncedHlc: text("last_synced_hlc"),
+    port: integer("port").notNull(),
     publicKey: text("public_key").notNull(),
     tailnetHostname: text("tailnet_hostname").notNull(),
   },

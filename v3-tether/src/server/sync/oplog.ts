@@ -1,13 +1,21 @@
 import "server-only";
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq, gt } from "drizzle-orm";
 
 import { db as dbClient } from "@/server/db/client";
 import { oplog } from "@/server/db/schema/sync";
 
-import { getOrCreateDeviceId } from "./device-id";
+import { getDeviceIdentity } from "./device-identity";
 import { decodeHlc, encodeHlc, type HlcState, tickLocal } from "./hlc";
 
 type Tx = Parameters<Parameters<typeof dbClient.transaction>[0]>[0] | typeof dbClient;
+
+/**
+ * Fixed per-round cap on oplog rows exchanged in one sync request
+ * (07_backend/02_connections_and_scaling_limits.md, 08_sync/00_oplog_and_clock.md's
+ * Checkpointing) -- a device that was offline for weeks reconciles across
+ * several bounded rounds, not one unbounded pull.
+ */
+export const SYNC_BATCH_SIZE = 500;
 
 /**
  * This process's device id and HLC state, lazily established once per
@@ -24,7 +32,7 @@ const loadInitialClockState = async (): Promise<{
   deviceId: string;
   clock: HlcState;
 }> => {
-  const deviceId = await getOrCreateDeviceId(dbClient);
+  const { deviceId } = await getDeviceIdentity(dbClient);
 
   const [lastOwnEntry] = await dbClient
     .select({ hlcTimestamp: oplog.hlcTimestamp })
@@ -85,3 +93,40 @@ export const appendOplogEntry = async (
     tombstone: input.tombstone ?? false,
   });
 };
+
+export interface OplogEntry {
+  seq: number;
+  deviceId: string;
+  tableName: string;
+  rowId: string;
+  columnDiffs: Record<string, unknown>;
+  hlcTimestamp: string;
+  tombstone: boolean;
+}
+
+/**
+ * This device's own oplog rows with hlc_timestamp strictly greater than
+ * `sinceHlc` -- the query the /api/sync Route Handler runs to serve a
+ * peer's pull request. Scans the *entire* local oplog (every device_id
+ * this device has ever recorded, not just its own), which is what makes
+ * sync transitive without a separate checkpoint per origin device
+ * (08_sync/00_oplog_and_clock.md's Checkpointing).
+ */
+export const getOplogEntriesSince = async (
+  sinceHlc: string | null,
+  limit: number = SYNC_BATCH_SIZE
+): Promise<OplogEntry[]> =>
+  await dbClient
+    .select({
+      columnDiffs: oplog.columnDiffs,
+      deviceId: oplog.deviceId,
+      hlcTimestamp: oplog.hlcTimestamp,
+      rowId: oplog.rowId,
+      seq: oplog.seq,
+      tableName: oplog.tableName,
+      tombstone: oplog.tombstone,
+    })
+    .from(oplog)
+    .where(gt(oplog.hlcTimestamp, sinceHlc ?? ""))
+    .orderBy(asc(oplog.hlcTimestamp))
+    .limit(limit);

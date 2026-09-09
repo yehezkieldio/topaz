@@ -72,14 +72,21 @@ Each device maintains one HLC: `(physical_time_ms, logical_counter)`, advanced o
 
 ## Checkpointing
 
+The checkpoint is keyed by **HLC timestamp, not `seq`** -- `seq` is a plain autoincrement local to one device's own SQLite file, so a row a device received *from* a peer gets a new, unrelated `seq` value when it's inserted into that device's own oplog (to make it available for further relay). Two different devices' oplog tables never agree on what a given `seq` number means, so `seq` cannot be the cross-device sync cursor -- only the globally-comparable `hlc_timestamp` can be.
+
 ```text
-- Each device tracks, per known peer, the last oplog seq of that peer's
-  history it has already applied (last_synced_seq in known_peer, see
-  03_data/00_schema_contract.md).
-- A sync round asks a peer for oplog rows with seq > last_synced_seq, applies
-  them in HLC order (not seq order -- seq is per-device and only orders that
-  device's own history; HLC orders across devices), and advances the
-  checkpoint to the highest seq actually received.
+- Each device tracks, per known peer, the highest hlc_timestamp it has
+  already received from that peer (last_synced_hlc in known_peer, see
+  03_data/00_schema_contract.md) -- not a seq number.
+- A sync round asks a peer for oplog rows with hlc_timestamp > last_synced_hlc,
+  scanning that peer's *entire* local oplog (every device_id it has ever
+  recorded, not just rows it originated itself) -- this is what makes sync
+  transitive without a separate per-origin-device checkpoint: if peer A
+  already absorbed a change from device C, asking A once also picks up
+  that change, the same as asking C directly would.
+- Applies received rows in hlc_timestamp order, and re-inserts each into this
+  device's own oplog (so it can relay them onward to a third device later),
+  then advances the checkpoint to the highest hlc_timestamp actually received.
 - Bounded per round (07_backend/02_connections_and_scaling_limits.md's fixed
   batch size, e.g. 500 oplog rows). A device that was closed for weeks
   reconciles across several bounded rounds, not one unbounded pull.

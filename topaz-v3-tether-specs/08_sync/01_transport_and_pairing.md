@@ -5,9 +5,12 @@
 Store-and-forward sync doesn't need a live connection -- it needs "ask a peer for everything since seq N, get a bounded batch back." That's a request/response shape, so it's implemented as exactly that: a Next.js Route Handler, the same primitive already used elsewhere in this stack for TanStack-Query-facing reads (`02_stack/00_stack_contract.md`).
 
 ```text
-app/api/sync/route.ts   POST -- body: { deviceId, sinceSeq }, signed (see below).
-                          Response: { rows: OplogRow[], nextSeq }, capped at the
-                          fixed per-round batch size.
+app/api/sync/route.ts   POST -- body: { deviceId, sinceHlc }, signed (see below).
+                          Response: { rows: OplogRow[], nextHlc }, capped at
+                          the fixed per-round batch size. sinceHlc/nextHlc are
+                          hlc_timestamp values, not seq numbers -- seq is
+                          per-device-file and isn't comparable across devices
+                          (08_sync/00_oplog_and_clock.md's Checkpointing).
 ```
 
 ```text

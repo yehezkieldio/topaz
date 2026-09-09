@@ -44,8 +44,10 @@ oplog          - append-only: (seq, device_id, table_name, row_id,
                  as the row write -- one commit, not two.
 
 known_peer     - per-device table of paired peers: device_id, tailnet hostname,
-                 public key fingerprint, last_synced_seq. Never synced itself
-                 (each device's peer list is its own local configuration).
+                 public key fingerprint, last_synced_hlc (a hlc_timestamp
+                 value, not a seq -- see 08_sync/00_oplog_and_clock.md's
+                 Checkpointing). Never synced itself (each device's peer list
+                 is its own local configuration).
 ```
 
 `version` columns (below) are unchanged in purpose but now also double as sync-relevant state: a bumped `version` is itself an oplog-recorded change, and the oplog's HLC timestamp -- not the `version` integer -- is what actually orders conflicting writes across devices during a sync round.
