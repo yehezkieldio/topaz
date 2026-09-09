@@ -1,24 +1,19 @@
 import { sql } from "drizzle-orm";
 import {
-  boolean,
   check,
   index,
   integer,
-  jsonb,
-  numeric,
-  pgEnum,
-  pgTable,
+  real,
+  sqliteTable,
   text,
-  timestamp,
   uniqueIndex,
-  uuid,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/sqlite-core";
 
-import { idColumns, timestampColumns } from "./_shared";
+import { enumCheck, idColumns, jsonText, timestampColumns } from "./_shared";
 import { user } from "./auth";
 import { work } from "./catalog";
 
-export const libraryEntryStatusEnum = pgEnum("library_entry_status", [
+export const libraryEntryStatusValues = [
   "not_started",
   "reading",
   "paused",
@@ -27,9 +22,10 @@ export const libraryEntryStatusEnum = pgEnum("library_entry_status", [
   "plan_to_read",
   "dropped_as_abandoned",
   "completed_as_axed",
-]);
+] as const;
+export type LibraryEntryStatus = (typeof libraryEntryStatusValues)[number];
 
-export const readingEventTypeEnum = pgEnum("reading_event_type", [
+export const readingEventTypeValues = [
   "started",
   "progressed",
   "rating_changed",
@@ -37,23 +33,28 @@ export const readingEventTypeEnum = pgEnum("reading_event_type", [
   "status_changed",
   "completed",
   "dropped",
-]);
+] as const;
+export type ReadingEventType = (typeof readingEventTypeValues)[number];
 
-export const libraryEntry = pgTable(
+export const libraryEntry = sqliteTable(
   "library_entry",
   {
     ...idColumns(),
     displayOrder: integer("display_order"),
-    favorite: boolean("favorite").default(false).notNull(),
-    isFeatured: boolean("is_featured").default(false).notNull(),
+    favorite: integer("favorite", { mode: "boolean" }).default(false).notNull(),
+    isFeatured: integer("is_featured", { mode: "boolean" })
+      .default(false)
+      .notNull(),
     priority: integer("priority"),
-    private: boolean("private").default(false).notNull(),
-    status: libraryEntryStatusEnum("status").default("not_started").notNull(),
+    private: integer("private", { mode: "boolean" }).default(false).notNull(),
+    status: text("status", { enum: libraryEntryStatusValues })
+      .default("not_started")
+      .notNull(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     version: integer("version").default(1).notNull(),
-    workId: uuid("work_id")
+    workId: text("work_id")
       .notNull()
       .references(() => work.id, { onDelete: "cascade" }),
     ...timestampColumns(),
@@ -67,22 +68,26 @@ export const libraryEntry = pgTable(
     index("library_entry_display_order_idx")
       .on(table.isFeatured, table.displayOrder)
       .where(sql`${table.isFeatured} = true`),
+    enumCheck("library_entry_status_valid", table.status, libraryEntryStatusValues),
   ]
 );
 
-export const readingState = pgTable(
+export const readingState = sqliteTable(
   "reading_state",
   {
-    completedAt: timestamp("completed_at"),
+    completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     currentChapter: integer("current_chapter"),
-    lastReadAt: timestamp("last_read_at"),
-    libraryEntryId: uuid("library_entry_id")
+    lastReadAt: integer("last_read_at", { mode: "timestamp_ms" }),
+    libraryEntryId: text("library_entry_id")
       .primaryKey()
       .references(() => libraryEntry.id, { onDelete: "cascade" }),
-    percent: numeric("percent", { precision: 5, scale: 2 }),
-    rating: numeric("rating", { mode: "number", precision: 3, scale: 1 }),
+    // numeric(precision, scale) has no SQLite equivalent -- real, with the
+    // existing range/step CHECK doing the precision enforcement that a
+    // Postgres numeric column type gave for free.
+    percent: real("percent"),
+    rating: real("rating"),
     rereadCount: integer("reread_count").default(0).notNull(),
-    startedAt: timestamp("started_at"),
+    startedAt: integer("started_at", { mode: "timestamp_ms" }),
     version: integer("version").default(1).notNull(),
     ...timestampColumns(),
   },
@@ -94,25 +99,32 @@ export const readingState = pgTable(
   ]
 );
 
-export const readingEvent = pgTable(
+export const readingEvent = sqliteTable(
   "reading_event",
   {
     ...idColumns(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    eventType: readingEventTypeEnum("event_type").notNull(),
-    fromSnapshot: jsonb("from_snapshot"),
-    libraryEntryId: uuid("library_entry_id")
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    eventType: text("event_type", { enum: readingEventTypeValues }).notNull(),
+    fromSnapshot: jsonText<Record<string, unknown>>("from_snapshot"),
+    libraryEntryId: text("library_entry_id")
       .notNull()
       .references(() => libraryEntry.id, { onDelete: "cascade" }),
-    metadata: jsonb("metadata"),
-    toSnapshot: jsonb("to_snapshot"),
+    metadata: jsonText<Record<string, unknown>>("metadata"),
+    toSnapshot: jsonText<Record<string, unknown>>("to_snapshot"),
   },
   (table) => [
     index("reading_event_library_entry_id_idx").on(table.libraryEntryId),
     index("reading_event_created_at_idx").on(table.createdAt),
     check(
       "reading_event_metadata_is_object",
-      sql`${table.metadata} is null or jsonb_typeof(${table.metadata}) = 'object'`
+      sql`${table.metadata} is null or (json_valid(${table.metadata}) and json_type(${table.metadata}) = 'object')`
+    ),
+    enumCheck(
+      "reading_event_event_type_valid",
+      table.eventType,
+      readingEventTypeValues
     ),
   ]
 );

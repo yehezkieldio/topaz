@@ -1,4 +1,4 @@
-import type { readingEventTypeEnum } from "@/server/db/schema/library";
+import type { ReadingEventType } from "@/server/db/schema/library";
 
 type LibraryEntryStatus =
   | "not_started"
@@ -10,7 +10,7 @@ type LibraryEntryStatus =
   | "dropped_as_abandoned"
   | "completed_as_axed";
 
-export type ReadingEventType = (typeof readingEventTypeEnum.enumValues)[number];
+export type { ReadingEventType };
 
 export interface ReadingSnapshot {
   status?: LibraryEntryStatus;

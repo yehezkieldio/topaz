@@ -1,5 +1,12 @@
 import { createId } from "@paralleldrive/cuid2";
-import { customType, integer, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+import {
+  check,
+  customType,
+  integer,
+  type SQLiteColumn,
+  text,
+} from "drizzle-orm/sqlite-core";
 
 /**
  * Case-insensitive text (03_data/00_schema_contract.md's citext -> SQLite
@@ -42,6 +49,27 @@ export const idColumns = () => ({
     .unique()
     .$defaultFn(() => createId()),
 });
+
+/**
+ * SQLite has no native enum type (03_data/00_schema_contract.md's pgEnum ->
+ * SQLite translation). A column declared `text(name, { enum: values })` gets
+ * the TypeScript union for free but nothing stops an out-of-range value at
+ * the database level -- this check() restores that enforcement, matching the
+ * existing "CHECK constraints enforce shape at the database level" invariant
+ * (03_data/00_schema_contract.md's Constraints and Indexing Policy).
+ */
+export const enumCheck = (
+  constraintName: string,
+  column: SQLiteColumn,
+  values: readonly string[]
+) =>
+  check(
+    constraintName,
+    sql`${column} in (${sql.join(
+      values.map((value) => sql`${value}`),
+      sql`, `
+    )})`
+  );
 
 export const timestampColumns = () => ({
   createdAt: integer("created_at", { mode: "timestamp_ms" })

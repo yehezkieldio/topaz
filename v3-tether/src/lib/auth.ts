@@ -1,57 +1,56 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin as adminPlugin, bearer } from "better-auth/plugins";
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 
 import { ac, admin, user as userRole } from "@/auth/permissions";
 import { env } from "@/lib/env";
 import { db } from "@/server/db/client";
 import * as schema from "@/server/db/schema";
 
-const isAdminDiscordAccount = (account: {
-  providerId: string;
-  accountId: string;
-}) =>
-  account.providerId === "discord" &&
-  account.accountId === env.ADMIN_DISCORD_ID;
+/**
+ * The single-user invite gate's local-first equivalent of the old Discord-ID
+ * allow-list (02_stack/04_auth_and_authorization.md): sign-up is refused once
+ * a user row already exists, so there is never a second account to
+ * authorize against in the first place.
+ */
+const hasExistingUser = async (): Promise<boolean> => {
+  const [row] = await db.select({ value: count() }).from(schema.user);
+  return (row?.value ?? 0) > 0;
+};
 
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
   database: drizzleAdapter(db, {
-    provider: "pg",
+    provider: "sqlite",
     schema,
   }),
   databaseHooks: {
-    account: {
+    user: {
       create: {
-        after: async (account) => {
-          // The `role` field only ever defaults to "user" -- nothing else
-          // promotes an account to admin, so the one allowed Discord sign-in
-          // is promoted here, right after its account row is created.
-          if (isAdminDiscordAccount(account)) {
-            await db
-              .update(schema.user)
-              .set({ role: "admin" })
-              .where(eq(schema.user.id, account.userId));
-          }
+        after: async (newUser) => {
+          // The one account this device will ever have is also its admin --
+          // there is no separate promotion step to run once sign-up is
+          // limited to a single user (the `before` hook below).
+          await db
+            .update(schema.user)
+            .set({ role: "admin" })
+            .where(eq(schema.user.id, newUser.id));
         },
-        before: (account) => {
-          const isAllowedAdmin =
-            account.providerId !== "discord" ||
-            account.accountId === env.ADMIN_DISCORD_ID;
-          return Promise.resolve(isAllowedAdmin ? { data: account } : false);
+        before: async () => {
+          if (await hasExistingUser()) {
+            return false;
+          }
+          return true;
         },
       },
     },
   },
+  emailAndPassword: {
+    enabled: true,
+  },
   plugins: [adminPlugin({ ac, roles: { admin, user: userRole } }), bearer()],
   secret: env.BETTER_AUTH_SECRET,
-  socialProviders: {
-    discord: {
-      clientId: env.DISCORD_CLIENT_ID,
-      clientSecret: env.DISCORD_CLIENT_SECRET,
-    },
-  },
   user: {
     additionalFields: {
       role: {

@@ -6,19 +6,17 @@ import {
 } from "nuqs/server";
 
 import {
-  contentRatingEnum,
-  publicationStatusEnum,
+  contentRatingValues,
+  publicationStatusValues,
 } from "@/server/db/schema/catalog";
 import { libraryEntry } from "@/server/db/schema/library";
 
 export const libraryStatusValues = libraryEntry.status.enumValues;
 
 export const libraryStatusParser = parseAsStringLiteral(libraryStatusValues);
-export const contentRatingParser = parseAsStringLiteral(
-  contentRatingEnum.enumValues
-);
+export const contentRatingParser = parseAsStringLiteral(contentRatingValues);
 export const publicationStatusParser = parseAsStringLiteral(
-  publicationStatusEnum.enumValues
+  publicationStatusValues
 );
 
 export const librarySearchParsers = {

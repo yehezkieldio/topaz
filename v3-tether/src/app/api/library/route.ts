@@ -5,8 +5,8 @@ import { LIBRARY_PAGE_SIZE } from "@/features/library/query-key";
 import { libraryStatusValues } from "@/features/library/search-params";
 import { getLibraryList } from "@/features/library/server/queries";
 import {
-  contentRatingEnum,
-  publicationStatusEnum,
+  contentRatingValues,
+  publicationStatusValues,
 } from "@/server/db/schema/catalog";
 
 const isLibraryStatus = (
@@ -20,19 +20,19 @@ const isLibraryStatus = (
 
 const isContentRating = (
   value: string | null
-): value is (typeof contentRatingEnum.enumValues)[number] =>
+): value is (typeof contentRatingValues)[number] =>
   // SAFETY: same widening as isLibraryStatus above -- only relaxes the
   // element type for `.includes`, not the enum's actual runtime values.
   value !== null &&
-  (contentRatingEnum.enumValues as readonly string[]).includes(value);
+  (contentRatingValues as readonly string[]).includes(value);
 
 const isPublicationStatus = (
   value: string | null
-): value is (typeof publicationStatusEnum.enumValues)[number] =>
+): value is (typeof publicationStatusValues)[number] =>
   // SAFETY: same widening as isLibraryStatus above -- only relaxes the
   // element type for `.includes`, not the enum's actual runtime values.
   value !== null &&
-  (publicationStatusEnum.enumValues as readonly string[]).includes(value);
+  (publicationStatusValues as readonly string[]).includes(value);
 
 const parseRating = (value: string | null): number | undefined => {
   if (!value) {

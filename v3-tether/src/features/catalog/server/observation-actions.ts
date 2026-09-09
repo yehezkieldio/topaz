@@ -6,13 +6,13 @@ import { revalidateTag } from "next/cache";
 import { requireAdmin } from "@/server/auth/require-admin";
 import { recordAudit } from "@/server/db/audit";
 import { db } from "@/server/db/client";
-import type { publicationStatusEnum } from "@/server/db/schema";
+import type { publicationStatusValues } from "@/server/db/schema";
 import { workSource, workSourceObservation } from "@/server/db/schema";
 import type { MutationResult } from "@/server/query/mutation-result";
 
 import { workSourceObservationTag } from "./cache-tags";
 
-type PublicationStatus = (typeof publicationStatusEnum.enumValues)[number];
+type PublicationStatus = (typeof publicationStatusValues)[number];
 type ObservationSource = "manual" | "refresh" | "import";
 
 export interface ObservationCounts {

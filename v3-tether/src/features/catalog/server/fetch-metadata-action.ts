@@ -3,12 +3,12 @@
 import { z } from "zod";
 
 import { requireAdmin } from "@/server/auth/require-admin";
-import type { publicationStatusEnum } from "@/server/db/schema";
+import type { publicationStatusValues } from "@/server/db/schema";
 
 const FICHUB_EPUB_ENDPOINT = "https://fichub.net/api/v0/epub";
 const FETCH_TIMEOUT_MS = 10_000;
 
-type PublicationStatus = (typeof publicationStatusEnum.enumValues)[number];
+type PublicationStatus = (typeof publicationStatusValues)[number];
 
 /**
  * FicHub's shape isn't contractually guaranteed -- a field can arrive as an

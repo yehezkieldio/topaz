@@ -1,6 +1,5 @@
 import { and, asc, desc, eq, gt, lt, or } from "drizzle-orm";
-import type { SQL } from "drizzle-orm";
-import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import type { AnyColumn, SQL } from "drizzle-orm";
 
 import { encodeCursor } from "./cursor";
 
@@ -34,8 +33,8 @@ export const keysetCondition = ({
   idColumn,
   sortColumn,
 }: {
-  sortColumn: AnyPgColumn;
-  idColumn: AnyPgColumn;
+  sortColumn: AnyColumn;
+  idColumn: AnyColumn;
   direction: SortDirection;
   cursor: KeysetCursor | null;
 }): SQL | undefined => {
@@ -52,8 +51,8 @@ export const keysetCondition = ({
 };
 
 export const orderByKeyset = (
-  sortColumn: AnyPgColumn,
-  idColumn: AnyPgColumn,
+  sortColumn: AnyColumn,
+  idColumn: AnyColumn,
   direction: SortDirection
 ): SQL[] => {
   const order = direction === "asc" ? asc : desc;

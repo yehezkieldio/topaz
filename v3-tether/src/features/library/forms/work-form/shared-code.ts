@@ -2,16 +2,16 @@ import { formOptions } from "@tanstack/react-form";
 import { z } from "zod";
 
 import {
-  contentRatingEnum,
-  publicationStatusEnum,
+  contentRatingValues,
+  publicationStatusValues,
 } from "@/server/db/schema/catalog";
 
 export const workFormSchema = z.object({
   authorName: z.string().trim().min(1, "Author name is required").max(200),
-  contentRating: z.enum(contentRatingEnum.enumValues),
+  contentRating: z.enum(contentRatingValues),
   description: z.string().trim().max(10_000),
   isNsfw: z.boolean(),
-  publicationStatus: z.enum(publicationStatusEnum.enumValues),
+  publicationStatus: z.enum(publicationStatusValues),
   sourcePlatformId: z.string().trim().min(1, "Choose a source platform"),
   sourceUrl: z.string().trim().pipe(z.url("Enter a valid URL")),
   taxonomyTermIds: z.array(z.string()),

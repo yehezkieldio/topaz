@@ -9,32 +9,41 @@ import {
 
 const SESSION_TTL_MS = 1000 * 60 * 60;
 
+// Children before parents -- SQLite has no TRUNCATE ... CASCADE, so deletion
+// order does the job explicitly. Identity/autoincrement has nothing to reset
+// (ids are generated UUID strings, not autoincrementing integers).
+const APP_TABLES_CHILD_TO_PARENT = [
+  "work_taxonomy_effective",
+  "work_taxonomy_assignment",
+  "taxonomy_relation",
+  "taxonomy_term",
+  "audit_log",
+  "work_source_observation",
+  "reading_event",
+  "reading_state",
+  "library_entry",
+  "work_contributor",
+  "work_source",
+  "work",
+  "contributor",
+  "session",
+  "account",
+  "user",
+] as const;
+
 /**
- * Truncates every app table between tests, keeping the reference data
+ * Clears every app table between tests, keeping the reference data
  * (taxonomy_kind, source_platform) global-setup seeds -- those are looked
  * up by slug in production code and are cheap to leave standing.
  */
 export const truncateAppData = async () => {
-  await db.execute(sql`
-    truncate table
-      "work_taxonomy_effective",
-      "work_taxonomy_assignment",
-      "taxonomy_relation",
-      "taxonomy_term",
-      "audit_log",
-      "work_source_observation",
-      "reading_event",
-      "reading_state",
-      "library_entry",
-      "work_contributor",
-      "work_source",
-      "work",
-      "contributor",
-      "session",
-      "account",
-      "user"
-    restart identity cascade
-  `);
+  for (const table of APP_TABLES_CHILD_TO_PARENT) {
+    // Table names come only from the fixed list above, not external input --
+    // sql.raw is safe here. Sequential, not Promise.all, because deletion
+    // order (children before parents) is load-bearing under foreign keys.
+    // biome-ignore lint/performance/noAwaitInLoops: ordering across statements is required, not incidental
+    await db.run(sql.raw(`delete from "${table}"`));
+  }
 };
 
 export const createTestUser = async (role: "admin" | "user" = "admin") => {

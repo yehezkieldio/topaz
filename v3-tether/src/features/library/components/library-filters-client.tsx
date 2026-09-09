@@ -17,8 +17,8 @@ import {
   libraryStatusValues,
 } from "@/features/library/search-params";
 import {
-  contentRatingEnum,
-  publicationStatusEnum,
+  contentRatingValues,
+  publicationStatusValues,
 } from "@/server/db/schema/catalog";
 
 const ALL_STATUSES = "all";
@@ -145,18 +145,18 @@ export const LibraryFiltersClient = ({
         onValueChange={(value) => {
           void setFilters({
             // SAFETY: this dropdown's options are built from
-            // contentRatingEnum.enumValues plus the ALL_CONTENT_RATINGS
+            // contentRatingValues plus the ALL_CONTENT_RATINGS
             // sentinel (handled below), so any other value is one of those
             // enum values.
             contentRating:
               value === ALL_CONTENT_RATINGS
                 ? null
-                : (value as (typeof contentRatingEnum.enumValues)[number]),
+                : (value as (typeof contentRatingValues)[number]),
           });
         }}
         options={[
           { label: "All", value: ALL_CONTENT_RATINGS },
-          ...contentRatingEnum.enumValues.map((value) => ({
+          ...contentRatingValues.map((value) => ({
             label: formatLabel(value),
             value,
           })),
@@ -173,18 +173,18 @@ export const LibraryFiltersClient = ({
         onValueChange={(value) => {
           void setFilters({
             // SAFETY: this dropdown's options are built from
-            // publicationStatusEnum.enumValues plus the
+            // publicationStatusValues plus the
             // ALL_PUBLICATION_STATUSES sentinel (handled below), so any
             // other value is one of those enum values.
             publicationStatus:
               value === ALL_PUBLICATION_STATUSES
                 ? null
-                : (value as (typeof publicationStatusEnum.enumValues)[number]),
+                : (value as (typeof publicationStatusValues)[number]),
           });
         }}
         options={[
           { label: "All", value: ALL_PUBLICATION_STATUSES },
-          ...publicationStatusEnum.enumValues.map((value) => ({
+          ...publicationStatusValues.map((value) => ({
             label: formatLabel(value),
             value,
           })),

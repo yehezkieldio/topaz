@@ -4,10 +4,10 @@ import { sql } from "drizzle-orm";
 
 config({ override: true, path: ".env.test" });
 
-if (process.env.DATABASE_URL?.includes("/topaz_test") !== true) {
+if (process.env.DATABASE_PATH?.includes("topaz_test") !== true) {
   throw new Error(
     "Refusing to run against a non-test database. Check .env.test -- " +
-      "verify scripts truncate app tables and must never point at dev/prod data."
+      "verify scripts clear app tables and must never point at dev/prod data."
   );
 }
 
@@ -52,26 +52,31 @@ export const closeDb = async () => {
   await closeDbConnection();
 };
 
+// Children before parents -- SQLite has no TRUNCATE ... CASCADE (see
+// test/db-helpers.ts's truncateAppData for the same pattern).
+const APP_TABLES_CHILD_TO_PARENT = [
+  "work_taxonomy_effective",
+  "work_taxonomy_assignment",
+  "taxonomy_relation",
+  "taxonomy_term",
+  "reading_event",
+  "reading_state",
+  "library_entry",
+  "work_contributor",
+  "work_source",
+  "work",
+  "contributor",
+  "session",
+  "account",
+  "user",
+] as const;
+
 export const truncateAppData = async () => {
   const { db } = await import("@/server/db/client");
-  await db.execute(sql`
-    truncate table
-      "work_taxonomy_effective",
-      "work_taxonomy_assignment",
-      "taxonomy_relation",
-      "taxonomy_term",
-      "reading_event",
-      "reading_state",
-      "library_entry",
-      "work_contributor",
-      "work_source",
-      "work",
-      "contributor",
-      "session",
-      "account",
-      "user"
-    restart identity cascade
-  `);
+  for (const table of APP_TABLES_CHILD_TO_PARENT) {
+    // biome-ignore lint/performance/noAwaitInLoops: ordering across statements is required, not incidental
+    await db.run(sql.raw(`delete from "${table}"`));
+  }
 };
 
 export const seedReferenceData = async () => {

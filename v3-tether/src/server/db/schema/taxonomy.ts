@@ -1,55 +1,55 @@
 import { sql } from "drizzle-orm";
 import {
-  boolean,
   check,
   index,
   integer,
-  pgEnum,
-  pgTable,
   primaryKey,
+  sqliteTable,
   text,
   uniqueIndex,
-  uuid,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/sqlite-core";
 
-import { citext, idColumns, timestampColumns } from "./_shared";
+import { enumCheck, idColumns, nocaseText, timestampColumns } from "./_shared";
 import { work } from "./catalog";
 
-export const taxonomyTermStatusEnum = pgEnum("taxonomy_term_status", [
-  "active",
-  "merged",
-]);
+export const taxonomyTermStatusValues = ["active", "merged"] as const;
+export type TaxonomyTermStatus = (typeof taxonomyTermStatusValues)[number];
 
-export const taxonomyRelationTypeEnum = pgEnum("taxonomy_relation_type", [
+export const taxonomyRelationTypeValues = [
   "broader",
   "related",
   "implies",
   "conflicts_with",
   "equivalent_to",
-]);
+] as const;
+export type TaxonomyRelationType = (typeof taxonomyRelationTypeValues)[number];
 
-export const taxonomyEffectiveReasonEnum = pgEnum("taxonomy_effective_reason", [
-  "direct",
-  "inferred",
-]);
+export const taxonomyEffectiveReasonValues = ["direct", "inferred"] as const;
+export type TaxonomyEffectiveReason =
+  (typeof taxonomyEffectiveReasonValues)[number];
 
-export const taxonomyKind = pgTable("taxonomy_kind", {
+export const taxonomyKind = sqliteTable("taxonomy_kind", {
   ...idColumns(),
   name: text("name").notNull().unique(),
   slug: text("slug").notNull().unique(),
   ...timestampColumns(),
 });
 
-export const taxonomyTerm = pgTable(
+// Free-text/fuzzy search over name moves to the work_fts-style FTS5 virtual
+// table pattern (07_backend/03_search_and_filtering.md), not a column-level
+// index here -- see the note in catalog.ts.
+export const taxonomyTerm = sqliteTable(
   "taxonomy_term",
   {
     ...idColumns(),
-    mergedIntoId: uuid("merged_into_id"),
-    name: citext("name").notNull(),
+    mergedIntoId: text("merged_into_id"),
+    name: nocaseText("name").notNull(),
     normalizedName: text("normalized_name").notNull(),
     slug: text("slug").notNull(),
-    status: taxonomyTermStatusEnum("status").default("active").notNull(),
-    taxonomyKindId: uuid("taxonomy_kind_id")
+    status: text("status", { enum: taxonomyTermStatusValues })
+      .default("active")
+      .notNull(),
+    taxonomyKindId: text("taxonomy_kind_id")
       .notNull()
       .references(() => taxonomyKind.id),
     version: integer("version").default(1).notNull(),
@@ -61,21 +61,20 @@ export const taxonomyTerm = pgTable(
       table.slug
     ),
     index("taxonomy_term_normalized_name_idx").on(table.normalizedName),
-    index("taxonomy_term_name_trgm_idx").using(
-      "gin",
-      sql`${table.name} gin_trgm_ops`
-    ),
     index("taxonomy_term_merged_into_id_idx").on(table.mergedIntoId),
+    enumCheck("taxonomy_term_status_valid", table.status, taxonomyTermStatusValues),
   ]
 );
 
-export const taxonomyLabel = pgTable(
+export const taxonomyLabel = sqliteTable(
   "taxonomy_label",
   {
     ...idColumns(),
-    isPrimary: boolean("is_primary").default(false).notNull(),
-    label: citext("label").notNull(),
-    taxonomyTermId: uuid("taxonomy_term_id")
+    isPrimary: integer("is_primary", { mode: "boolean" })
+      .default(false)
+      .notNull(),
+    label: nocaseText("label").notNull(),
+    taxonomyTermId: text("taxonomy_term_id")
       .notNull()
       .references(() => taxonomyTerm.id, { onDelete: "cascade" }),
     ...timestampColumns(),
@@ -92,15 +91,17 @@ export const taxonomyLabel = pgTable(
   ]
 );
 
-export const taxonomyRelation = pgTable(
+export const taxonomyRelation = sqliteTable(
   "taxonomy_relation",
   {
     ...idColumns(),
-    fromTermId: uuid("from_term_id")
+    fromTermId: text("from_term_id")
       .notNull()
       .references(() => taxonomyTerm.id, { onDelete: "cascade" }),
-    relationType: taxonomyRelationTypeEnum("relation_type").notNull(),
-    toTermId: uuid("to_term_id")
+    relationType: text("relation_type", {
+      enum: taxonomyRelationTypeValues,
+    }).notNull(),
+    toTermId: text("to_term_id")
       .notNull()
       .references(() => taxonomyTerm.id, { onDelete: "cascade" }),
     ...timestampColumns(),
@@ -116,16 +117,21 @@ export const taxonomyRelation = pgTable(
       "taxonomy_relation_no_self_edge",
       sql`${table.fromTermId} != ${table.toTermId}`
     ),
+    enumCheck(
+      "taxonomy_relation_type_valid",
+      table.relationType,
+      taxonomyRelationTypeValues
+    ),
   ]
 );
 
-export const workTaxonomyAssignment = pgTable(
+export const workTaxonomyAssignment = sqliteTable(
   "work_taxonomy_assignment",
   {
-    taxonomyTermId: uuid("taxonomy_term_id")
+    taxonomyTermId: text("taxonomy_term_id")
       .notNull()
       .references(() => taxonomyTerm.id, { onDelete: "cascade" }),
-    workId: uuid("work_id")
+    workId: text("work_id")
       .notNull()
       .references(() => work.id, { onDelete: "cascade" }),
     ...timestampColumns(),
@@ -136,15 +142,15 @@ export const workTaxonomyAssignment = pgTable(
   ]
 );
 
-export const workTaxonomyEffective = pgTable(
+export const workTaxonomyEffective = sqliteTable(
   "work_taxonomy_effective",
   {
     depth: integer("depth").notNull(),
-    reason: taxonomyEffectiveReasonEnum("reason").notNull(),
-    taxonomyTermId: uuid("taxonomy_term_id")
+    reason: text("reason", { enum: taxonomyEffectiveReasonValues }).notNull(),
+    taxonomyTermId: text("taxonomy_term_id")
       .notNull()
       .references(() => taxonomyTerm.id, { onDelete: "cascade" }),
-    workId: uuid("work_id")
+    workId: text("work_id")
       .notNull()
       .references(() => work.id, { onDelete: "cascade" }),
     ...timestampColumns(),
@@ -153,5 +159,10 @@ export const workTaxonomyEffective = pgTable(
     primaryKey({ columns: [table.workId, table.taxonomyTermId] }),
     index("work_taxonomy_effective_term_id_idx").on(table.taxonomyTermId),
     check("work_taxonomy_effective_depth_bounded", sql`${table.depth} <= 4`),
+    enumCheck(
+      "work_taxonomy_effective_reason_valid",
+      table.reason,
+      taxonomyEffectiveReasonValues
+    ),
   ]
 );

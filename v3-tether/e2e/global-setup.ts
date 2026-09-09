@@ -2,10 +2,10 @@ import { config } from "dotenv";
 
 config({ path: ".env.test" });
 
-if (process.env.DATABASE_URL?.includes("/topaz_test") !== true) {
+if (process.env.DATABASE_PATH?.includes("topaz_test") !== true) {
   throw new Error(
-    "Refusing to run e2e tests: DATABASE_URL does not point at the " +
-      "topaz_test database. Check .env.test."
+    "Refusing to run e2e tests: DATABASE_PATH does not point at a " +
+      "topaz_test SQLite file. Check .env.test."
   );
 }
 
@@ -14,7 +14,7 @@ if (process.env.DATABASE_URL?.includes("/topaz_test") !== true) {
  * a scratch file for library-flow.spec.ts to read -- never printed to
  * stdout/logs. The `bearer` plugin (src/lib/auth.ts) lets requireAdmin()
  * resolve this via an Authorization header, so the browser context never
- * needs a real Discord OAuth round trip or a hand-rolled signed cookie.
+ * needs a real credential sign-in round trip or a hand-rolled signed cookie.
  */
 const globalSetup = async () => {
   const { truncateAppData, createTestUser, createAuthHeaders } =
