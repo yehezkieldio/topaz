@@ -63,3 +63,27 @@ Tailscale gets two devices onto the same private network; it does not by itself 
   beyond "the other devices simply stop trusting that key," which is
   sufficient for a fixed, admin-controlled set of trusted devices.
 ```
+
+## Implementation Notes
+
+```text
+- A pairing code is a version-tagged, base64url-encoded JSON envelope
+  ({v, deviceId, publicKeyRaw, tailnetHostname, port}) -- one string, short
+  enough to render as a QR or paste by hand (src/server/sync/pairing.ts).
+- A device's own tailnetHostname/port aren't auto-detected -- there's no
+  reliable way to learn "what hostname/port am I actually reachable on"
+  from inside the process, and pairing is already a deliberate, admin-typed
+  action. They're set once per device via SYNC_TAILNET_HOSTNAME/SYNC_PORT
+  env vars and embedded in the pairing code this device generates.
+- Pairing itself (pairWithPeerAction) is a purely local write -- it never
+  contacts the peer whose code was just captured. Trust is established by
+  each device independently recording the other's pairing code; there is
+  no network handshake at pairing time, only later, during an actual sync
+  round.
+- The fingerprint shown alongside a pairing code (computeKeyFingerprint --
+  the first 4 bytes of SHA-256(publicKeyRaw), as two hex groups) is a
+  belt-and-suspenders check: however the code itself was transferred (QR
+  scan, typed by hand), the admin can compare the fingerprint shown after
+  pairing against the one shown on the other device to catch a
+  transposition or a tampered code.
+```
