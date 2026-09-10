@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { MobileConnectCard } from "@/features/sync/components/mobile-connect-card";
 import { PairingCodeCard } from "@/features/sync/components/pairing-code-card";
 import { PairWithPeerForm } from "@/features/sync/components/pair-with-peer-form";
 import { PeerList } from "@/features/sync/components/peer-list";
@@ -24,6 +25,8 @@ export const SyncPanel = async () => {
 
   return (
     <div className="space-y-6">
+      <MobileConnectCard />
+
       <Suspense fallback={<CardSkeleton />}>
         <PairingCodeCard />
       </Suspense>

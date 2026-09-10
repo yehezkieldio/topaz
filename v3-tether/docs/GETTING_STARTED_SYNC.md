@@ -3,12 +3,10 @@
 This walks through getting Topaz running on two (or three) of your own devices and pairing them so they sync. Everything here has been verified to actually work — a real `next dev` server, a real signed HTTP request between two independent SQLite files, real convergence — not just typechecked. See `docs/BUN_SQLITE_NEXT_BUILD.md` if you want the full "how we know this works" log.
 
 **What's not done yet**, so you're not surprised:
-- No UI for pairing — you run a couple of CLI commands (`bun run sync ...`) instead of clicking through a settings screen.
-- Nothing automatically triggers a sync round on app open/close yet — you run `bun run sync round` manually for now.
+- Nothing automatically triggers a sync round on app open/close yet — you click "Sync now" on the `/sync` page (or run `bun run sync round`) manually for now.
 - Deleting things doesn't sync yet (no delete/tombstone path exists in the app at all currently — only creates and edits do).
-- Reference data (taxonomy kinds, source platforms) now seeds with fixed, deterministic IDs, so running the seed script independently on each device produces identical rows — no more foreign-key errors on sync. See the note near the end for details.
 
-None of that blocks trying it out — it just means "type a couple of commands," not "click a button," for now.
+There's a pairing/sync UI at `/sync` (see step 5) as well as the `bun run sync ...` CLI commands — use whichever's more convenient; they operate on the same `known_peer` table. Reference data (taxonomy kinds, source platforms) now seeds with fixed, deterministic IDs, so running the seed script independently on each device produces identical rows — no more foreign-key errors on sync. See the note near the end for details.
 
 ## 1. Install Tailscale on every device
 
@@ -94,6 +92,14 @@ It should print `Paired with <device A's hostname>:3000 (fingerprint 5BC6-1FEE)`
 Now do it **the other way**: `bun run sync generate` on device B, and `bun run sync pair "<code>"` on device A.
 
 Once both directions are done, `bun run sync peers` on either device should list the other one.
+
+## 5b. Connect a phone (thin-client, no pairing needed)
+
+Phones don't get their own copy of the library or join the pairing mesh above — there's no mobile runtime for the oplog/SQLite sync engine, and no background execution model on Android/iOS to run one in anyway. Instead, a phone is just a thin client: a browser pointed at one of your laptops/desktops, which needs to be reachable over Tailscale and left running (`bun dev`, or the compiled binary) whenever you want to use it from your phone.
+
+To avoid typing a Tailscale hostname and a password on a phone keyboard: open `/sync` on the laptop you want to connect from, install Tailscale on the phone too, and scan the **"Connect a phone"** QR code with the phone's camera. That opens the phone's browser straight into an already-signed-in `/library` — no URL, no password. The code is single-use and expires in 5 minutes; hit "New code" if it's gone stale (already scanned, or timed out) before you got to it.
+
+Under the hood this is a one-time magic-link sign-in for the device's single admin account (better-auth's `magicLink` plugin), addressed at the laptop's own tailnet hostname/port rather than `BETTER_AUTH_URL` (which is typically `localhost`, meaningless from another device) — the same address pairing codes already use.
 
 ## 6. Test it
 
