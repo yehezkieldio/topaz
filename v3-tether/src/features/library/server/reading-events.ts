@@ -17,6 +17,11 @@ export interface ReadingSnapshot {
   favorite?: boolean;
   rating?: number | null;
   currentChapter?: number | null;
+  // Lets this satisfy Record<string, unknown> structurally (needed to
+  // assign directly into readingEvent's jsonText<Record<string, unknown>>
+  // fromSnapshot/toSnapshot columns) without a cast at every call site --
+  // the named properties above still get their specific types.
+  [key: string]: unknown;
 }
 
 interface FavoriteInput {

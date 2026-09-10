@@ -41,7 +41,7 @@ import {
   changeTermKind,
   findKindBySlug,
   findTermByPublicId,
-  indexTermFts,
+  insertTermFts,
   renameTerm,
 } from "./repository/terms";
 
@@ -110,15 +110,20 @@ const searchTaxonomyTermsByFts = async (
   trimmed: string,
   kindSlug: string | undefined
 ): Promise<TaxonomySearchRow[]> =>
+  // FTS5's MATCH/bm25() magic column resolution only recognizes the FTS
+  // table's real name, not an alias (verified empirically -- `t_fts fts
+  // ... where fts match ?` throws "no such column: fts" even though the
+  // identical query against the unaliased table name works) -- so
+  // taxonomy_term_fts is referenced directly here, not aliased.
   await db.all<TaxonomySearchRow>(sql`
     select tt.public_id as id, tk.slug as kind, tt.name as label
-    from taxonomy_term_fts fts
-    join taxonomy_term tt on tt.rowid = fts.rowid
+    from taxonomy_term_fts
+    join taxonomy_term tt on tt.rowid = taxonomy_term_fts.rowid
     join taxonomy_kind tk on tk.id = tt.taxonomy_kind_id
-    where fts match ${toFtsPhraseQuery(trimmed)}
+    where taxonomy_term_fts match ${toFtsPhraseQuery(trimmed)}
       and tt.status = 'active'
       ${kindSlug ? sql`and tk.slug = ${kindSlug}` : sql``}
-    order by bm25(fts)
+    order by bm25(taxonomy_term_fts)
     limit ${MAX_RESULTS}
   `);
 
@@ -276,7 +281,7 @@ export const createTaxonomyTermAction = async (
     throw new Error("Failed to create taxonomy term.");
   }
 
-  await indexTermFts(db, created.internalId, trimmed);
+  await insertTermFts(db, created.internalId, trimmed);
   await appendOplogEntry(db, {
     columnDiffs: {
       name: trimmed,

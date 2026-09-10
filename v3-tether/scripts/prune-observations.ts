@@ -1,51 +1,57 @@
 import { config } from "dotenv";
 /**
- * Manual retention script -- never a cron job (v3/plan-work.md Slice E).
+ * Manual retention script -- never a cron job (v3-tether/plan-work.md Slice E).
  * Deletes work_source_observation rows older than 2 years. Refuses to run
- * (logs + exits 0) if the table is already below the size threshold, since
- * pruning below that point isn't worth a VACUUM. Run via:
+ * (logs + exits 0) if the table is already below the row-count threshold,
+ * since pruning below that point isn't worth a VACUUM. Run via:
  *
  *   bun run prune-observations
  *
- * After a real prune, run `VACUUM (ANALYZE) work_source_observation;`
- * manually -- this script only deletes rows, it never vacuums.
+ * After a real prune, run `VACUUM;` manually -- this script only deletes
+ * rows, it never vacuums (SQLite's VACUUM operates on the whole file, not
+ * per-table the way Postgres's VACUUM (ANALYZE) table_name does).
  */
-import { sql } from "drizzle-orm";
+import { lt } from "drizzle-orm";
 
 config({ path: ".env.local" });
 
-// 10 MB
-const SIZE_THRESHOLD_BYTES = 10 * 1024 * 1024;
-const RETENTION_INTERVAL = "2 years";
+// SQLite has no per-table size introspection without the dbstat virtual
+// table, which isn't compiled into Bun's bundled SQLite build -- a row
+// count is used as the threshold instead of a byte size. ~150 bytes/row
+// (v3-tether/plan-work.md's per-row size math) puts 65,000 rows at
+// roughly the same 10MB mark the original threshold targeted.
+const ROW_COUNT_THRESHOLD = 65_000;
+const RETENTION_MS = 1000 * 60 * 60 * 24 * 365 * 2; // 2 years
 
 const main = async () => {
   const { closeDbConnection, db } = await import("@/server/db/client");
+  const { workSourceObservation } = await import("@/server/db/schema");
+  const { count } = await import("drizzle-orm");
 
-  const [{ size_bytes: sizeBytes }] = await db.execute<{
-    size_bytes: string;
-  }>(
-    sql`select pg_total_relation_size('work_source_observation') as size_bytes`
-  );
+  const [row] = await db
+    .select({ value: count() })
+    .from(workSourceObservation);
+  const rowCount = row?.value ?? 0;
 
-  if (Number(sizeBytes) < SIZE_THRESHOLD_BYTES) {
+  if (rowCount < ROW_COUNT_THRESHOLD) {
     // biome-ignore lint/suspicious/noConsole: local one-shot CLI script
     console.log(
-      `work_source_observation is ${sizeBytes} bytes, below the ` +
-        `${SIZE_THRESHOLD_BYTES} byte threshold -- nothing to prune.`
+      `work_source_observation has ${rowCount} rows, below the ` +
+        `${ROW_COUNT_THRESHOLD}-row threshold -- nothing to prune.`
     );
     await closeDbConnection();
     return;
   }
 
-  const deleted = await db.execute(sql`
-    delete from work_source_observation
-    where created_at < now() - interval '${sql.raw(RETENTION_INTERVAL)}'
-  `);
+  const cutoff = new Date(Date.now() - RETENTION_MS);
+  const deleted = await db
+    .delete(workSourceObservation)
+    .where(lt(workSourceObservation.createdAt, cutoff))
+    .returning({ id: workSourceObservation.id });
 
   // biome-ignore lint/suspicious/noConsole: local one-shot CLI script
   console.log(
-    `Deleted ${deleted.count} rows older than ${RETENTION_INTERVAL}. ` +
-      "Run VACUUM (ANALYZE) work_source_observation; next."
+    `Deleted ${deleted.length} rows older than 2 years. Run VACUUM; next.`
   );
   await closeDbConnection();
 };

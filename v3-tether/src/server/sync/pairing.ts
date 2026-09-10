@@ -30,7 +30,10 @@ interface PairingCodeEnvelope extends PairingPayload {
 export const computeKeyFingerprint = async (
   publicKeyRawBase64: string
 ): Promise<string> => {
-  const keyBytes = Buffer.from(publicKeyRawBase64, "base64");
+  // Uint8Array.from() (not the Buffer itself) allocates a fresh, definite
+  // ArrayBuffer -- see device-identity.ts's fromBase64 for why this matters
+  // for Web Crypto's BufferSource<ArrayBuffer> parameter type.
+  const keyBytes = Uint8Array.from(Buffer.from(publicKeyRawBase64, "base64"));
   const digest = await crypto.subtle.digest("SHA-256", keyBytes);
   const hex = Buffer.from(digest).toString("hex").toUpperCase();
   return `${hex.slice(0, 4)}-${hex.slice(4, 8)}`;

@@ -51,13 +51,15 @@ export const verifySignature = async (
   try {
     const publicKey = await crypto.subtle.importKey(
       "raw",
-      new Uint8Array(Buffer.from(publicKeyRawBase64, "base64")),
+      // Uint8Array.from() (not `new Uint8Array(buffer)`) allocates a fresh,
+      // definite ArrayBuffer -- see device-identity.ts's fromBase64 for why.
+      Uint8Array.from(Buffer.from(publicKeyRawBase64, "base64")),
       ED25519,
       false,
       ["verify"]
     );
     const data = new TextEncoder().encode(canonicalize(payload));
-    const signature = new Uint8Array(Buffer.from(signatureBase64, "base64"));
+    const signature = Uint8Array.from(Buffer.from(signatureBase64, "base64"));
     return await crypto.subtle.verify(ED25519, publicKey, signature, data);
   } catch {
     return false;

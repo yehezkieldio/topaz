@@ -1,5 +1,7 @@
 import "server-only";
 import { and, desc, eq } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import type { SQLiteColumn, SQLiteTable } from "drizzle-orm/sqlite-core";
 
 import type { db as dbClient } from "@/server/db/client";
 import {
@@ -16,25 +18,59 @@ import type { OplogEntry } from "./oplog";
 type Tx = Parameters<Parameters<typeof dbClient.transaction>[0]>[0] | typeof dbClient;
 
 /**
+ * Applies a column diff to one row of `table`, inserting a fresh row if
+ * `idColumn` doesn't match any existing row, updating in place if it does.
+ *
+ * This is deliberately two branches, not one `INSERT ... ON CONFLICT DO
+ * UPDATE` statement: `columnDiffs` from an *update*-shaped oplog row (e.g.
+ * a rename's `{name, normalizedName, slug, version}`) omits NOT NULL
+ * columns like a foreign key that a create event would have included --
+ * and SQLite validates NOT NULL against the row an INSERT would produce
+ * *before* it even checks for a conflict to resolve via DO UPDATE, so an
+ * upsert with a partial column set throws `NOT NULL constraint failed` on
+ * the very first update it ever needs to apply, even though the row
+ * already exists and only the listed columns needed to change. Verified
+ * empirically (not assumed) applying a real create-then-rename oplog
+ * sequence across two devices. A plain `UPDATE ... SET` never has this
+ * problem -- it only ever touches the columns actually listed.
+ */
+const upsertRow = async (
+  tx: Tx,
+  table: SQLiteTable,
+  idColumn: SQLiteColumn,
+  idKey: string,
+  rowId: string,
+  columnDiffs: Record<string, unknown>
+): Promise<void> => {
+  const existing = await tx
+    .select({ found: idColumn })
+    .from(table)
+    .where(eq(idColumn, rowId) as SQL)
+    .limit(1);
+
+  if (existing.length > 0) {
+    await tx.update(table).set(columnDiffs).where(eq(idColumn, rowId) as SQL);
+    return;
+  }
+
+  // `columnDiffs`'s keys are Record<string, unknown> data that arrived over
+  // the network from a peer (08_sync/01_transport_and_pairing.md) -- the
+  // cast below is the only place that matters for safety, and safety here
+  // comes from Drizzle's typed `.values()` resolving each key against this
+  // table's own fixed column registry (an unrecognized key can never
+  // become an arbitrary SQL identifier the way raw string-built SQL could),
+  // not from the cast itself, which TypeScript can't avoid needing since
+  // the target table is only known at runtime from the oplog row.
+  await tx
+    .insert(table)
+    .values({ [idKey]: rowId, ...columnDiffs } as Record<string, unknown>);
+};
+
+/**
  * Every table a remote oplog row can legally target, as one explicit
  * branch each rather than a generic string-keyed table/column lookup with
- * raw SQL. This is deliberate, not just verbose-for-its-own-sake:
- * `row.columnDiffs` is `Record<string, unknown>` data that arrived over
- * the network from a peer (08_sync/01_transport_and_pairing.md), so its
- * *keys* are attacker-influenceable if a paired device were ever
- * compromised. Routing them through Drizzle's typed `.values()`/`.set()`
- * means every key is resolved against that table's own fixed column
- * registry -- an unrecognized key can never become an arbitrary SQL
- * identifier, only a column Drizzle doesn't know about. Building the
- * equivalent upsert by string-interpolating table/column names into raw
- * SQL would reopen exactly the injection surface this design exists to
- * avoid, for the sake of not writing five near-identical branches.
- *
- * The `as never`-adjacent casts below exist because `columnDiffs`'s type
- * genuinely can't be narrowed to a specific table's insert shape at compile
- * time -- the table it applies to is only known at runtime, from
- * `row.tableName`. Safety here comes from routing through Drizzle's typed
- * builder (as above), not from the cast.
+ * raw SQL -- see upsertRow's doc for the insert/update split, and this
+ * file's original commit message for why raw SQL was rejected outright.
  */
 const applyToTable = async (
   tx: Tx,
@@ -44,49 +80,26 @@ const applyToTable = async (
 ): Promise<boolean> => {
   switch (tableName) {
     case "library_entry":
-      await tx
-        .insert(libraryEntry)
-        .values({
-          id: rowId,
-          ...columnDiffs,
-        } as typeof libraryEntry.$inferInsert)
-        .onConflictDoUpdate({ set: columnDiffs, target: libraryEntry.id });
+      await upsertRow(tx, libraryEntry, libraryEntry.id, "id", rowId, columnDiffs);
       return true;
     case "reading_state":
-      await tx
-        .insert(readingState)
-        .values({
-          libraryEntryId: rowId,
-          ...columnDiffs,
-        } as typeof readingState.$inferInsert)
-        .onConflictDoUpdate({
-          set: columnDiffs,
-          target: readingState.libraryEntryId,
-        });
+      await upsertRow(
+        tx,
+        readingState,
+        readingState.libraryEntryId,
+        "libraryEntryId",
+        rowId,
+        columnDiffs
+      );
       return true;
     case "taxonomy_term":
-      await tx
-        .insert(taxonomyTerm)
-        .values({
-          id: rowId,
-          ...columnDiffs,
-        } as typeof taxonomyTerm.$inferInsert)
-        .onConflictDoUpdate({ set: columnDiffs, target: taxonomyTerm.id });
+      await upsertRow(tx, taxonomyTerm, taxonomyTerm.id, "id", rowId, columnDiffs);
       return true;
     case "work":
-      await tx
-        .insert(work)
-        .values({ id: rowId, ...columnDiffs } as typeof work.$inferInsert)
-        .onConflictDoUpdate({ set: columnDiffs, target: work.id });
+      await upsertRow(tx, work, work.id, "id", rowId, columnDiffs);
       return true;
     case "work_source":
-      await tx
-        .insert(workSource)
-        .values({
-          id: rowId,
-          ...columnDiffs,
-        } as typeof workSource.$inferInsert)
-        .onConflictDoUpdate({ set: columnDiffs, target: workSource.id });
+      await upsertRow(tx, workSource, workSource.id, "id", rowId, columnDiffs);
       return true;
     default:
       return false;

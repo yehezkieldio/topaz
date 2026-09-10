@@ -22,8 +22,12 @@ export interface DeviceIdentity {
 const toBase64 = (buffer: ArrayBuffer): string =>
   Buffer.from(buffer).toString("base64");
 
-const fromBase64 = (value: string): Uint8Array =>
-  new Uint8Array(Buffer.from(value, "base64"));
+// Uint8Array.from() (not `new Uint8Array(buffer)`) allocates a fresh,
+// definite ArrayBuffer -- Node's Buffer's own .buffer is typed as
+// ArrayBufferLike (it may be backed by a SharedArrayBuffer), which doesn't
+// satisfy Web Crypto's BufferSource<ArrayBuffer> parameter type.
+const fromBase64 = (value: string): Uint8Array<ArrayBuffer> =>
+  Uint8Array.from(Buffer.from(value, "base64"));
 
 interface GeneratedKeypair {
   privateKey: CryptoKey;

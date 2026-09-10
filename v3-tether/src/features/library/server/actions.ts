@@ -63,13 +63,13 @@ export const toggleFavoriteAction = async (
     });
 
     if (plan) {
-      await tx.insert(readingEvent).values({
+      await tx.insert(readingEvent).values([{
         eventType: plan.eventType,
         fromSnapshot: plan.fromSnapshot,
         libraryEntryId: current.id,
         metadata: { action: "toggle-favorite", actorId: session.user.id },
         toSnapshot: plan.toSnapshot,
-      });
+      }]);
       await recordAudit(
         tx,
         { action: "toggle-favorite", actorId: session.user.id },
@@ -233,13 +233,13 @@ export const updateStatusAction = async (
     });
 
     if (plan) {
-      await tx.insert(readingEvent).values({
+      await tx.insert(readingEvent).values([{
         eventType: plan.eventType,
         fromSnapshot: plan.fromSnapshot,
         libraryEntryId: current.id,
         metadata: { action: "update-status", actorId: session.user.id },
         toSnapshot: plan.toSnapshot,
-      });
+      }]);
       await recordAudit(
         tx,
         { action: "update-status", actorId: session.user.id },
@@ -334,13 +334,13 @@ export const updateRatingAction = async (
     });
 
     if (plan) {
-      await tx.insert(readingEvent).values({
+      await tx.insert(readingEvent).values([{
         eventType: plan.eventType,
         fromSnapshot: plan.fromSnapshot,
         libraryEntryId: entry.id,
         metadata: { action: "update-rating", actorId: session.user.id },
         toSnapshot: plan.toSnapshot,
-      });
+      }]);
       await recordAudit(
         tx,
         { action: "update-rating", actorId: session.user.id },
@@ -456,13 +456,13 @@ export const updateProgressAction = async (
     });
 
     if (plan) {
-      await tx.insert(readingEvent).values({
+      await tx.insert(readingEvent).values([{
         eventType: plan.eventType,
         fromSnapshot: plan.fromSnapshot,
         libraryEntryId: entry.id,
         metadata: { action: "update-progress", actorId: session.user.id },
         toSnapshot: plan.toSnapshot,
-      });
+      }]);
       await recordAudit(
         tx,
         { action: "update-progress", actorId: session.user.id },

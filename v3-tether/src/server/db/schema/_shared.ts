@@ -57,6 +57,15 @@ export const idColumns = () => ({
  * the database level -- this check() restores that enforcement, matching the
  * existing "CHECK constraints enforce shape at the database level" invariant
  * (03_data/00_schema_contract.md's Constraints and Indexing Policy).
+ *
+ * Values are inlined as literal SQL string constants (sql.raw), not bound
+ * parameters (sql`${value}`) -- SQLite rejects bound parameters inside a
+ * CHECK constraint's definition outright ("parameters prohibited in CHECK
+ * constraints"), since a CHECK is part of the table's static DDL, evaluated
+ * per-row at write time, not a prepared-statement argument. Safe here only
+ * because every caller passes one of this module's own hardcoded `as const`
+ * value arrays (alphanumeric + underscore, never attacker-influenced), never
+ * arbitrary external input.
  */
 export const enumCheck = (
   constraintName: string,
@@ -66,7 +75,7 @@ export const enumCheck = (
   check(
     constraintName,
     sql`${column} in (${sql.join(
-      values.map((value) => sql`${value}`),
+      values.map((value) => sql.raw(`'${value.replaceAll("'", "''")}'`)),
       sql`, `
     )})`
   );

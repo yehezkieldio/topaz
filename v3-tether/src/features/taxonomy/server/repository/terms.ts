@@ -15,24 +15,44 @@ const slugify = (value: string) =>
     .replaceAll(/^-+|-+$/gu, "");
 
 /**
- * Keeps taxonomy_term_fts (src/server/db/search-index.ts) in step with a
- * single term's name, delete-then-insert rather than UPDATE -- the simplest
- * approach that's correct regardless of the running SQLite build's FTS5
- * UPDATE-on-virtual-table support. Called from the same write path as the
- * row mutation itself (07_backend/03_search_and_filtering.md's "explicit,
- * not a trigger" rule), though not yet inside the same transaction/oplog
- * append -- that lands with 08_sync/00_oplog_and_clock.md's write pipeline.
+ * Indexes a term into taxonomy_term_fts (src/server/db/search-index.ts) for
+ * the first time -- call this once, right after the row itself is
+ * inserted, never as part of a rename. See removeTermFromFts's doc for why
+ * insert and delete can't share one delete-then-insert helper here the way
+ * a naive "upsert" would suggest.
  */
-export const indexTermFts = async (
+export const insertTermFts = async (
   tx: Tx,
   termId: string,
   name: string
 ): Promise<void> => {
   await tx.run(
-    sql`delete from taxonomy_term_fts where rowid = (select rowid from taxonomy_term where id = ${termId})`
-  );
-  await tx.run(
     sql`insert into taxonomy_term_fts(rowid, name) select rowid, ${name} from taxonomy_term where id = ${termId}`
+  );
+};
+
+/**
+ * Removes a term's existing entry from taxonomy_term_fts -- call this
+ * BEFORE updating taxonomy_term's row, never after, and never for a row
+ * that hasn't been indexed yet (a fresh insert; use insertTermFts instead).
+ *
+ * Both orderings matter and were verified empirically (not assumed)
+ * against Bun's bundled SQLite (3.51.2): an FTS5 external-content table's
+ * DELETE reads the content table's *current* row to know which trigrams to
+ * remove. If the content row was already updated to its new value before
+ * this runs, FTS5 computes trigrams for the wrong string and throws
+ * `SQLITE_CORRUPT_VTAB` ("database disk image is malformed") -- a
+ * misleading error for what's actually an ordering bug, not real
+ * corruption. The same error occurs deleting a rowid that was never
+ * inserted into the index at all, which is why this is never called for a
+ * brand-new row.
+ */
+export const removeTermFromFts = async (
+  tx: Tx,
+  termId: string
+): Promise<void> => {
+  await tx.run(
+    sql`delete from taxonomy_term_fts where rowid = (select rowid from taxonomy_term where id = ${termId})`
   );
 };
 
@@ -77,6 +97,11 @@ export const renameTerm = async (
   const normalizedName = normalize(trimmed);
   const slug = slugify(trimmed);
   const version = currentVersion + 1;
+
+  // Must run before the update below, not after -- see removeTermFromFts's
+  // doc.
+  await removeTermFromFts(tx, termId);
+
   const rows = await tx
     .update(taxonomyTerm)
     .set({ name: trimmed, normalizedName, slug, version })
@@ -86,7 +111,7 @@ export const renameTerm = async (
       label: taxonomyTerm.name,
       version: taxonomyTerm.version,
     });
-  await indexTermFts(tx, termId, trimmed);
+  await insertTermFts(tx, termId, trimmed);
   await appendOplogEntry(tx, {
     columnDiffs: { name: trimmed, normalizedName, slug, version },
     rowId: termId,

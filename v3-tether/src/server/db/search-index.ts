@@ -66,6 +66,20 @@ const createFtsTableSql = ({
  * transaction as the row write and the oplog append, 08_sync/00_oplog_and_clock.md)
  * done by each feature's mutation actions, not a SQLite trigger -- see the
  * rationale in 07_backend/03_search_and_filtering.md.
+ *
+ * Whoever wires up FTS indexing for work/contributor/work_source (taxonomy_term
+ * is the only one done so far, in features/taxonomy/server/repository/terms.ts):
+ * an external-content FTS5 table's DELETE reads the content table's *current*
+ * row to compute which trigrams to remove. Deleting a row's FTS entry AFTER
+ * the content table has already been updated to its new value (or deleting a
+ * rowid that was never indexed at all) throws `SQLITE_CORRUPT_VTAB`
+ * ("database disk image is malformed") -- verified empirically against Bun's
+ * bundled SQLite (3.51.2), not a hypothetical. The correct order on an
+ * update is: delete the FTS entry first, then update the content row, then
+ * insert the FTS entry with the new value -- never delete-then-insert after
+ * the content row already changed, and never call delete at all for a
+ * brand-new row (insert only). See removeTermFromFts/insertTermFts in
+ * terms.ts for the reference implementation.
  */
 export const ensureSearchIndexes = (sqlite: Database): void => {
   for (const index of FTS_INDEXES) {

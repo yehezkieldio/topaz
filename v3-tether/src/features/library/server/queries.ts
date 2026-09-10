@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { cache } from "react";
 
@@ -24,7 +24,7 @@ import {
   paginateRows,
   resolvePageSize,
 } from "@/server/query/paginate";
-import { sanitizeSearchText } from "@/server/query/search-text";
+import { escapeLikeWildcards, sanitizeSearchText } from "@/server/query/search-text";
 
 import {
   libraryEntryTag,
@@ -86,11 +86,15 @@ interface LibraryListFilters {
 }
 
 /**
- * Word-similarity (`<%`) rather than plain similarity (`%`): it matches when
- * the search term is similar to *any substring* of the title, which is a
- * much closer approximation of the old ILIKE "contains" behavior than full-
- * string similarity would be -- and it still uses the title's GIN trgm
- * index (work_title_trgm_idx), unlike ILIKE.
+ * A plain LIKE substring match, case-insensitive via `title`'s COLLATE
+ * NOCASE (03_data/00_schema_contract.md's citext translation) -- an interim
+ * stand-in for the FTS5 trigram/bm25 path from
+ * 07_backend/03_search_and_filtering.md, which searchTaxonomyTermsAction
+ * (taxonomy/server/actions.ts) already uses. Wiring this list query through
+ * work_fts (src/server/db/search-index.ts) the same way is real follow-up
+ * work, not done here -- this at least searches correctly today rather
+ * than emitting Postgres-only `<%` syntax that isn't valid SQL under
+ * SQLite at all.
  *
  * `search` also matches against effective taxonomy term names -- tags don't
  * have their own filter UI (they can grow without bound), so the one search
@@ -100,15 +104,18 @@ const libraryFilterSpec: FilterSpec<LibraryListFilters> = {
   contentRating: (value) => eq(work.contentRating, value),
   minRating: (value) => gte(readingState.rating, value),
   publicationStatus: (value) => eq(work.publicationStatus, value),
-  search: (value) => sql`(
-    ${value} <% ${work.title}
-    or exists (
-      select 1 from ${workTaxonomyEffective}
-      inner join ${taxonomyTerm} on ${taxonomyTerm.id} = ${workTaxonomyEffective.taxonomyTermId}
-      where ${workTaxonomyEffective.workId} = ${work.id}
-        and ${value} <% ${taxonomyTerm.name}
-    )
-  )`,
+  search: (value) => {
+    const pattern = `%${escapeLikeWildcards(value)}%`;
+    return sql`(
+      ${work.title} like ${pattern} escape '\\'
+      or exists (
+        select 1 from ${workTaxonomyEffective}
+        inner join ${taxonomyTerm} on ${taxonomyTerm.id} = ${workTaxonomyEffective.taxonomyTermId}
+        where ${workTaxonomyEffective.workId} = ${work.id}
+          and ${taxonomyTerm.name} like ${pattern} escape '\\'
+      )
+    )`;
+  },
   sourcePlatformId: (value) => sql`exists (
     select 1 from ${workSource}
     where ${workSource.workId} = ${work.id}
@@ -184,15 +191,17 @@ const fetchLibraryList = async ({
     })
   );
 
+  // json_agg/json_build_object (Postgres) -> json_group_array/json_object
+  // (SQLite's JSON1 equivalents). Term order within a work's chip list
+  // isn't semantically load-bearing (unlike the keyset-paginated outer
+  // query), so this drops the Postgres version's `order by name` inside
+  // the aggregate rather than reach for a correlated-subquery workaround
+  // just to preserve an ordering nothing depends on.
   const taxonomyAgg = db
     .select({
-      terms: sql`coalesce(
-        json_agg(
-          json_build_object('id', ${taxonomyTerm.publicId}, 'label', ${taxonomyTerm.name})
-          order by ${taxonomyTerm.name}
-        ) filter (where ${taxonomyTerm.id} is not null),
-        '[]'
-      )`.as("terms"),
+      terms: sql<string>`json_group_array(json_object('id', ${taxonomyTerm.publicId}, 'label', ${taxonomyTerm.name}))`.as(
+        "terms"
+      ),
       workId: workTaxonomyEffective.workId,
     })
     .from(workTaxonomyEffective)
@@ -203,32 +212,52 @@ const fetchLibraryList = async ({
     .groupBy(workTaxonomyEffective.workId)
     .as("taxonomy_agg");
 
+  // Postgres's DISTINCT ON has no SQLite equivalent -- a
+  // row_number()-over-partition CTE, filtered to rn = 1, gets the same
+  // "one row per group, picked by this order" result.
   /** One row per work: its earliest-added source, for a compact source pill. */
   const primarySourceAgg = db
-    .selectDistinctOn([workSource.workId], {
-      chapterCount: workSource.chapterCount,
-      sourcePlatformName: sourcePlatform.name,
-      wordCount: workSource.wordCount,
-      workId: workSource.workId,
+    .select({
+      chapterCount: sql<number | null>`ps.chapter_count`.as("chapter_count"),
+      sourcePlatformName: sql<
+        string | null
+      >`ps.source_platform_name`.as("source_platform_name"),
+      wordCount: sql<number | null>`ps.word_count`.as("word_count"),
+      workId: sql<string>`ps.work_id`.as("work_id"),
     })
-    .from(workSource)
-    .innerJoin(
-      sourcePlatform,
-      eq(sourcePlatform.id, workSource.sourcePlatformId)
-    )
-    .orderBy(workSource.workId, asc(workSource.createdAt))
+    .from(sql`(
+      select
+        ${workSource.workId} as work_id,
+        ${workSource.chapterCount} as chapter_count,
+        ${workSource.wordCount} as word_count,
+        ${sourcePlatform.name} as source_platform_name,
+        row_number() over (
+          partition by ${workSource.workId} order by ${workSource.createdAt} asc
+        ) as rn
+      from ${workSource}
+      inner join ${sourcePlatform} on ${sourcePlatform.id} = ${workSource.sourcePlatformId}
+    ) ps`)
+    .where(sql`ps.rn = 1`)
     .as("primary_source");
 
   /** One row per work: its first-listed author, for the byline. */
   const primaryAuthorAgg = db
-    .selectDistinctOn([workContributor.workId], {
-      authorName: contributor.name,
-      workId: workContributor.workId,
+    .select({
+      authorName: sql<string | null>`pa.author_name`.as("author_name"),
+      workId: sql<string>`pa.work_id`.as("work_id"),
     })
-    .from(workContributor)
-    .innerJoin(contributor, eq(contributor.id, workContributor.contributorId))
-    .where(eq(workContributor.role, "author"))
-    .orderBy(workContributor.workId, asc(contributor.name))
+    .from(sql`(
+      select
+        ${workContributor.workId} as work_id,
+        ${contributor.name} as author_name,
+        row_number() over (
+          partition by ${workContributor.workId} order by ${contributor.name} asc
+        ) as rn
+      from ${workContributor}
+      inner join ${contributor} on ${contributor.id} = ${workContributor.contributorId}
+      where ${workContributor.role} = 'author'
+    ) pa`)
+    .where(sql`pa.rn = 1`)
     .as("primary_author");
 
   const rows = await db
@@ -271,11 +300,17 @@ const fetchLibraryList = async ({
 
   const mappedRows: LibraryListRow[] = rows.map((row) => ({
     ...row,
-    // SAFETY: taxonomyAgg's raw sql`json_agg(json_build_object('id', ...,
-    // 'label', ...))` above builds this JSON itself with exactly
-    // TaxonomyChip's two fields (coalescing to '[]' when there are none),
-    // so the shape is guaranteed by the query, not by anything untrusted.
-    taxonomyTerms: (row.taxonomyTerms as TaxonomyChip[] | null) ?? [],
+    // SAFETY: taxonomyAgg's raw sql`json_group_array(json_object('id', ...,
+    // 'label', ...))` above builds this JSON text itself with exactly
+    // TaxonomyChip's two fields, so the shape is guaranteed by the query,
+    // not by anything untrusted. json_group_array returns a JSON-encoded
+    // string column (unlike a driver that auto-deserializes jsonb), so it
+    // needs an explicit parse here; null (no effective taxonomy terms --
+    // the left join found nothing to aggregate) maps to an empty list.
+    taxonomyTerms:
+      typeof row.taxonomyTerms === "string"
+        ? (JSON.parse(row.taxonomyTerms) as TaxonomyChip[])
+        : [],
     updatedAt:
       row.updatedAt instanceof Date
         ? row.updatedAt.toISOString()
