@@ -12,9 +12,11 @@ import * as schema from "@/server/db/schema";
  * The single-user invite gate's local-first equivalent of the old Discord-ID
  * allow-list (02_stack/04_auth_and_authorization.md): sign-up is refused once
  * a user row already exists, so there is never a second account to
- * authorize against in the first place.
+ * authorize against in the first place. Exported so the auth UI can decide
+ * whether to render a sign-up form or a sign-in form -- this device either
+ * has its one account already or it doesn't, there's no third state.
  */
-const hasExistingUser = async (): Promise<boolean> => {
+export const hasExistingUser = async (): Promise<boolean> => {
   const [row] = await db.select({ value: count() }).from(schema.user);
   return (row?.value ?? 0) > 0;
 };

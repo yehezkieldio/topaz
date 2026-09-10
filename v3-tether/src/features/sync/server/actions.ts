@@ -1,6 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
+import { toDataURL } from "qrcode";
 
 import { env } from "@/lib/env";
 import { requireAdmin } from "@/server/auth/require-admin";
@@ -13,6 +14,7 @@ import {
   decodePairingCode,
   encodePairingCode,
 } from "@/server/sync/pairing";
+import { syncWithAllKnownPeers } from "@/server/sync/round";
 
 export interface PairingCode {
   code: string;
@@ -40,6 +42,17 @@ export const generatePairingCodeAction = async (): Promise<PairingCode> => {
   const fingerprint = await computeKeyFingerprint(identity.publicKeyRaw);
 
   return { code, deviceId: identity.deviceId, fingerprint };
+};
+
+/**
+ * The same pairing code as generatePairingCodeAction, rendered server-side
+ * as a QR code (a PNG data URL) -- so scanning it on the other device is an
+ * option alongside copy-pasting the raw code, with no client-side QR
+ * library needed at all.
+ */
+export const generatePairingQrCodeAction = async (): Promise<string> => {
+  const { code } = await generatePairingCodeAction();
+  return await toDataURL(code, { margin: 1, width: 320 });
 };
 
 export interface PairedPeer {
@@ -173,4 +186,23 @@ export const unpairPeerAction = async (
   }
 
   return { data: { deviceId: deleted.deviceId }, status: "success" };
+};
+
+export interface SyncRoundResult {
+  deviceId: string;
+  status: "synced" | "error";
+  rowsApplied: number;
+  error?: string;
+}
+
+/**
+ * One manual sync attempt against every paired peer
+ * (08_sync/02_packaging_and_lifecycle.md) -- the UI's "Sync now" action.
+ * Nothing calls syncWithAllKnownPeers automatically yet (no app-open/close
+ * lifecycle hook exists), so this is currently the only way to trigger a
+ * round from inside the app itself, alongside `bun run sync round`.
+ */
+export const triggerSyncRoundAction = async (): Promise<SyncRoundResult[]> => {
+  await requireAdmin();
+  return await syncWithAllKnownPeers(db);
 };

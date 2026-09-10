@@ -72,7 +72,15 @@ export const account = sqliteTable(
       .$defaultFn(() => new Date()),
     id: text("id").primaryKey(),
     idToken: text("id_token"),
-    issuer: text("issuer").notNull(),
+    // Nullable, not notNull: better-auth's own local credential
+    // (email/password) sign-up flow never populates this -- issuer is an
+    // OAuth-provider concept, and this schema previously only ever
+    // exercised the account table via Discord OAuth, where it was always
+    // set. Found by actually running the local sign-up flow (it throws
+    // NOT NULL constraint failed: account.issuer otherwise) after
+    // 02_stack/04_auth_and_authorization.md dropped Discord for local
+    // credentials.
+    issuer: text("issuer"),
     password: text("password"),
     providerId: text("provider_id").notNull(),
     refreshToken: text("refresh_token"),

@@ -6,7 +6,7 @@ This walks through getting Topaz running on two (or three) of your own devices a
 - No UI for pairing — you run a couple of CLI commands (`bun run sync ...`) instead of clicking through a settings screen.
 - Nothing automatically triggers a sync round on app open/close yet — you run `bun run sync round` manually for now.
 - Deleting things doesn't sync yet (no delete/tombstone path exists in the app at all currently — only creates and edits do).
-- If you seed reference data (taxonomy kinds, source platforms) differently on each device, syncing a taxonomy term across them can fail with a foreign-key error. See "Known limitation" near the end.
+- Reference data (taxonomy kinds, source platforms) now seeds with fixed, deterministic IDs, so running the seed script independently on each device produces identical rows — no more foreign-key errors on sync. See the note near the end for details.
 
 None of that blocks trying it out — it just means "type a couple of commands," not "click a button," for now.
 
@@ -112,11 +112,11 @@ Once both directions are done, `bun run sync peers` on either device should list
 
 If step 2 shows `0 row(s) applied` when you expected changes, double check you actually ran `bun run sync round` on the device that should be *receiving* the change (the one that didn't create it).
 
-## Known limitation: reference data must match across devices
+## Resolved: reference data now matches across devices by construction
 
-`bun run db:push` seeds nothing by itself — if your app has a seed script for things like taxonomy categories or source platforms, and you run it independently on each device, each device gets **different random IDs** for those rows. Syncing a taxonomy term (or anything referencing them) across devices will then fail with a foreign-key error, because the ID it points to on the sending device doesn't exist on the receiving one.
+`bun run db:push` seeds nothing by itself — you run `src/server/db/seed.ts` (or your app's seed script) on each device. Earlier, seeded reference rows (taxonomy kinds, source platforms) got a random `crypto.randomUUID()` ID per device, so syncing a taxonomy term (or anything referencing them) across devices could fail with a foreign-key error — the ID it pointed to on the sending device didn't exist on the receiving one.
 
-Workaround for now: only seed this reference data on **one** device, then let the others pick it up via `bun run sync round` before you create anything that depends on it, rather than running a seed script independently on each device. This is a real gap (documented in `docs/BUN_SQLITE_NEXT_BUILD.md`) that needs a proper fix — giving these tables fixed, deterministic IDs — before this stops being something to work around by hand.
+This is fixed: `seed.ts` now gives each reference row a fixed, slug-derived ID (e.g. `taxonomy-kind:custom`, `source-platform:ao3`) instead of a random one. Running the seed script independently on every device produces byte-identical rows, so these tables never need to go through the oplog at all. Just run the seed script on each device as usual — no special ordering or workaround required. See `docs/BUN_SQLITE_NEXT_BUILD.md` for the investigation that surfaced this.
 
 ## Troubleshooting
 

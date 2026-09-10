@@ -11,6 +11,7 @@ import {
 } from "@/features/library/components/library-results";
 import { LibrarySearch } from "@/features/library/components/library-search";
 import { LibraryShell } from "@/features/library/components/library-shell";
+import { SyncLink } from "@/features/library/components/sync-link";
 import { LibraryQueryProvider } from "@/features/library/providers/library-query-provider";
 
 const LibraryPage = ({
@@ -27,9 +28,14 @@ const LibraryPage = ({
               <LibrarySearch />
               <LibraryFilters />
             </Suspense>
-            <Suspense fallback={null}>
-              <CreateWorkTrigger />
-            </Suspense>
+            <div className="flex items-center gap-2">
+              <Suspense fallback={null}>
+                <CreateWorkTrigger />
+              </Suspense>
+              <Suspense fallback={null}>
+                <SyncLink />
+              </Suspense>
+            </div>
           </div>
         </div>
       </div>

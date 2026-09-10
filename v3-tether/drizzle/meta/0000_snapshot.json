@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "72dd57bd-10fe-4b63-9af0-daea060e50c6",
+  "id": "bb752916-7823-4a86-b179-01e7a849d365",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "audit_log": {
@@ -160,7 +160,7 @@
           "name": "issuer",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "password": {

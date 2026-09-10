@@ -23,7 +23,7 @@ CREATE TABLE `account` (
 	`created_at` integer NOT NULL,
 	`id` text PRIMARY KEY NOT NULL,
 	`id_token` text,
-	`issuer` text NOT NULL,
+	`issuer` text,
 	`password` text,
 	`provider_id` text NOT NULL,
 	`refresh_token` text,
