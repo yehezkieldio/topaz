@@ -1,11 +1,11 @@
 # Local Access and Memory Budget
 
-There is no pooler, no serverless connection limit, and no vendor free-tier egress cap to design around anymore -- `bun:sqlite` opens one file on the same machine the app is running on. That doesn't mean resource discipline goes away; it moves target. The device this runs on is the admin's own laptop or phone, often doing other things at the same time, so the same seriousness that used to go into "stay inside Supabase Free" now goes into "stay inside a memory and CPU budget a personal device won't notice." Treat this like writing for a resource-constrained embedded target, not a beefy cloud instance: every allocation, every buffered byte, every kept-alive process is a deliberate choice, not a default.
+There is no pooler, no serverless connection limit, and no vendor free-tier egress cap to design around anymore -- `@libsql/client` opens one file on the same machine the app is running on (ADR-0010). That doesn't mean resource discipline goes away; it moves target. The device this runs on is the admin's own laptop or phone, often doing other things at the same time, so the same seriousness that used to go into "stay inside Supabase Free" now goes into "stay inside a memory and CPU budget a personal device won't notice." Treat this like writing for a resource-constrained embedded target, not a beefy cloud instance: every allocation, every buffered byte, every kept-alive process is a deliberate choice, not a default.
 
 ## Connection Strategy
 
 ```text
-- One bun:sqlite Database handle per process, opened once at module load and
+- One @libsql/client handle per process, opened once at module load and
   reused as a singleton -- never re-opened per request. There is no pool to
   size because there is exactly one process talking to exactly one file.
 - WAL journal mode (PRAGMA journal_mode = WAL) -- readers don't block the
@@ -27,16 +27,19 @@ There is no pooler, no serverless connection limit, and no vendor free-tier egre
 
 ```typescript
 // server/db/client.ts
-import { Database } from "bun:sqlite";
-import { drizzle } from "drizzle-orm/bun-sqlite";
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
 
-const sqlite = new Database(env.DATABASE_PATH);
-sqlite.exec("PRAGMA journal_mode = WAL;");
-sqlite.exec("PRAGMA synchronous = NORMAL;");
-sqlite.exec("PRAGMA cache_size = -20000;"); // ~20MB page cache, explicit ceiling
-sqlite.exec("PRAGMA mmap_size = 67108864;"); // 64MB, explicit ceiling
+const client = createClient({ url: `file:${env.DATABASE_PATH}` });
+// @libsql/client's API is uniformly async (ADR-0010) -- top-level await,
+// not fire-and-forget, so every module importing `db` is guaranteed this
+// setup already ran.
+await client.execute("PRAGMA journal_mode = WAL;");
+await client.execute("PRAGMA synchronous = NORMAL;");
+await client.execute("PRAGMA cache_size = -20000;"); // ~20MB page cache, explicit ceiling
+await client.execute("PRAGMA mmap_size = 67108864;"); // 64MB, explicit ceiling
 
-export const db = drizzle(sqlite, { schema, relations, casing: "snake_case" });
+export const db = drizzle(client, { schema, relations, casing: "snake_case" });
 ```
 
 ## Resource-Conscious Query and Sync Posture

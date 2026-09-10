@@ -108,7 +108,7 @@ Load remaining ADRs after that.
 - Cursor (keyset) pagination everywhere, never OFFSET/LIMIT page-number
   pagination, with a stable-id tie-breaker on every sort.
 - No shared server or shared database. Each device runs its own copy of the app
-  against its own local SQLite (bun:sqlite) file; data is reconciled between
+  against its own local SQLite (@libsql/client) file; data is reconciled between
   the admin's own devices via an oplog-based sync protocol, not shared at
   query time.
 - Sync is store-and-forward, not real-time: an append-only oplog, a per-device

@@ -29,9 +29,9 @@ Topaz V3 is not a CRUD app wearing a framework. It is a deliberately over-engine
 
 ```text
 Next.js app router, React 19, React Compiler, Cache Components
-Bun-first development and runtime end to end (bun:sqlite, no Node.js)
+Bun-first development and runtime end to end (@libsql/client for SQLite, no Node.js)
 next-bun-compile packages each build into one self-contained Bun binary per device
-SQLite (bun:sqlite) as the per-device datastore, Drizzle ORM with relations() everywhere
+SQLite (@libsql/client) as the per-device datastore, Drizzle ORM with relations() everywhere
 An append-only oplog + Hybrid Logical Clock as the sync substrate between devices
 Server Components + Server Actions as the primary data layer, no API router framework
 The sync endpoint is a plain Next.js Route Handler, not a persistent socket

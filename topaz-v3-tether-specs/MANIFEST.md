@@ -45,4 +45,5 @@
 | `10_adr/ADR-0007-oplog-hlc-over-crdt.md` | Decision on the sync/conflict-resolution model |
 | `10_adr/ADR-0008-next-bun-compile-packaging.md` | Decision on packaging and the sync transport shape |
 | `10_adr/ADR-0009-tiered-obscura-fichub-fetch.md` | Decision on the metadata-fetch tier order |
+| `10_adr/ADR-0010-libsql-over-bun-sqlite.md` | Decision to switch the SQLite driver from bun:sqlite to @libsql/client |
 | `GLOSSARY.md` | Canonical vocabulary |

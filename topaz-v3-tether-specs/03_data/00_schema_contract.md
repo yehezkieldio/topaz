@@ -1,6 +1,6 @@
 # Schema Contract
 
-SQLite (`bun:sqlite`) via Drizzle ORM, one file per device. Every table gets a `text` primary key (a generated id, stored as a string -- SQLite has no native UUID type) plus a `publicId` (cuid2) exposed to clients instead of the raw id, and `created_at`/`updated_at` timestamps. `relations()` is defined alongside every table so Drizzle's relational query API (`db.query.work.findMany({ with: {...} })`) is available from the first migration, not retrofitted later.
+SQLite (via `@libsql/client`, ADR-0010) via Drizzle ORM, one file per device. Every table gets a `text` primary key (a generated id, stored as a string -- SQLite has no native UUID type) plus a `publicId` (cuid2) exposed to clients instead of the raw id, and `created_at`/`updated_at` timestamps. `relations()` is defined alongside every table so Drizzle's relational query API (`db.query.work.findMany({ with: {...} })`) is available from the first migration, not retrofitted later.
 
 ## Postgres -> SQLite Type Translation
 

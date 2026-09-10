@@ -5,7 +5,7 @@
 ```text
 No shared server. Each device (currently: two laptops, one phone-reachable host)
 runs its own copy of the app as a local Bun binary, built by next-bun-compile.
-SQLite (bun:sqlite) is the datastore -- one file per device, no network hop to a
+SQLite (@libsql/client) is the datastore -- one file per device, no network hop to a
 database at all. Tailscale is the network fabric between devices for sync.
 ```
 
@@ -39,8 +39,8 @@ Consequences:
 | URL state | nuqs |
 | Client UI state | Zustand, scoped strictly to cross-component client UI state |
 | Selection state | typed include/exclude Set model, see 06_library/03_row_selection.md |
-| ORM | Drizzle ORM, relations() defined for every table, `drizzle-orm/bun-sqlite` driver |
-| Database | SQLite via `bun:sqlite`, one file per device, WAL journal mode |
+| ORM | Drizzle ORM, relations() defined for every table, `drizzle-orm/libsql` driver |
+| Database | SQLite via `@libsql/client` (ADR-0010), one file per device, WAL journal mode |
 | Full-text/fuzzy search | SQLite FTS5, `trigram` tokenizer (replaces pg_trgm -- see 07_backend/03_search_and_filtering.md) |
 | Sync substrate | Append-only oplog table + per-device Hybrid Logical Clock, exchanged over a signed HTTP Route Handler (see 08_sync/) |
 | Peer transport/discovery | Tailscale (tailnet hostnames as peer addresses); no custom discovery service, no mDNS, no Bluetooth |
@@ -77,14 +77,16 @@ Ultracite stays as the zero-config preset wrapper, but its backend moves from Bi
   dev-only modules and non-turbo runtimes stripped. This is the shippable unit
   for every device; there is no separate "deploy" step beyond copying this
   one file over and running it.
-- bun:sqlite is chosen specifically because it's a runtime-native Bun module,
-  not a dynamically-required native (N-API) addon -- the class of dependency
-  most likely to break under single-file bundling. This is a real bundling risk
-  with other drivers (better-sqlite3, libsql's native bindings) and is a load-
-  bearing reason for the choice, not just a style preference.
-- Validate this end to end with a throwaway bun:sqlite + next-bun-compile spike
-  before wiring the real schema through it -- native-adjacent bundling failures
-  are exactly the kind of thing that only shows up at compile time, not in dev.
+- The database driver is @libsql/client, not bun:sqlite (ADR-0010) --
+  bun:sqlite does not survive Next's jest-worker-based page-data-collection
+  phase in dev *or* build, verified by actually running it, not assumed.
+  @libsql/client is a real npm package (on Next's own serverExternalPackages
+  default allow-list already) with prebuilt per-platform native bindings, no
+  compile-from-source step -- a materially different risk profile than a
+  node-gyp-based addon like better-sqlite3, and one that's actually verified
+  to work end to end: a real `next dev` server, a real signed request to
+  `/api/sync`, and a full two-device sync round over actual HTTP all confirmed
+  working (docs/BUN_SQLITE_NEXT_BUILD.md in the app repo has the full log).
 - No custom Bun.serve wrapper and no WebSocket server. The sync endpoint is an
   ordinary Route Handler (08_sync/01_transport_and_pairing.md), which
   next-bun-compile bundles into the same binary with zero extra plumbing.

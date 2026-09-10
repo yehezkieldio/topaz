@@ -1,4 +1,4 @@
-import type { Database } from "bun:sqlite";
+import type { Client } from "@libsql/client";
 
 interface FtsIndexDefinition {
   readonly virtualTableName: string;
@@ -81,8 +81,9 @@ const createFtsTableSql = ({
  * brand-new row (insert only). See removeTermFromFts/insertTermFts in
  * terms.ts for the reference implementation.
  */
-export const ensureSearchIndexes = (sqlite: Database): void => {
+export const ensureSearchIndexes = async (client: Client): Promise<void> => {
   for (const index of FTS_INDEXES) {
-    sqlite.exec(createFtsTableSql(index));
+    // biome-ignore lint/performance/noAwaitInLoops: a handful of DDL statements run once at startup, not a hot path worth parallelizing
+    await client.execute(createFtsTableSql(index));
   }
 };

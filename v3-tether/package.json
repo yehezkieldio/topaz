@@ -28,6 +28,7 @@
     "import:reading-tracker": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/import-reading-tracker.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "@paralleldrive/cuid2": "^3.3.0",
     "@radix-ui/react-alert-dialog": "^1.1.23",
     "@radix-ui/react-dialog": "^1.1.23",

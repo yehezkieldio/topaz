@@ -1,6 +1,10 @@
 # `bun:sqlite` vs. Next.js's build/dev pipeline
 
-**Status as of this writing: unresolved, blocking.** `bun run dev` and `bun run build` both fail on every route that transitively imports `src/server/db/client.ts` (which is nearly every route in the app). This is not a guess -- it was reproduced and root-caused by actually running the commands, on Next 16.3.4, `next-bun-compile` 2.0.0, and both Bun 1.3.11 and 1.4.2.
+**Status: resolved.** The app now uses `@libsql/client` instead of `bun:sqlite` (ADR-0010 in `topaz-v3-tether-specs/10_adr/`). This doc is kept as the record of what was tried, why `bun:sqlite` doesn't work here, and the verification that the switch to `@libsql/client` actually fixes it -- not just typechecks, but a real `next dev` server, a real signed `/api/sync` request, and a full two-device sync round over actual HTTP, all confirmed working (see "Verified after switching to @libsql/client" at the bottom).
+
+Checked GitHub issue oven-sh/bun#5382 first, per a direct request to try it before switching drivers -- it's an unrelated, already-resolved TypeScript type-declaration issue (missing `@types/bun`, fixed earlier in this same investigation) and has no bearing on the jest-worker/`bun:` protocol problem documented below.
+
+The `bun:sqlite` failure below was reproduced and root-caused by actually running the commands, on Next 16.3.4, `next-bun-compile` 2.0.0, and both Bun 1.3.11 and 1.4.2 -- upgrading Bun did not change the outcome.
 
 ## The failure
 
@@ -42,7 +46,7 @@ Next.js's build tooling uses **jest-worker** to load each route module out-of-pr
 
 Because `next build` fails during Next's own core page-data-collection phase -- upstream of anything `next-bun-compile` controls -- **this blocks the compiled binary too, not just `next dev`.** There is currently no path from this codebase to a working `next-bun-compile` binary while `bun:sqlite` is the database driver.
 
-## The real fix (recommended, not yet done)
+## The fix (applied)
 
 Switch the database driver from `bun:sqlite` to **`@libsql/client`** in local-file mode. Concretely:
 - `@libsql/client` is on Next's own `serverExternalPackages` default allow-list (confirmed in the bundled docs above) -- it's a real npm package jest-worker's `require()` can resolve normally, sidestepping this entire class of problem.
@@ -50,7 +54,7 @@ Switch the database driver from `bun:sqlite` to **`@libsql/client`** in local-fi
 - Drizzle has a first-class `drizzle-orm/libsql` driver with a very similar API surface to `drizzle-orm/bun-sqlite` -- `src/server/db/client.ts` is the main file that changes; the schema files (`sqlite-core` table definitions) do not need to change at all.
 - This does give up the "bun:sqlite is a runtime built-in, not a native addon that might not bundle" rationale from ADR-0006/ADR-0008 -- but that rationale is moot now that we know `bun:sqlite` doesn't even survive Next's own build tooling, regardless of native-addon bundling risk. `@libsql/client` ships prebuilt native bindings per-platform (no compile-from-source step), which is a materially different risk profile than `better-sqlite3`'s node-gyp-based build.
 
-This has **not been implemented** -- it's the recommended next step, pending a decision, since it touches ADR-0006/ADR-0008's stated rationale and deserves an explicit go-ahead rather than a silent swap.
+**Implemented.** `src/server/db/client.ts` and `src/server/db/search-index.ts` were the only files that changed -- every schema file, every feature's queries/actions, and the whole oplog/apply/sync module set were unaffected, since none of it ever depended on which client library talks to the SQLite file. See "Verified after switching to @libsql/client" below for the confirmation this actually fixes the problem, and `topaz-v3-tether-specs/10_adr/ADR-0010-libsql-over-bun-sqlite.md` for the formal decision record.
 
 ## Other things discovered while root-causing this (fixed, unrelated to the above)
 
@@ -77,4 +81,19 @@ Using `scripts/sync-cli.ts` and direct in-process calls (all under plain `bun`, 
 - A full two-device convergence test: create + rename on device A, oplog rows extracted, applied via `applyRemoteOplogRow` on an independent device B's SQLite file, resulting in **byte-for-byte identical final state** (name, slug, version) on both devices.
 - Idempotency: re-applying the same oplog rows a second time (simulating an overlapping sync round) is a correct no-op, both for the base table state and for not duplicating oplog rows (the `hlc_timestamp` unique index deduplicates via `onConflictDoNothing()`).
 
-The sync *algorithm* -- oplog, HLC ordering, apply, pairing -- is real and correct, verified against actual execution, not just typechecked. The blocker is entirely in getting a Next.js server (dev or the compiled binary) to actually serve it over HTTP, which is the `bun:sqlite` issue documented above.
+The sync *algorithm* -- oplog, HLC ordering, apply, pairing -- is real and correct, verified against actual execution, not just typechecked. The blocker was entirely in getting a Next.js server (dev or the compiled binary) to actually serve it over HTTP, which is the `bun:sqlite` issue documented above.
+
+## Verified after switching to `@libsql/client`
+
+Confirmed by actually running each of these, not assumed to follow from the driver swap:
+
+- `@libsql/client` supports the trigram FTS5 tokenizer, `json_valid`/`json_type`, and `floor()` -- the three SQLite features this schema depends on -- against libsql's own bundled SQLite build (3.45.1), independently of Bun's (3.51.2).
+- `bun run typecheck` is clean (aside from the pre-existing, expected `LayoutProps` divergence between standalone `tsc` and Next's own build-time type generation -- see the note near the top of this doc's history).
+- `bun run dev` actually serves requests: `GET /` returns 200 with real rendered content, and `POST /api/sync` reaches the route handler and returns a real (rejecting, as expected for an unpaired caller) 403 -- no `bun:sqlite`-style crash anywhere in the request path.
+- The full two-device scenario, this time for real: device A run as an actual `next dev` server on port 4001 against its own SQLite file; a taxonomy term created directly against A's database; device B (a separate `bun` process, separate SQLite file) paired with A via a real pairing-code exchange (mutual -- both `known_peer` rows written); `syncWithPeer` run from B against A's *live* HTTP server -- a real signed POST to `http://127.0.0.1:4001/api/sync`, a real Ed25519 signature verified on A's side, a real response with the oplog row -- resulting in the term appearing on B with the correct name and version, and B's `known_peer.last_synced_hlc` checkpoint correctly advanced.
+
+This is the actual point of the whole rework, working, over real HTTP, between two independent SQLite files. Everything upstream of this doc (schema, oplog, HLC, apply engine, pairing) was correct; this doc's story was entirely about getting a working transport underneath it.
+
+## A related gap this testing surfaced (separate from the above, not yet fixed)
+
+Reference/seed tables (`taxonomy_kind`, `source_platform`) currently get independently-random `id` values on each device (via `crypto.randomUUID()` defaults). A `taxonomy_term` row created on one device references that device's own random id for, e.g., the "custom" kind; applying that row's oplog entry on another device fails its foreign key, because that device's independently-seeded "custom" kind has a *different* id. The two-device test above only succeeded because both devices' `taxonomy_kind` rows were seeded with the same id by hand, as a test setup step -- this does not happen automatically today. The likely fix is giving these small, fixed, seeded reference tables deterministic ids (the slug itself, or a fixed constant per seed entry) instead of random ones, so every device's seed script produces identical ids by construction, avoiding the need to sync these tables through the oplog at all. Needs a decision before implementing.

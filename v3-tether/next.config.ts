@@ -10,15 +10,12 @@ const nextConfig: NextConfig = {
   adapterPath: "next-bun-compile",
   cacheComponents: true,
   reactCompiler: true,
-  // KNOWN BROKEN as of Next 16.3.4 + next-bun-compile 2.0.0 + Bun 1.3.11
-  // (verified by actually running `bun run build`, not assumed): Next's
-  // page-data-collection phase spawns jest-worker child processes/threads
-  // to statically load each route module, and neither mode resolves
-  // `bun:sqlite` (a Bun runtime built-in, not an npm package) --
-  // serverExternalPackages doesn't help either, since that only affects
-  // Node-style `node_modules` resolution, not a `bun:` protocol specifier.
-  // See docs/BUN_SQLITE_NEXT_BUILD.md for the full investigation and
-  // what to try when picking this back up.
+  // @libsql/client is on this default allow-list already, but declared
+  // explicitly since it's load-bearing here: bun:sqlite (tried first) does
+  // not survive Next's jest-worker-based page-data-collection phase in
+  // either dev or build, which is the reason this app uses libsql instead
+  // -- see docs/BUN_SQLITE_NEXT_BUILD.md for the full investigation.
+  serverExternalPackages: ["@libsql/client"],
   turbopack: {
     root: path.resolve(import.meta.dirname),
   },
