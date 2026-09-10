@@ -35,23 +35,36 @@ export const deviceIdentity = sqliteTable("device_identity", {
  * last-write-wins conflict resolution) -- these are different orderings and
  * neither substitutes for the other.
  */
-export const oplog = sqliteTable("oplog", {
-  // column_diffs carries only the columns that actually changed, not a
-  // full-row snapshot -- keeps rows small and makes per-column conflict
-  // resolution possible.
-  columnDiffs: jsonText<Record<string, unknown>>("column_diffs").notNull(),
-  deviceId: text("device_id").notNull(),
-  // Sortable string encoding (physical time + logical counter + device id,
-  // fixed-width zero-padded prefix) -- see src/server/sync/hlc.ts. A plain
-  // `order by hlc_timestamp` is a correct total order without decoding.
-  hlcTimestamp: text("hlc_timestamp").notNull(),
-  rowId: text("row_id").notNull(),
-  seq: integer("seq").primaryKey({ autoIncrement: true }),
-  tableName: text("table_name").notNull(),
-  // A tombstone (not a hard DELETE) so a late-arriving update from another
-  // device can't silently resurrect a row the user deliberately removed.
-  tombstone: integer("tombstone", { mode: "boolean" }).notNull().default(false),
-});
+export const oplog = sqliteTable(
+  "oplog",
+  {
+    // column_diffs carries only the columns that actually changed, not a
+    // full-row snapshot -- keeps rows small and makes per-column conflict
+    // resolution possible.
+    columnDiffs: jsonText<Record<string, unknown>>("column_diffs").notNull(),
+    deviceId: text("device_id").notNull(),
+    // Sortable string encoding (physical time + logical counter + device
+    // id, fixed-width zero-padded prefix) -- see src/server/sync/hlc.ts. A
+    // plain `order by hlc_timestamp` is a correct total order without
+    // decoding, and it's globally unique by construction (a device's clock
+    // never produces the same encoded value twice) -- the unique index
+    // below lets a relayed row's re-insertion during sync
+    // (src/server/sync/apply.ts) use onConflictDoNothing() to skip an
+    // already-recorded event in one statement, instead of a separate
+    // existence check every time.
+    hlcTimestamp: text("hlc_timestamp").notNull(),
+    rowId: text("row_id").notNull(),
+    seq: integer("seq").primaryKey({ autoIncrement: true }),
+    tableName: text("table_name").notNull(),
+    // A tombstone (not a hard DELETE) so a late-arriving update from
+    // another device can't silently resurrect a row the user deliberately
+    // removed.
+    tombstone: integer("tombstone", { mode: "boolean" })
+      .notNull()
+      .default(false),
+  },
+  (table) => [uniqueIndex("oplog_hlc_timestamp_uidx").on(table.hlcTimestamp)]
+);
 
 /**
  * A device the admin has explicitly paired with (Ed25519 key exchange,

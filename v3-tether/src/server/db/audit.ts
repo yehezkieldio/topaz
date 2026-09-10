@@ -26,6 +26,27 @@ export interface AuditContext {
   action: string;
 }
 
+/**
+ * What actually gets recorded to the oplog for this mutation. Not always
+ * derivable from entityType/entityId/after: those three exist for a human-
+ * readable audit trail, and at several real call sites they don't
+ * correspond 1:1 to one physical table's own columns -- a rating or
+ * reading-progress change is audited under entityType "library_entry" for
+ * readability, but the changed column (rating, current_chapter) actually
+ * lives on reading_state, a different table with its own row id and
+ * version. Applying such a diff generically by table name
+ * (08_sync/00_oplog_and_clock.md's sync consumers) against the wrong table,
+ * or against columns the named table doesn't have, would be a real
+ * correctness bug -- so this is required whenever entityType/entityId/after
+ * aren't already exactly the real table/row/columns, not inferred.
+ */
+export interface OplogPlan {
+  tableName: string;
+  rowId: string;
+  columnDiffs: Record<string, unknown>;
+  tombstone?: boolean;
+}
+
 export interface AuditPlan {
   entityType: AuditEntityType;
   entityId: string;
@@ -33,6 +54,16 @@ export interface AuditPlan {
   before: Record<string, AuditValue> | null;
   after: Record<string, AuditValue> | null;
   version: number;
+  /**
+   * Defaults to {tableName: entityType, rowId: entityId, columnDiffs: after
+   * ?? {}} when omitted -- correct only when the audit framing and the real
+   * table/row/columns genuinely coincide (true for plain work/taxonomy_term
+   * edits, false for anything touching reading_state under a
+   * "library_entry" audit entityType, or an `after` that includes fields
+   * that aren't literal columns of `entityType`'s table). See this
+   * function's OplogPlan doc.
+   */
+  oplog?: OplogPlan;
 }
 
 /**
@@ -40,16 +71,9 @@ export interface AuditPlan {
  * the mutation itself. `before`/`after` must already be allow-listed by the
  * caller -- never pass a full-row dump (v3-tether/plan-work.md Slice C).
  *
- * Also appends the matching oplog entry (08_sync/00_oplog_and_clock.md):
- * every call site that already tracks "this entity's columns changed, to
- * this version" for the audit trail needs the identical fact recorded for
- * sync, so this is the one place both are written together rather than
- * duplicating that bookkeeping at each of this function's call sites.
- * `plan.entityType`'s values ("work", "work_source", "library_entry",
- * "taxonomy_term") are already the real table names oplog.table_name needs,
- * with no separate mapping to keep in sync. `after: null` (no call site
- * currently passes this) is treated as the entity's tracked state being
- * gone -- a tombstone, not an empty diff.
+ * Also appends the matching oplog entry (08_sync/00_oplog_and_clock.md) --
+ * see AuditPlan.oplog's doc for when the default derived from
+ * entityType/entityId/after is (and isn't) correct.
  */
 export const recordAudit = async (
   tx: Tx,
@@ -67,10 +91,11 @@ export const recordAudit = async (
     version: plan.version,
   });
 
-  await appendOplogEntry(tx, {
+  const oplogPlan: OplogPlan = plan.oplog ?? {
     columnDiffs: plan.after ?? {},
     rowId: plan.entityId,
     tableName: plan.entityType,
     tombstone: plan.after === null,
-  });
+  };
+  await appendOplogEntry(tx, oplogPlan);
 };

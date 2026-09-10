@@ -350,6 +350,19 @@ export const updateRatingAction = async (
           changedColumns: ["rating"],
           entityId: entry.id,
           entityType: "library_entry",
+          // The rating column itself lives on reading_state (a different
+          // physical table, keyed by the same id as its 1:1 library_entry),
+          // not library_entry -- the audit entry above is framed as
+          // "library_entry" for human readability, but what a sync consumer
+          // needs to apply is the real table/row/columns.
+          oplog: {
+            columnDiffs: {
+              rating: updated?.rating ?? null,
+              version: updated?.version ?? currentVersion + 1,
+            },
+            rowId: entry.id,
+            tableName: "reading_state",
+          },
           version: updated?.version ?? currentVersion + 1,
         }
       );
@@ -459,6 +472,18 @@ export const updateProgressAction = async (
           changedColumns: ["current_chapter"],
           entityId: entry.id,
           entityType: "library_entry",
+          // currentChapter/lastReadAt/startedAt live on reading_state, not
+          // library_entry -- see updateRatingAction's identical note above.
+          oplog: {
+            columnDiffs: {
+              currentChapter: updated?.currentChapter ?? null,
+              lastReadAt: now,
+              startedAt,
+              version: updated?.version ?? currentVersion + 1,
+            },
+            rowId: entry.id,
+            tableName: "reading_state",
+          },
           version: updated?.version ?? currentVersion + 1,
         }
       );

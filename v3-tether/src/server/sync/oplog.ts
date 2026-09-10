@@ -5,7 +5,13 @@ import { db as dbClient } from "@/server/db/client";
 import { oplog } from "@/server/db/schema/sync";
 
 import { getDeviceIdentity } from "./device-identity";
-import { decodeHlc, encodeHlc, type HlcState, tickLocal } from "./hlc";
+import {
+  decodeHlc,
+  encodeHlc,
+  type HlcState,
+  mergeRemote,
+  tickLocal,
+} from "./hlc";
 
 type Tx = Parameters<Parameters<typeof dbClient.transaction>[0]>[0] | typeof dbClient;
 
@@ -61,6 +67,20 @@ const ensureClockState = async (): Promise<{
   initPromise ??= loadInitialClockState();
   clockState = await initPromise;
   return clockState;
+};
+
+/**
+ * Merges an observed remote HLC timestamp (a row received during sync)
+ * into this process's clock -- the other half of the HLC receive rule
+ * (src/server/sync/hlc.ts's mergeRemote), so this device's own next local
+ * write is correctly ordered after anything it just learned about from a
+ * peer. Called once per applied oplog row (src/server/sync/apply.ts),
+ * regardless of whether that row's data change was itself applied or
+ * skipped as stale -- the clock observes the event either way.
+ */
+export const observeRemoteHlc = async (encoded: string): Promise<void> => {
+  const state = await ensureClockState();
+  state.clock = mergeRemote(state.clock, decodeHlc(encoded), Date.now());
 };
 
 export interface AppendOplogEntryInput {

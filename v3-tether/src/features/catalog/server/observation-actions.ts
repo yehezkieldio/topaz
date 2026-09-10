@@ -107,6 +107,18 @@ export const recordSourceObservationAction = async (
         changedColumns: ["chapter_count", "word_count", "publication_status"],
         entityId: current.id,
         entityType: "work_source",
+        // publicationStatus isn't a work_source column at all (it lives on
+        // `work`, not written here) -- it rides along in the audit
+        // before/after above purely as human-readable context. Only the
+        // columns actually written to work_source belong in the oplog diff.
+        oplog: {
+          columnDiffs: {
+            chapterCount: counts.chapterCount,
+            wordCount: counts.wordCount,
+          },
+          rowId: current.id,
+          tableName: "work_source",
+        },
         version: observationCount,
       }
     );
