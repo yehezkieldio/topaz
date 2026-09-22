@@ -96,18 +96,19 @@ export const generateMobileConnectAction =
       throw new Error("No admin account exists yet.");
     }
 
+    const tailnetOrigin = `http://${env.SYNC_TAILNET_HOSTNAME}:${env.SYNC_PORT}`;
+    const callbackURL = `${tailnetOrigin}${MOBILE_CONNECT_CALLBACK_PATH}`;
+
     const capture = captureNextMagicLink();
     await auth.api.signInMagicLink({
-      body: { callbackURL: MOBILE_CONNECT_CALLBACK_PATH, email: admin.email },
+      body: { callbackURL, email: admin.email },
       headers: await headers(),
     });
     const { token } = await capture;
 
-    const url = new URL(
-      `http://${env.SYNC_TAILNET_HOSTNAME}:${env.SYNC_PORT}/api/auth/magic-link/verify`
-    );
+    const url = new URL(`${tailnetOrigin}/api/auth/magic-link/verify`);
     url.searchParams.set("token", token);
-    url.searchParams.set("callbackURL", MOBILE_CONNECT_CALLBACK_PATH);
+    url.searchParams.set("callbackURL", callbackURL);
 
     const qrDataUrl = await toDataURL(url.toString(), {
       margin: 1,

@@ -222,23 +222,6 @@
   }
 }
 
-@keyframes route-content-enter {
-  from {
-    filter: blur(2px);
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    filter: blur(0);
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.route-content-enter {
-  animation: 560ms var(--ease-ui-spring) 90ms both route-content-enter;
-}
-
 @keyframes project-row-enter {
   from {
     opacity: 0;
@@ -556,7 +539,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .route-content-enter,
   .project-row-enter {
     animation-duration: 0s !important;
     animation-delay: 0s !important;
@@ -565,6 +547,100 @@
   .motion-link,
   .motion-press {
     transition-duration: 0s !important;
+  }
+}
+
+/* View Transition recipes -- drive SitePageTransition's directional page
+   swaps and the article Suspense reveal. Keyframes are namespaced (vt-*) so
+   they don't collide with the unrelated `fade` keyframe above. */
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes vt-slide {
+  from {
+    translate: var(--vt-slide-offset);
+  }
+  to {
+    translate: 0;
+  }
+}
+
+@keyframes vt-slide-y {
+  from {
+    opacity: 0;
+    transform: translateY(var(--vt-slide-y-offset, 12px));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+::view-transition-old(.fade-out) {
+  animation: var(--duration-exit) var(--ease-ui) vt-fade reverse;
+}
+
+::view-transition-new(.fade-in) {
+  animation: var(--duration-enter) var(--ease-ui) var(--duration-exit) both
+    vt-fade;
+}
+
+::view-transition-old(.nav-forward) {
+  --vt-slide-offset: -48px;
+  animation:
+    var(--duration-exit) var(--ease-ui) both vt-fade reverse,
+    var(--duration-move) var(--ease-ui-move) both vt-slide reverse;
+}
+
+::view-transition-new(.nav-forward) {
+  --vt-slide-offset: 48px;
+  animation:
+    var(--duration-enter) var(--ease-ui) var(--duration-exit) both vt-fade,
+    var(--duration-move) var(--ease-ui-move) both vt-slide;
+}
+
+::view-transition-old(.nav-back) {
+  --vt-slide-offset: 48px;
+  animation:
+    var(--duration-exit) var(--ease-ui) both vt-fade reverse,
+    var(--duration-move) var(--ease-ui-move) both vt-slide reverse;
+}
+
+::view-transition-new(.nav-back) {
+  --vt-slide-offset: -48px;
+  animation:
+    var(--duration-enter) var(--ease-ui) var(--duration-exit) both vt-fade,
+    var(--duration-move) var(--ease-ui-move) both vt-slide;
+}
+
+::view-transition-new(.reveal-up) {
+  --vt-slide-y-offset: 12px;
+  animation: var(--duration-move) var(--ease-ui-soft) both vt-slide-y;
+}
+
+/* Live root: the header/nav sit outside SitePageTransition's boundary, so
+   without this the browser default root cross-fade ghosts them on every
+   navigation. Disabling it lets unnamed chrome swap instantly instead. */
+::view-transition-old(root) {
+  display: none;
+}
+
+::view-transition-new(root) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }
 

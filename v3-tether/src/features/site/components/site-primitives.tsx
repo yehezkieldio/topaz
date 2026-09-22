@@ -115,10 +115,12 @@ export const SiteContentTitleLink = ({
   children,
   href,
   isExternal = false,
+  transitionTypes,
 }: {
   children: ReactNode;
   href: string;
   isExternal?: boolean;
+  transitionTypes?: string[];
 }) => {
   if (isExternal) {
     return (
@@ -138,6 +140,7 @@ export const SiteContentTitleLink = ({
       className="motion-link motion-title-link"
       href={href}
       prefetch={false}
+      transitionTypes={transitionTypes}
     >
       {children}
     </Link>

@@ -48,7 +48,10 @@ const NotesPage = () => {
             >
               <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
                 <h2 className="min-w-0 text-[13px] leading-tight font-medium tracking-normal sm:text-sm sm:leading-tight">
-                  <SiteContentTitleLink href={`/writing/notes/${note.slug}`}>
+                  <SiteContentTitleLink
+                    href={`/writing/notes/${note.slug}`}
+                    transitionTypes={["nav-forward"]}
+                  >
                     {note.title}
                   </SiteContentTitleLink>
                 </h2>

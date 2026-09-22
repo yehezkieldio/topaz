@@ -1,5 +1,7 @@
 This project specs exits in `../topaz-v3-tether-specs`.
 
+Use `bun`, NOT `npm`
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` or via Context7.
@@ -12,12 +14,13 @@ The browser is not a simple runtime. It is a vast, stateful, concurrent mechanis
 
 The browser's internal machinery is substantially more complex than any application, developer, or coding agent can fully assume.
 
-Therefore, approach it like a systems programmer:
+Therefore:
 
 - Never treat the browser as an infinitely cheap execution environment.
 - When code touches the browser, approach it with systems-engineering mechanical sympathy.
 - The objective is not to make performance-conscious guesses.
 - The objective is to systematically minimize contention for browser resources.
+- Establish constraints and aggresively measure work implementation against them.
 
 This applies to any browser-related or browser-touched work — not just frontend code.
 

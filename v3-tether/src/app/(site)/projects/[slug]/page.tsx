@@ -2,7 +2,7 @@ import { ArrowLeftIcon, ExternalLinkIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, ViewTransition } from "react";
 
 import { mdxComponents } from "@/features/site/components/mdx-component-map";
 import {
@@ -106,6 +106,7 @@ const ProjectPage = ({ params }: ProjectPageProps) => (
       className="motion-link text-muted-foreground/75 mb-6 inline-flex items-center gap-2 font-mono text-xs"
       href="/projects"
       prefetch={false}
+      transitionTypes={["nav-back"]}
     >
       <ArrowLeftIcon
         aria-hidden="true"
@@ -116,7 +117,9 @@ const ProjectPage = ({ params }: ProjectPageProps) => (
     </Link>
 
     <Suspense fallback={null}>
-      <ProjectArticleBody params={params} />
+      <ViewTransition default="none" enter="reveal-up">
+        <ProjectArticleBody params={params} />
+      </ViewTransition>
     </Suspense>
   </article>
 );

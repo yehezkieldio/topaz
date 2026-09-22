@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, ViewTransition } from "react";
 
 import { mdxComponents } from "@/features/site/components/mdx-component-map";
 import {
@@ -69,7 +69,9 @@ const NoteArticleBody = async ({ params }: NotePageProps) => {
 const NotePage = ({ params }: NotePageProps) => (
   <article className="space-y-9">
     <Suspense fallback={null}>
-      <NoteArticleBody params={params} />
+      <ViewTransition default="none" enter="reveal-up">
+        <NoteArticleBody params={params} />
+      </ViewTransition>
     </Suspense>
   </article>
 );

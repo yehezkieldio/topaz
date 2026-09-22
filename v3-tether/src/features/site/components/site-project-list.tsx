@@ -28,7 +28,10 @@ const getProjectLinkLabel = (link: ProjectLink) => {
 const ProjectTitle = ({ project }: { project: ProjectListItem }) => {
   if (project.hasNote) {
     return (
-      <SiteContentTitleLink href={`/projects/${project.slug}`}>
+      <SiteContentTitleLink
+        href={`/projects/${project.slug}`}
+        transitionTypes={["nav-forward"]}
+      >
         {project.title}
       </SiteContentTitleLink>
     );
@@ -95,6 +98,7 @@ const ProjectRow = ({
             className="motion-link group text-foreground/82 hover:text-foreground inline-flex items-center gap-1.5 font-medium transition-colors duration-200 ease-(--ease-ui)"
             href={`/projects/${project.slug}`}
             prefetch={false}
+            transitionTypes={["nav-forward"]}
           >
             <FileTextIcon
               aria-hidden="true"
