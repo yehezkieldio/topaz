@@ -2,6 +2,7 @@ import { ArrowLeftIcon, ExternalLinkIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { mdxComponents } from "@/features/site/components/mdx-component-map";
 import {
@@ -69,7 +70,7 @@ const ProjectLinks = ({ links }: { links: Project["links"] }) => {
   );
 };
 
-const ProjectPage = async ({ params }: ProjectPageProps) => {
+const ProjectArticleBody = async ({ params }: ProjectPageProps) => {
   const { slug } = await params;
   const project = getProject(slug);
 
@@ -80,20 +81,7 @@ const ProjectPage = async ({ params }: ProjectPageProps) => {
   const Body = project.body;
 
   return (
-    <article className="space-y-9">
-      <Link
-        className="motion-link text-muted-foreground/75 mb-6 inline-flex items-center gap-2 font-mono text-xs"
-        href="/projects"
-        prefetch={false}
-      >
-        <ArrowLeftIcon
-          aria-hidden="true"
-          className="size-3.5"
-          strokeWidth={1.75}
-        />
-        projects
-      </Link>
-
+    <>
       <ArticleHeader
         description={project.description}
         tags={project.tags}
@@ -108,8 +96,29 @@ const ProjectPage = async ({ params }: ProjectPageProps) => {
       <MdxBody>
         <Body components={mdxComponents} />
       </MdxBody>
-    </article>
+    </>
   );
 };
+
+const ProjectPage = ({ params }: ProjectPageProps) => (
+  <article className="space-y-9">
+    <Link
+      className="motion-link text-muted-foreground/75 mb-6 inline-flex items-center gap-2 font-mono text-xs"
+      href="/projects"
+      prefetch={false}
+    >
+      <ArrowLeftIcon
+        aria-hidden="true"
+        className="size-3.5"
+        strokeWidth={1.75}
+      />
+      projects
+    </Link>
+
+    <Suspense fallback={null}>
+      <ProjectArticleBody params={params} />
+    </Suspense>
+  </article>
+);
 
 export default ProjectPage;

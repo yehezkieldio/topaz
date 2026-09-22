@@ -215,49 +215,60 @@ const fetchLibraryList = async ({
   // Postgres's DISTINCT ON has no SQLite equivalent -- a
   // row_number()-over-partition CTE, filtered to rn = 1, gets the same
   // "one row per group, picked by this order" result.
+  //
+  // Both ranked subqueries below are built as proper Drizzle `.as(...)`
+  // subqueries (not `.from(sql\`...\`)` raw fragments) so that Drizzle can
+  // qualify their `work_id` column with the subquery alias in the outer
+  // join conditions. An unqualified raw-sql `work_id` column collides with
+  // taxonomyAgg's own `work_id` once both are joined, and SQLite raises
+  // "ambiguous column name: work_id".
+  const rankedSources = db
+    .select({
+      chapterCount: workSource.chapterCount,
+      rn: sql<number>`row_number() over (partition by ${workSource.workId} order by ${workSource.createdAt} asc)`.as(
+        "rn"
+      ),
+      sourcePlatformName: sourcePlatform.name,
+      wordCount: workSource.wordCount,
+      workId: workSource.workId,
+    })
+    .from(workSource)
+    .innerJoin(sourcePlatform, eq(sourcePlatform.id, workSource.sourcePlatformId))
+    .as("ranked_source");
+
   /** One row per work: its earliest-added source, for a compact source pill. */
   const primarySourceAgg = db
     .select({
-      chapterCount: sql<number | null>`ps.chapter_count`.as("chapter_count"),
-      sourcePlatformName: sql<
-        string | null
-      >`ps.source_platform_name`.as("source_platform_name"),
-      wordCount: sql<number | null>`ps.word_count`.as("word_count"),
-      workId: sql<string>`ps.work_id`.as("work_id"),
+      chapterCount: rankedSources.chapterCount,
+      sourcePlatformName: rankedSources.sourcePlatformName,
+      wordCount: rankedSources.wordCount,
+      workId: rankedSources.workId,
     })
-    .from(sql`(
-      select
-        ${workSource.workId} as work_id,
-        ${workSource.chapterCount} as chapter_count,
-        ${workSource.wordCount} as word_count,
-        ${sourcePlatform.name} as source_platform_name,
-        row_number() over (
-          partition by ${workSource.workId} order by ${workSource.createdAt} asc
-        ) as rn
-      from ${workSource}
-      inner join ${sourcePlatform} on ${sourcePlatform.id} = ${workSource.sourcePlatformId}
-    ) ps`)
-    .where(sql`ps.rn = 1`)
+    .from(rankedSources)
+    .where(eq(rankedSources.rn, 1))
     .as("primary_source");
+
+  const rankedAuthors = db
+    .select({
+      authorName: contributor.name,
+      rn: sql<number>`row_number() over (partition by ${workContributor.workId} order by ${contributor.name} asc)`.as(
+        "rn"
+      ),
+      workId: workContributor.workId,
+    })
+    .from(workContributor)
+    .innerJoin(contributor, eq(contributor.id, workContributor.contributorId))
+    .where(eq(workContributor.role, "author"))
+    .as("ranked_author");
 
   /** One row per work: its first-listed author, for the byline. */
   const primaryAuthorAgg = db
     .select({
-      authorName: sql<string | null>`pa.author_name`.as("author_name"),
-      workId: sql<string>`pa.work_id`.as("work_id"),
+      authorName: rankedAuthors.authorName,
+      workId: rankedAuthors.workId,
     })
-    .from(sql`(
-      select
-        ${workContributor.workId} as work_id,
-        ${contributor.name} as author_name,
-        row_number() over (
-          partition by ${workContributor.workId} order by ${contributor.name} asc
-        ) as rn
-      from ${workContributor}
-      inner join ${contributor} on ${contributor.id} = ${workContributor.contributorId}
-      where ${workContributor.role} = 'author'
-    ) pa`)
-    .where(sql`pa.rn = 1`)
+    .from(rankedAuthors)
+    .where(eq(rankedAuthors.rn, 1))
     .as("primary_author");
 
   const rows = await db

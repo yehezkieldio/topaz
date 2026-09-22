@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { SyncPanel } from "@/features/sync/components/sync-panel";
 
 export const metadata = {
@@ -29,7 +31,9 @@ const SyncPage = () => (
         </p>
       </header>
 
-      <SyncPanel />
+      <Suspense fallback={<Skeleton className="h-40 w-full rounded-md" />}>
+        <SyncPanel />
+      </Suspense>
     </div>
   </div>
 );

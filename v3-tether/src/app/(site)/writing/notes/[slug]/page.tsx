@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { mdxComponents } from "@/features/site/components/mdx-component-map";
 import {
@@ -37,7 +38,7 @@ export const generateMetadata = async ({
   return { description: note.description, title: note.title };
 };
 
-const NotePage = async ({ params }: NotePageProps) => {
+const NoteArticleBody = async ({ params }: NotePageProps) => {
   const { slug } = await params;
   const note = getNote(slug);
 
@@ -48,7 +49,7 @@ const NotePage = async ({ params }: NotePageProps) => {
   const Body = note.body;
 
   return (
-    <article className="space-y-9">
+    <>
       <ArticleHeader
         description={note.description}
         meta={
@@ -61,8 +62,16 @@ const NotePage = async ({ params }: NotePageProps) => {
       <MdxBody>
         <Body components={mdxComponents} />
       </MdxBody>
-    </article>
+    </>
   );
 };
+
+const NotePage = ({ params }: NotePageProps) => (
+  <article className="space-y-9">
+    <Suspense fallback={null}>
+      <NoteArticleBody params={params} />
+    </Suspense>
+  </article>
+);
 
 export default NotePage;

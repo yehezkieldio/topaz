@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   // output: "standalone" step, the adapter supersedes it.
   adapterPath: "next-bun-compile",
   cacheComponents: true,
+  partialPrefetching: true,
   reactCompiler: true,
   // @libsql/client is on this default allow-list already, but declared
   // explicitly since it's load-bearing here: bun:sqlite (tried first) does
