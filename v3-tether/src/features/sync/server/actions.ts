@@ -20,11 +20,20 @@ import type { MutationResult } from "@/server/query/mutation-result";
 import { pullAccountFromPeer } from "@/server/sync/account-bootstrap";
 import { getDeviceIdentity } from "@/server/sync/device-identity";
 import {
+  discoverTailnetPeers,
+  fetchPeerIdentity,
+} from "@/server/sync/discovery";
+import type { DiscoveredPeer } from "@/server/sync/discovery";
+import {
   computeKeyFingerprint,
   decodePairingCode,
   encodePairingCode,
 } from "@/server/sync/pairing";
+import type { PairingPayload } from "@/server/sync/pairing";
+import { signPayload } from "@/server/sync/protocol";
 import { syncWithAllKnownPeers } from "@/server/sync/round";
+
+const PAIR_REQUEST_FETCH_TIMEOUT_MS = 10_000;
 
 const MOBILE_CONNECT_CALLBACK_PATH = "/library";
 const ACCOUNT_RESTORE_CALLBACK_PATH = "/sync?justRestored=1";
@@ -363,4 +372,215 @@ export interface SyncRoundResult {
 export const triggerSyncRoundAction = async (): Promise<SyncRoundResult[]> => {
   await requireAdmin();
   return await syncWithAllKnownPeers(db);
+};
+
+/**
+ * Every online tailnet peer, probed for a running Topaz instance -- backs
+ * the pairing screen's discovered-devices list (an alternative to typing or
+ * scanning a code, kept alongside it rather than replacing it: a peer on a
+ * different port, or off the tailnet's `tailscale` CLI path, still needs
+ * the manual flow). Guarded like generatePairingCodeAction/pairWithPeerAction
+ * -- a brand-new device with no account yet still needs to discover and
+ * pair before it can restore an account from a peer.
+ */
+export const discoverTailnetPeersAction = async (): Promise<
+  DiscoveredPeer[]
+> => {
+  await requireAdminOrFreshDevice();
+  return await discoverTailnetPeers();
+};
+
+export interface PeerIdentityPreview {
+  payload: PairingPayload;
+  fingerprint: string;
+}
+
+/**
+ * Re-fetches a discovered device's identity right before pairing with it,
+ * rather than trusting the snapshot from discoverTailnetPeersAction --
+ * closes the gap between "this device was listed a moment ago" and "this
+ * is what I'm actually about to trust," and gives the fingerprint shown in
+ * the confirmation step (the one human checkpoint in this flow) the
+ * freshest possible value.
+ */
+export const fetchPeerIdentityAction = async (
+  hostname: string,
+  port: number
+): Promise<MutationResult<PeerIdentityPreview>> => {
+  await requireAdminOrFreshDevice();
+
+  try {
+    const payload = await fetchPeerIdentity(hostname, port);
+    const fingerprint = await computeKeyFingerprint(payload.publicKeyRaw);
+    return { data: { fingerprint, payload }, status: "success" };
+  } catch (error) {
+    return {
+      fieldErrors: {
+        hostname: [
+          error instanceof Error
+            ? error.message
+            : "Couldn't reach that device.",
+        ],
+      },
+      status: "validation-error",
+    };
+  }
+};
+
+export interface DiscoveredPairResult extends PairedPeer {
+  reciprocalConfirmed: boolean;
+}
+
+/**
+ * One-click pairing once the admin has confirmed a discovered device's
+ * fingerprint: stores trust locally exactly like the manual-code path
+ * (pairWithPeerAction, reused as-is via encodePairingCode), then pushes
+ * this device's own signed identity to the peer's /api/sync/pair-request
+ * so it trusts back automatically -- no second confirmation on that side
+ * (see that route's own comment for why). The reciprocal push is
+ * best-effort: local pairing already succeeded by the time it runs, so a
+ * failed push is reported, not treated as a hard failure -- the admin can
+ * always pair from the other device too if sync doesn't work afterward.
+ */
+export const confirmDiscoveredPairAction = async (
+  payload: PairingPayload
+): Promise<MutationResult<DiscoveredPairResult>> => {
+  const pairResult = await pairWithPeerAction(encodePairingCode(payload));
+  if (pairResult.status !== "success") {
+    return pairResult;
+  }
+
+  const identity = await getDeviceIdentity(db);
+  const reciprocalPayload = {
+    deviceId: identity.deviceId,
+    port: env.SYNC_PORT,
+    publicKeyRaw: identity.publicKeyRaw,
+    tailnetHostname: env.SYNC_TAILNET_HOSTNAME,
+    timestamp: Date.now(),
+  };
+  const signature = await signPayload(identity.privateKey, reciprocalPayload);
+
+  let reciprocalConfirmed = false;
+  try {
+    const response = await fetch(
+      `http://${payload.tailnetHostname}:${payload.port}/api/sync/pair-request`,
+      {
+        body: JSON.stringify({ ...reciprocalPayload, signature }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+        signal: AbortSignal.timeout(PAIR_REQUEST_FETCH_TIMEOUT_MS),
+      }
+    );
+    reciprocalConfirmed = response.ok;
+  } catch {
+    reciprocalConfirmed = false;
+  }
+
+  return {
+    data: { ...pairResult.data, reciprocalConfirmed },
+    status: "success",
+  };
+};
+
+export interface ReconcileResult {
+  status: "updated" | "unchanged" | "moved" | "unreachable";
+  peer?: PairedPeer;
+}
+
+const toPairedPeer = async (row: {
+  createdAt: Date;
+  deviceId: string;
+  port: number;
+  publicKey: string;
+  tailnetHostname: string;
+}): Promise<PairedPeer> => ({
+  deviceId: row.deviceId,
+  fingerprint: await computeKeyFingerprint(row.publicKey),
+  pairedAt: row.createdAt,
+  port: row.port,
+  tailnetHostname: row.tailnetHostname,
+});
+
+/**
+ * Fixes a paired peer's stored address after it drifts (moved to a new
+ * tailnet hostname, changed port, rotated its identity) -- first tries the
+ * address already on file, since that's the common case and needs no
+ * rescan; only falls back to a fresh discovery pass, matching by deviceId,
+ * when the stored address no longer answers or now answers for a
+ * different device. "Rotating where a device lives on the tailnet
+ * shouldn't force a full resync" (pairWithPeerAction's own comment) --
+ * this just automates that update instead of requiring a fresh pairing
+ * code paste.
+ */
+export const reconcilePeerAction = async (
+  deviceId: string
+): Promise<MutationResult<ReconcileResult>> => {
+  await requireAdmin();
+
+  const [stored] = await db
+    .select()
+    .from(knownPeer)
+    .where(eq(knownPeer.deviceId, deviceId))
+    .limit(1);
+
+  if (!stored) {
+    return { status: "not-found" };
+  }
+
+  const applyUpdate = async (identity: PairingPayload): Promise<PairedPeer> => {
+    const [row] = await db
+      .update(knownPeer)
+      .set({
+        port: identity.port,
+        publicKey: identity.publicKeyRaw,
+        tailnetHostname: identity.tailnetHostname,
+      })
+      .where(eq(knownPeer.deviceId, deviceId))
+      .returning();
+    if (!row) {
+      throw new Error("Failed to update peer.");
+    }
+    return await toPairedPeer(row);
+  };
+
+  try {
+    const identity = await fetchPeerIdentity(
+      stored.tailnetHostname,
+      stored.port
+    );
+    if (identity.deviceId !== deviceId) {
+      throw new Error("Address now answers for a different device.");
+    }
+
+    const unchanged =
+      identity.port === stored.port &&
+      identity.publicKeyRaw === stored.publicKey &&
+      identity.tailnetHostname === stored.tailnetHostname;
+
+    if (unchanged) {
+      return {
+        data: { peer: await toPairedPeer(stored), status: "unchanged" },
+        status: "success",
+      };
+    }
+
+    return {
+      data: { peer: await applyUpdate(identity), status: "updated" },
+      status: "success",
+    };
+  } catch {
+    // Stored address is stale -- fall through to rediscovery below.
+  }
+
+  const discovered = await discoverTailnetPeers();
+  const match = discovered.find((peer) => peer.identity?.deviceId === deviceId);
+
+  if (match?.identity) {
+    return {
+      data: { peer: await applyUpdate(match.identity), status: "moved" },
+      status: "success",
+    };
+  }
+
+  return { data: { status: "unreachable" }, status: "success" };
 };

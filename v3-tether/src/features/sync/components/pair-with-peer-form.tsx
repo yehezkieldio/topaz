@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DiscoveredPeers } from "@/features/sync/components/discovered-peers";
 import { pairWithPeerAction } from "@/features/sync/server/actions";
 import type { PairedPeer } from "@/features/sync/server/actions";
 
@@ -50,38 +51,46 @@ export const PairWithPeerForm = () => {
       <div>
         <h3 className="text-sm font-medium">Pair with a device</h3>
         <p className="text-muted-foreground text-sm">
-          Paste the pairing code shown on the other device.
+          Pick a device found on your tailnet, or paste a pairing code.
         </p>
       </div>
 
-      <form action={handleSubmit} className="space-y-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="code">Pairing code</Label>
-          <Textarea
-            className="min-h-20 font-mono text-xs"
-            id="code"
-            name="code"
-            placeholder="eyJ2IjoxLCJkZXZpY2VJZCI6..."
-            required
-          />
-        </div>
+      <DiscoveredPeers />
 
-        {result?.kind === "error" && (
-          <p className="text-destructive text-sm">{result.message}</p>
-        )}
-        {result?.kind === "success" && (
-          <p className="text-sm text-emerald-600 dark:text-emerald-400">
-            Paired with {result.peer.tailnetHostname}:{result.peer.port} --
-            confirm fingerprint{" "}
-            <span className="font-mono">{result.peer.fingerprint}</span> matches
-            what that device shows.
-          </p>
-        )}
+      <div className="border-border/50 border-t pt-4">
+        <p className="text-muted-foreground mb-3 text-xs">
+          Or paste a pairing code shown on the other device
+        </p>
 
-        <Button disabled={isPending} type="submit">
-          Pair
-        </Button>
-      </form>
+        <form action={handleSubmit} className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="code">Pairing code</Label>
+            <Textarea
+              className="min-h-20 font-mono text-xs"
+              id="code"
+              name="code"
+              placeholder="eyJ2IjoxLCJkZXZpY2VJZCI6..."
+              required
+            />
+          </div>
+
+          {result?.kind === "error" && (
+            <p className="text-destructive text-sm">{result.message}</p>
+          )}
+          {result?.kind === "success" && (
+            <p className="text-sm text-emerald-600 dark:text-emerald-400">
+              Paired with {result.peer.tailnetHostname}:{result.peer.port}
+              -- confirm fingerprint{" "}
+              <span className="font-mono">{result.peer.fingerprint}</span>{" "}
+              matches what that device shows.
+            </p>
+          )}
+
+          <Button disabled={isPending} type="submit">
+            Pair
+          </Button>
+        </form>
+      </div>
     </section>
   );
 };

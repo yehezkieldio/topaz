@@ -1,3 +1,4 @@
+import { ReconcileButton } from "@/features/sync/components/reconcile-button";
 import { UnpairButton } from "@/features/sync/components/unpair-button";
 import {
   type PairedPeer,
@@ -20,7 +21,10 @@ const PeerRow = ({ peer }: { peer: PairedPeer }) => (
         {peer.fingerprint} -- paired {formatPairedAt(peer.pairedAt)}
       </p>
     </div>
-    <UnpairButton deviceId={peer.deviceId} />
+    <div className="flex shrink-0 items-start gap-2">
+      <ReconcileButton deviceId={peer.deviceId} />
+      <UnpairButton deviceId={peer.deviceId} />
+    </div>
   </li>
 );
 

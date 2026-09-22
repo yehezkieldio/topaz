@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "postinstall": "fumadocs-mdx",
+    "predev": "bun run scripts/sync-env-setup.ts",
     "dev": "next dev",
     "build": "next build",
+    "prestart": "bun run scripts/sync-env-setup.ts",
     "start": "next start",
     "check": "ultracite check",
     "fix": "ultracite fix",

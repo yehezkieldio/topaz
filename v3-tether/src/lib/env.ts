@@ -10,13 +10,17 @@ const envSchema = z.object({
   DATABASE_PATH: z.string().min(1),
   // Port this device's /api/sync endpoint is reachable on, for embedding in
   // the pairing code this device generates (08_sync/01_transport_and_pairing.md).
-  // Not auto-detected -- there's no reliable way to learn "what port am I
-  // actually reachable on" from inside the process, and pairing is already
-  // a deliberate, admin-typed action.
+  // Auto-filled into .env once by scripts/sync-env-setup.ts (predev/prestart)
+  // if missing, same as SYNC_TAILNET_HOSTNAME -- still an explicit value in
+  // .env after that, not detected at runtime inside this process (this
+  // schema parses process.env eagerly at import time, before any code here
+  // could reach for `tailscale status`).
   SYNC_PORT: z.coerce.number().int().min(1).max(65_535),
   // This device's own Tailscale hostname (e.g. laptop-a.tailnet-name.ts.net),
-  // embedded in the pairing code this device generates. Not auto-detected
-  // for the same reason as SYNC_PORT -- see 08_sync/01_transport_and_pairing.md.
+  // embedded in the pairing code this device generates. Auto-filled into
+  // .env once by scripts/sync-env-setup.ts from `tailscale status --json`'s
+  // Self.DNSName if missing -- see that script for the fallback when
+  // Tailscale isn't reachable.
   SYNC_TAILNET_HOSTNAME: z.string().min(1),
 });
 
