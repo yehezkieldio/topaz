@@ -97,6 +97,26 @@ export const auth = betterAuth({
     }),
   ],
   secret: env.BETTER_AUTH_SECRET,
+  // baseURL (and thus its origin) is auto-trusted, but "Connect a phone"
+  // deliberately mints its magic link against this device's *tailnet*
+  // origin instead (generateMobileConnectAction), since BETTER_AUTH_URL is
+  // typically a localhost value meaningless to another device. That second
+  // origin has to be declared here too, or requests from it hit
+  // better-auth's CSRF/origin checks.
+  trustedOrigins: [`http://${env.SYNC_TAILNET_HOSTNAME}:${env.SYNC_PORT}`],
+  advanced: {
+    // This app never terminates TLS itself -- Tailscale is the transport
+    // security layer (encrypted tunnel, device-authenticated by the
+    // tailnet), and every device is reached over plain http, whether via
+    // `bun dev` or the compiled binary (docs/GETTING_STARTED_SYNC.md,
+    // "Connect a phone"). better-auth's default is to mark session cookies
+    // `Secure` whenever NODE_ENV is production, which the compiled binary
+    // is -- browsers silently refuse to store a `Secure` cookie set over a
+    // non-localhost http origin, so without this override the "Connect a
+    // phone" magic-link sign-in (and any Tailscale-only access in general)
+    // would look like it succeeds but leave the device signed out.
+    useSecureCookies: false,
+  },
   user: {
     additionalFields: {
       role: {
