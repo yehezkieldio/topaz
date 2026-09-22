@@ -63,16 +63,36 @@ interface PlatformSeed {
 // QuestionableQuesting is genuinely new to this app, since the sheet is the
 // first place it shows up.
 const PLATFORM_BY_CODE: Record<string, PlatformSeed> = {
-  AO3: { baseUrl: "https://archiveofourown.org", name: "Archive of Our Own", slug: "ao3" },
-  FF: { baseUrl: "https://www.fanfiction.net", name: "FanFiction.Net", slug: "ffn" },
+  AO3: {
+    baseUrl: "https://archiveofourown.org",
+    name: "Archive of Our Own",
+    slug: "ao3",
+  },
+  FF: {
+    baseUrl: "https://www.fanfiction.net",
+    name: "FanFiction.Net",
+    slug: "ffn",
+  },
   QQ: {
     baseUrl: "https://forum.questionablequesting.com",
     name: "QuestionableQuesting",
     slug: "qq",
   },
-  SB: { baseUrl: "https://www.spacebattles.com", name: "SpaceBattles", slug: "spacebattles" },
-  SH: { baseUrl: "https://www.scribblehub.com", name: "ScribbleHub", slug: "scribblehub" },
-  WN: { baseUrl: "https://www.webnovel.com", name: "WebNovel", slug: "webnovel" },
+  SB: {
+    baseUrl: "https://www.spacebattles.com",
+    name: "SpaceBattles",
+    slug: "spacebattles",
+  },
+  SH: {
+    baseUrl: "https://www.scribblehub.com",
+    name: "ScribbleHub",
+    slug: "scribblehub",
+  },
+  WN: {
+    baseUrl: "https://www.webnovel.com",
+    name: "WebNovel",
+    slug: "webnovel",
+  },
 };
 
 const LEADING_ARTICLE_PATTERN = /^(?:a|an|the)\s+/iu;
@@ -126,7 +146,7 @@ const resolveLibraryStatus = (
   // The sheet has exactly one row with a blank Status but real progress --
   // treat "has a chapter but no status" as still being read, and true blanks
   // (no chapter either) as not yet started.
-  return currentChapter !== null ? "reading" : "not_started";
+  return currentChapter === null ? "not_started" : "reading";
 };
 
 interface SheetRow {
@@ -142,14 +162,16 @@ interface SheetRow {
 
 const readSheetRows = (filePath: string): SheetRow[] => {
   const workbook = XLSX.readFile(filePath);
-  const tracker = XLSX.utils.sheet_to_json<unknown[]>(
-    workbook.Sheets.Tracker,
-    { defval: null, header: 1, raw: false }
-  );
-  const details = XLSX.utils.sheet_to_json<unknown[]>(
-    workbook.Sheets.Details,
-    { defval: null, header: 1, raw: false }
-  );
+  const tracker = XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets.Tracker, {
+    defval: null,
+    header: 1,
+    raw: false,
+  });
+  const details = XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets.Details, {
+    defval: null,
+    header: 1,
+    raw: false,
+  });
 
   const detailById = new Map<string, unknown[]>();
   for (const row of details.slice(1)) {
@@ -201,9 +223,10 @@ const main = async () => {
   const dryRun = values["dry-run"] ?? false;
 
   const { closeDbConnection, db } = await import("@/server/db/client");
-  const { rebuildEffectiveTaxonomyForWork } = await import(
-    "@/features/taxonomy/server/repository/effective-taxonomy"
-  );
+  const { rebuildEffectiveTaxonomyForWork } =
+    await import("@/features/taxonomy/server/repository/effective-taxonomy");
+  const { recomputeWorkPrimaryPointers } =
+    await import("@/server/db/primary-pointers");
   const {
     libraryEntry,
     readingState,
@@ -217,7 +240,7 @@ const main = async () => {
   } = await import("@/server/db/schema");
 
   // biome-ignore lint/suspicious/noConsole: local one-shot CLI script
-  const log = console.log;
+  const { log } = console;
 
   const rows = readSheetRows(filePath);
   log(`Read ${rows.length} candidate rows from "${filePath}".`);
@@ -429,7 +452,10 @@ const main = async () => {
 
       if (dryRun) {
         imported += 1;
-        statusCounts.set(libraryStatus, (statusCounts.get(libraryStatus) ?? 0) + 1);
+        statusCounts.set(
+          libraryStatus,
+          (statusCounts.get(libraryStatus) ?? 0) + 1
+        );
         continue;
       }
 
@@ -453,6 +479,8 @@ const main = async () => {
           wordCount: row.wordCount,
           workId: createdWork.id,
         });
+
+        await recomputeWorkPrimaryPointers(tx, createdWork.id);
 
         if (row.fandoms.length > 0) {
           const termIds: string[] = [];
@@ -491,7 +519,10 @@ const main = async () => {
 
       existingSourceKeys.add(sourceKey);
       imported += 1;
-      statusCounts.set(libraryStatus, (statusCounts.get(libraryStatus) ?? 0) + 1);
+      statusCounts.set(
+        libraryStatus,
+        (statusCounts.get(libraryStatus) ?? 0) + 1
+      );
     } catch (error) {
       errors.push({ error, row });
     }

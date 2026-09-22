@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(import.meta.dirname),
   },
-  allowedDevOrigins: ["elizielx-linux.tail2c05b3.ts.net"]
+  allowedDevOrigins: ["elizielx-linux.tail2c05b3.ts.net"],
 };
 
 const withMDX = createMDX();

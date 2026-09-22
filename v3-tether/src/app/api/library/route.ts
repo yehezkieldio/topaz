@@ -23,8 +23,7 @@ const isContentRating = (
 ): value is (typeof contentRatingValues)[number] =>
   // SAFETY: same widening as isLibraryStatus above -- only relaxes the
   // element type for `.includes`, not the enum's actual runtime values.
-  value !== null &&
-  (contentRatingValues as readonly string[]).includes(value);
+  value !== null && (contentRatingValues as readonly string[]).includes(value);
 
 const isPublicationStatus = (
   value: string | null

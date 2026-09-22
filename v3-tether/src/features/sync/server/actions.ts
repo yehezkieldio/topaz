@@ -639,7 +639,7 @@ export interface RepairSummary {
 }
 
 /**
- * Phase 2's manual "Repair now" trigger (08_sync/03_data_integrity_and_reconciliation.md:
+ * The manual "Repair now" trigger (08_sync/03_data_integrity_and_reconciliation.md:
  * "A 'Repair now' action next to a flagged mismatch runs the full-table
  * pull and reconciliation... on demand, with a visible result"). Repairs
  * only whatever the most recent integrity check against this peer actually
@@ -647,9 +647,13 @@ export interface RepairSummary {
  * already cleared it), this is a validation error rather than a full
  * unconditional resync of all five tables.
  *
- * Deliberately manual, not triggered automatically from round.ts on a
- * detected mismatch -- that's Phase 3, which the spec is explicit hasn't
- * been earned yet ("only after Phase 2 has proven reliable in practice").
+ * round.ts now also triggers this automatically, immediately after its own
+ * periodic integrity check finds a mismatch -- this button is for forcing a
+ * repair on demand instead of waiting for that cadence, not the only way a
+ * repair happens. repairMismatchedTablesWithPeer's own in-flight guard
+ * means this and the automatic path can't run concurrently against the
+ * same peer; whichever gets there first wins, and the other surfaces (or,
+ * for the automatic path, silently drops) an "already in progress" error.
  */
 export const repairPeerMismatchAction = async (
   deviceId: string
@@ -686,7 +690,8 @@ export const repairPeerMismatchAction = async (
     const result = await repairMismatchedTablesWithPeer(
       db,
       peer,
-      latestCheck.mismatchedTables
+      latestCheck.mismatchedTables,
+      "manual"
     );
     return { data: result, status: "success" };
   } catch (error) {
@@ -704,13 +709,17 @@ export const repairPeerMismatchAction = async (
 };
 
 /**
- * Manual "Compact oplog" trigger (server/sync/compaction.ts) -- collapses
- * each (table, row)'s history into one fresh full-row snapshot entry and
- * removes the now-redundant older rows. Deliberately manual only, not
- * folded into a sync round or the periodic integrity-check cadence: this
- * is new and unproven, the same restraint the spec applies to Phase 3
- * auto-repair. Never throws for the run itself -- compactRowHistory skips
- * a group it can't safely compact rather than failing the whole sweep.
+ * The manual "Compact oplog" trigger (server/sync/compaction.ts) --
+ * collapses each (table, row)'s history into one fresh full-row snapshot
+ * entry and removes the now-redundant older rows. round.ts now also runs
+ * this automatically once the oplog grows past compaction.ts's threshold,
+ * checked on the same periodic cadence as the integrity check; this button
+ * forces a run immediately instead of waiting for that threshold.
+ * compactOplog's own in-flight guard means this and the automatic path
+ * can't run concurrently -- whichever gets there first does the work, the
+ * other returns a zero-change result. Never throws for the run itself --
+ * compactRowHistory skips a group it can't safely compact rather than
+ * failing the whole sweep.
  */
 export const compactOplogAction = async (): Promise<CompactionResult> => {
   await requireAdmin();

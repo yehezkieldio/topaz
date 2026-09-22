@@ -73,6 +73,14 @@ const APP_TABLES_CHILD_TO_PARENT = [
 
 export const truncateAppData = async () => {
   const { db } = await import("@/server/db/client");
+  // work.primary_source_id/primary_author_id point *into* work_source/
+  // contributor, the reverse of every other FK here -- clear them first to
+  // break that cycle (same fix as test/db-helpers.ts's truncateAppData).
+  await db.run(
+    sql.raw(
+      `update "work" set "primary_source_id" = null, "primary_author_id" = null`
+    )
+  );
   for (const table of APP_TABLES_CHILD_TO_PARENT) {
     // biome-ignore lint/performance/noAwaitInLoops: ordering across statements is required, not incidental
     await db.run(sql.raw(`delete from "${table}"`));

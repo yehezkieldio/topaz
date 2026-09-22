@@ -31,9 +31,8 @@ const main = async () => {
   const [command, arg] = process.argv.slice(2);
 
   const { closeDbConnection, db } = await import("@/server/db/client");
-  const { session: sessionTable, user: userTable } = await import(
-    "@/server/db/schema/auth"
-  );
+  const { session: sessionTable, user: userTable } =
+    await import("@/server/db/schema/auth");
 
   const [admin] = await db
     .select({ id: userTable.id })
@@ -61,9 +60,8 @@ const main = async () => {
 
   switch (command) {
     case "generate": {
-      const { generatePairingCodeAction } = await import(
-        "@/features/sync/server/actions"
-      );
+      const { generatePairingCodeAction } =
+        await import("@/features/sync/server/actions");
       const result = await generatePairingCodeAction();
       console.log(`Device ID:   ${result.deviceId}`);
       console.log(`Fingerprint: ${result.fingerprint}`);
@@ -77,9 +75,8 @@ const main = async () => {
         process.exitCode = 1;
         break;
       }
-      const { pairWithPeerAction } = await import(
-        "@/features/sync/server/actions"
-      );
+      const { pairWithPeerAction } =
+        await import("@/features/sync/server/actions");
       const result = await pairWithPeerAction(arg);
       if (result.status === "success") {
         console.log(
@@ -96,9 +93,8 @@ const main = async () => {
       break;
     }
     case "peers": {
-      const { listPairedPeersAction } = await import(
-        "@/features/sync/server/actions"
-      );
+      const { listPairedPeersAction } =
+        await import("@/features/sync/server/actions");
       const peers = await listPairedPeersAction();
       if (peers.length === 0) {
         console.log("No paired peers.");
@@ -118,9 +114,8 @@ const main = async () => {
         process.exitCode = 1;
         break;
       }
-      const { unpairPeerAction } = await import(
-        "@/features/sync/server/actions"
-      );
+      const { unpairPeerAction } =
+        await import("@/features/sync/server/actions");
       const result = await unpairPeerAction(arg);
       console.log(
         result.status === "success" ? `Removed ${arg}.` : "Not found."
@@ -142,11 +137,12 @@ const main = async () => {
       }
       break;
     }
-    default:
+    default: {
       console.error(
         "Usage: bun run sync <generate|pair <code>|peers|unpair <deviceId>|round>"
       );
       process.exitCode = 1;
+    }
   }
 
   closeDbConnection();

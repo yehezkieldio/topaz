@@ -11,7 +11,6 @@ import {
   sourcePlatform,
   taxonomyTerm,
   work,
-  workContributor,
   workSource,
   workTaxonomyEffective,
 } from "@/server/db/schema";
@@ -275,97 +274,46 @@ const fetchLibraryList = async ({
     .groupBy(workTaxonomyEffective.workId)
     .as("taxonomy_agg");
 
-  // Postgres's DISTINCT ON has no SQLite equivalent -- a
-  // row_number()-over-partition CTE, filtered to rn = 1, gets the same
-  // "one row per group, picked by this order" result.
-  //
-  // Both ranked subqueries below are built as proper Drizzle `.as(...)`
-  // subqueries (not `.from(sql\`...\`)` raw fragments) so that Drizzle can
-  // qualify their `work_id` column with the subquery alias in the outer
-  // join conditions. An unqualified raw-sql `work_id` column collides with
-  // taxonomyAgg's own `work_id` once both are joined, and SQLite raises
-  // "ambiguous column name: work_id".
-  const rankedSources = db
-    .select({
-      chapterCount: workSource.chapterCount,
-      rn: sql<number>`row_number() over (partition by ${workSource.workId} order by ${workSource.createdAt} asc)`.as(
-        "rn"
-      ),
-      sourcePlatformName: sourcePlatform.name,
-      wordCount: workSource.wordCount,
-      workId: workSource.workId,
-    })
-    .from(workSource)
-    .innerJoin(
-      sourcePlatform,
-      eq(sourcePlatform.id, workSource.sourcePlatformId)
-    )
-    .where(eq(workSource.deleted, false))
-    .as("ranked_source");
-
-  /** One row per work: its earliest-added source, for a compact source pill. */
-  const primarySourceAgg = db
-    .select({
-      chapterCount: rankedSources.chapterCount,
-      sourcePlatformName: rankedSources.sourcePlatformName,
-      wordCount: rankedSources.wordCount,
-      workId: rankedSources.workId,
-    })
-    .from(rankedSources)
-    .where(eq(rankedSources.rn, 1))
-    .as("primary_source");
-
-  const rankedAuthors = db
-    .select({
-      authorName: contributor.name,
-      rn: sql<number>`row_number() over (partition by ${workContributor.workId} order by ${contributor.name} asc)`.as(
-        "rn"
-      ),
-      workId: workContributor.workId,
-    })
-    .from(workContributor)
-    .innerJoin(contributor, eq(contributor.id, workContributor.contributorId))
-    .where(eq(workContributor.role, "author"))
-    .as("ranked_author");
-
-  /** One row per work: its first-listed author, for the byline. */
-  const primaryAuthorAgg = db
-    .select({
-      authorName: rankedAuthors.authorName,
-      workId: rankedAuthors.workId,
-    })
-    .from(rankedAuthors)
-    .where(eq(rankedAuthors.rn, 1))
-    .as("primary_author");
-
+  // work.primarySourceId / work.primaryAuthorId are denormalized pointers,
+  // maintained at write time by recomputeWorkPrimaryPointers
+  // (server/db/primary-pointers.ts) on every write that can change which
+  // work_source/work_contributor row is "first" for a work. Reading them
+  // directly here turns what used to be a row_number()-over-partition scan
+  // of the *entire* work_source/work_contributor tables, on every
+  // cache-miss list fetch, into two plain indexed joins bounded by the
+  // current page.
   const rows = await db
     .select({
-      authorName: primaryAuthorAgg.authorName,
+      authorName: contributor.name,
       contentRating: work.contentRating,
       currentChapter: readingState.currentChapter,
       description: work.description,
-      latestChapterCount: primarySourceAgg.chapterCount,
+      latestChapterCount: workSource.chapterCount,
       libraryEntryPublicId: libraryEntry.publicId,
       publicationStatus: work.publicationStatus,
       rating: readingState.rating,
       readingStateVersion: readingState.version,
       sortTitle: work.sortTitle,
-      sourcePlatformName: primarySourceAgg.sourcePlatformName,
+      sourcePlatformName: sourcePlatform.name,
       status: libraryEntry.status,
       summary: work.summary,
       taxonomyTerms: taxonomyAgg.terms,
       title: work.title,
       updatedAt: libraryEntry.updatedAt,
       version: libraryEntry.version,
-      wordCount: primarySourceAgg.wordCount,
+      wordCount: workSource.wordCount,
       workPublicId: work.publicId,
     })
     .from(libraryEntry)
     .innerJoin(work, eq(libraryEntry.workId, work.id))
     .leftJoin(readingState, eq(readingState.libraryEntryId, libraryEntry.id))
     .leftJoin(taxonomyAgg, eq(taxonomyAgg.workId, work.id))
-    .leftJoin(primarySourceAgg, eq(primarySourceAgg.workId, work.id))
-    .leftJoin(primaryAuthorAgg, eq(primaryAuthorAgg.workId, work.id))
+    .leftJoin(workSource, eq(workSource.id, work.primarySourceId))
+    .leftJoin(
+      sourcePlatform,
+      eq(sourcePlatform.id, workSource.sourcePlatformId)
+    )
+    .leftJoin(contributor, eq(contributor.id, work.primaryAuthorId))
     .where(condition)
     .orderBy(
       // SAFETY: isRankedSearch is only true when sanitizedSearch is

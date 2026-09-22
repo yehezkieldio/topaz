@@ -4,10 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  type SyncRoundResult,
-  triggerSyncRoundAction,
-} from "@/features/sync/server/actions";
+import { triggerSyncRoundAction } from "@/features/sync/server/actions";
+import type { SyncRoundResult } from "@/features/sync/server/actions";
 
 /**
  * The UI's manual trigger for a sync round (08_sync/02_packaging_and_lifecycle.md).

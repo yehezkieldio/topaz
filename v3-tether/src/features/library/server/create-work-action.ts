@@ -25,6 +25,7 @@ import { workTaxonomyEffectiveTag } from "@/features/taxonomy/server/cache-tags"
 import { rebuildEffectiveTaxonomyForWork } from "@/features/taxonomy/server/repository/effective-taxonomy";
 import { requireAdmin } from "@/server/auth/require-admin";
 import { db } from "@/server/db/client";
+import { recomputeWorkPrimaryPointers } from "@/server/db/primary-pointers";
 import {
   contributor,
   libraryEntry,
@@ -209,6 +210,8 @@ export const createWorkAction = async (
         role: "author",
         workId: createdWork.id,
       });
+
+      await recomputeWorkPrimaryPointers(tx, createdWork.id);
 
       let didAssignTaxonomy = false;
       if (value.taxonomyTermIds.length > 0) {

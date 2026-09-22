@@ -1,16 +1,11 @@
 {
   "mcpServers": {
     "agent-browser": {
-      "args": [
-        "mcp"
-      ],
+      "args": ["mcp"],
       "command": "agent-browser"
     },
     "next-devtools": {
-      "args": [
-        "-y",
-        "next-devtools-mcp@latest"
-      ],
+      "args": ["-y", "next-devtools-mcp@latest"],
       "command": "bunx"
     }
   }

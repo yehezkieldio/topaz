@@ -97,8 +97,10 @@ export const SyncPanel = async () => {
           </h2>
           <p className="text-muted-foreground text-sm">
             Per-table digest comparison against each paired peer -- detects
-            drift a normal sync round wouldn&apos;t notice. Detection only; a
-            mismatch is a warning, nothing here repairs it automatically.
+            drift a normal sync round wouldn&apos;t notice. A mismatch triggers
+            an automatic repair against that peer on the same periodic cycle;
+            &quot;Check integrity now&quot; runs the check immediately instead
+            of waiting for the next one.
           </p>
         </div>
 
@@ -120,8 +122,10 @@ export const SyncPanel = async () => {
           <p className="text-muted-foreground text-sm">
             Collapses each row&apos;s change history into one current snapshot,
             so the oplog doesn&apos;t grow without bound. Safe to run any time
-            -- a peer still catches up correctly afterward. Manual only -- this
-            doesn&apos;t run automatically yet.
+            -- a peer still catches up correctly afterward. Runs automatically
+            once the oplog grows past a few thousand entries; &quot;Compact
+            oplog&quot; runs it immediately instead of waiting for that
+            threshold.
           </p>
         </div>
 

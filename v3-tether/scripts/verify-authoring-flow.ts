@@ -79,6 +79,10 @@ const main = async () => {
   );
   formData.set("contentRating", "general");
   formData.set("publicationStatus", "in_progress");
+  // The real form always submits `description`, even empty, since it's a
+  // plain text input (unlike `isNsfw`'s checkbox, which FormData omits when
+  // unchecked) -- match that here instead of leaving it absent.
+  formData.set("description", "");
   formData.set("taxonomyTermIds", JSON.stringify([seededTerm.data.id]));
 
   const [platform] = await db.query.sourcePlatform.findMany({ limit: 1 });

@@ -36,6 +36,13 @@
       "when": 1790072818314,
       "tag": "0004_thankful_paper_doll",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1790075148085,
+      "tag": "0005_perpetual_fixer",
+      "breakpoints": true
     }
   ]
 }

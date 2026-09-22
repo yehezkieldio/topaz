@@ -8,6 +8,7 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 
 import {
   enumCheck,
@@ -75,6 +76,25 @@ export const work = sqliteTable(
     deleted: integer("deleted", { mode: "boolean" }).default(false).notNull(),
     description: text("description"),
     isNsfw: integer("is_nsfw", { mode: "boolean" }).default(false).notNull(),
+    // Denormalized pointers, recomputed at write time by
+    // recomputeWorkPrimaryPointers (server/db/primary-pointers.ts) whenever
+    // work_source or work_contributor changes for this work -- kept off the
+    // read path in features/library/server/queries.ts, which otherwise had
+    // to re-derive "earliest source" / "first author" via a
+    // row_number()-over-partition scan of the *entire* work_source /
+    // work_contributor tables on every cache-miss list fetch. Nullable: a
+    // freshly created work has neither until its first source/author write
+    // lands, and set null (not cascade) on delete of the pointed-to row --
+    // the pointer is a cache of the current answer, not a hard dependency
+    // the referenced row's lifecycle should be constrained by.
+    primaryAuthorId: text("primary_author_id").references(
+      (): AnySQLiteColumn => contributor.id,
+      { onDelete: "set null" }
+    ),
+    primarySourceId: text("primary_source_id").references(
+      (): AnySQLiteColumn => workSource.id,
+      { onDelete: "set null" }
+    ),
     publicationStatus: text("publication_status", {
       enum: publicationStatusValues,
     })

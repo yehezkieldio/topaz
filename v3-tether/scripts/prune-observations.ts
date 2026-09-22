@@ -28,9 +28,7 @@ const main = async () => {
   const { workSourceObservation } = await import("@/server/db/schema");
   const { count } = await import("drizzle-orm");
 
-  const [row] = await db
-    .select({ value: count() })
-    .from(workSourceObservation);
+  const [row] = await db.select({ value: count() }).from(workSourceObservation);
   const rowCount = row?.value ?? 0;
 
   if (rowCount < ROW_COUNT_THRESHOLD) {

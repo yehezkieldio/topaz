@@ -11,6 +11,7 @@ export interface OptionPickerOption {
 }
 
 const MIN_QUERY_LENGTH = 2;
+const SEARCH_DEBOUNCE_MS = 200;
 
 /**
  * The shared state machine both the combobox (single-select) and multiselect
@@ -92,12 +93,20 @@ export const useOptionPicker = ({
       }
     };
 
-    startTransition(() => {
-      void run();
-    });
+    // Debounced: holds off firing the request until deferredQuery settles
+    // for SEARCH_DEBOUNCE_MS, so fast typing doesn't fire one server search
+    // per keystroke. useDeferredValue alone only delays *rendering* the new
+    // value under load; it doesn't stop this effect from re-firing on every
+    // settled value.
+    const timer = setTimeout(() => {
+      startTransition(() => {
+        void run();
+      });
+    }, SEARCH_DEBOUNCE_MS);
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [deferredQuery, search, isQueryLongEnough, kind]);
 

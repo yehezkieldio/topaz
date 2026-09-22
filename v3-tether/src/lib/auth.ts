@@ -37,8 +37,9 @@ export const MOBILE_CONNECT_EXPIRY_SECONDS = 5 * 60;
  * wrong (but still admin-issued, still short-lived) link, not a
  * cross-request leak to a different user.
  */
-let pendingMagicLinkCapture: ((data: { url: string; token: string }) => void) | null =
-  null;
+let pendingMagicLinkCapture:
+  | ((data: { url: string; token: string }) => void)
+  | null = null;
 
 export const captureNextMagicLink = () =>
   new Promise<{ url: string; token: string }>((resolve) => {

@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { compactOplogAction } from "@/features/sync/server/actions";
 
 /**
- * Manual trigger for server/sync/compaction.ts's history-collapsing sweep.
- * No persisted "last compaction" row to read back the way integrity checks
- * have (compaction.ts doc: this is new and unproven, so it stays a manual,
- * admin-initiated action, not something with its own tracked history yet)
- * -- the result is only ever this run's own summary, shown inline until
- * the next click or a page reload.
+ * Manual, on-demand trigger for server/sync/compaction.ts's
+ * history-collapsing sweep -- round.ts also runs this automatically once
+ * the oplog crosses its size threshold, but that run has no UI of its own
+ * to report back to, so this button's result is only ever this click's own
+ * summary, shown inline until the next click or a page reload. No
+ * persisted "last compaction" row to read back the way integrity checks
+ * have.
  */
 export const CompactOplogButton = () => {
   const [isPending, startTransition] = useTransition();

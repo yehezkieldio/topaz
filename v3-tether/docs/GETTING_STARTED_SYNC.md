@@ -3,6 +3,7 @@
 This walks through getting Topaz running on two (or three) of your own devices and pairing them so they sync. Everything here has been verified to actually work — a real `next dev` server, a real signed HTTP request between two independent SQLite files, real convergence — not just typechecked. See `docs/BUN_SQLITE_NEXT_BUILD.md` if you want the full "how we know this works" log.
 
 **What's not done yet**, so you're not surprised:
+
 - Nothing automatically triggers a sync round on app open/close yet — you click "Sync now" on the `/sync` page (or run `bun run sync round`) manually for now.
 - Deleting things doesn't sync yet (no delete/tombstone path exists in the app at all currently — only creates and edits do).
 
@@ -116,7 +117,7 @@ Under the hood this is a one-time magic-link sign-in for the device's single adm
 4. Try the reverse: create/edit something on B, run `bun run sync round` from A, confirm it shows up there.
 5. Try it with one device's `bun run dev` stopped — the sync round for that peer should report an error (unreachable), not crash, and picks back up fine once you restart it and try again. This is the "devices don't need to be online together" behavior working as intended.
 
-If step 2 shows `0 row(s) applied` when you expected changes, double check you actually ran `bun run sync round` on the device that should be *receiving* the change (the one that didn't create it).
+If step 2 shows `0 row(s) applied` when you expected changes, double check you actually ran `bun run sync round` on the device that should be _receiving_ the change (the one that didn't create it).
 
 ## Resolved: reference data now matches across devices by construction
 

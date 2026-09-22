@@ -1,12 +1,7 @@
 import { createId } from "@paralleldrive/cuid2";
 import { sql } from "drizzle-orm";
-import {
-  check,
-  customType,
-  integer,
-  type SQLiteColumn,
-  text,
-} from "drizzle-orm/sqlite-core";
+import { check, customType, integer, text } from "drizzle-orm/sqlite-core";
+import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
 
 /**
  * Case-insensitive text (03_data/00_schema_contract.md's citext -> SQLite

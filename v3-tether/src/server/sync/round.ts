@@ -6,8 +6,10 @@ import { knownPeer } from "@/server/db/schema/sync";
 
 import { applyRemoteOplogRow, getLatestLocalHlcByRow } from "./apply";
 import { pullFromPeer } from "./client";
+import { compactOplogIfNeeded } from "./compaction";
 import { checkIntegrityWithPeer } from "./digest";
 import { observeRemoteHlc } from "./oplog";
+import { repairMismatchedTablesWithPeer } from "./repair";
 
 interface KnownPeerRow {
   deviceId: string;
@@ -135,11 +137,20 @@ let roundsSinceLastIntegrityCheck = 0;
  *
  * Every INTEGRITY_CHECK_EVERY_N_ROUNDS-th round, also runs a digest
  * comparison against each peer after the normal oplog exchange completes
- * (08_sync/03_data_integrity_and_reconciliation.md's Part 1). This is
- * separate from, and never blocks or is blocked by, the oplog sync above --
- * a digest mismatch (or an unreachable peer during the check) is recorded
- * for the UI to surface, never thrown, so it can't turn a healthy oplog
- * sync into a reported failure.
+ * (08_sync/03_data_integrity_and_reconciliation.md's Part 1), and, on the
+ * same cadence, an oplog-size check that compacts the log if it has grown
+ * past compaction.ts's threshold. A digest mismatch triggers an automatic
+ * repair against that peer immediately (repair.ts's
+ * repairMismatchedTablesWithPeer, guarded against overlapping a concurrent
+ * manual "Repair now" click on the same peer). All three -- the check, the
+ * repair, and the compaction -- are separate from, and never block or are
+ * blocked by, the oplog sync above: any failure among them is recorded for
+ * the UI to surface (or, for repair/compaction, simply swallowed the way an
+ * unreachable peer already was), never thrown, so none of them can turn a
+ * healthy oplog sync into a reported failure. The manual "Check integrity
+ * now", "Repair now", and "Compact oplog" actions (actions.ts) still work
+ * the same as before, unchanged -- this is additive automation on top of
+ * them, run on a periodic cadence instead of waiting for a click.
  */
 export const syncWithAllKnownPeers = async (
   db: typeof dbClient
@@ -161,14 +172,33 @@ export const syncWithAllKnownPeers = async (
   if (roundsSinceLastIntegrityCheck >= INTEGRITY_CHECK_EVERY_N_ROUNDS) {
     roundsSinceLastIntegrityCheck = 0;
     await Promise.all(
-      peers.map((peer) =>
-        checkIntegrityWithPeer(db, peer).catch(() => {
-          // A peer being unreachable or the check itself failing is not a
-          // sync-round failure -- checkIntegrityWithPeer already recorded
-          // whatever it could; nothing else to do here.
-        })
-      )
+      peers.map(async (peer) => {
+        try {
+          const result = await checkIntegrityWithPeer(db, peer);
+          if (result.mismatchedTables.length > 0) {
+            await repairMismatchedTablesWithPeer(
+              db,
+              peer,
+              result.mismatchedTables,
+              "auto"
+            );
+          }
+        } catch {
+          // A peer being unreachable, the check itself failing, or an
+          // automatic repair failing (including losing the in-flight guard
+          // race to a concurrent manual "Repair now" click) is not a
+          // sync-round failure -- checkIntegrityWithPeer and
+          // repairMismatchedTablesWithPeer already recorded whatever they
+          // could; nothing else to do here.
+        }
+      })
     );
+    await compactOplogIfNeeded(db).catch(() => {
+      // Same restraint as the integrity/repair block above -- a compaction
+      // failure (including losing the in-flight guard race to a concurrent
+      // manual "Compact oplog" click) never turns a healthy sync round into
+      // a reported failure.
+    });
   }
 
   return outcomes;

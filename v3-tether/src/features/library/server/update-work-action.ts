@@ -20,6 +20,7 @@ import { rebuildEffectiveTaxonomyForWork } from "@/features/taxonomy/server/repo
 import { requireAdmin } from "@/server/auth/require-admin";
 import { recordAudit } from "@/server/db/audit";
 import { db } from "@/server/db/client";
+import { recomputeWorkPrimaryPointers } from "@/server/db/primary-pointers";
 import {
   contributor,
   libraryEntry,
@@ -357,6 +358,8 @@ export const updateWorkAction = async (
       workId: current.id,
     });
 
+    await recomputeWorkPrimaryPointers(tx, current.id);
+
     const existingAssignments = await tx
       .select({ taxonomyTermId: workTaxonomyAssignment.taxonomyTermId })
       .from(workTaxonomyAssignment)
@@ -574,6 +577,7 @@ export const deleteWorkSourceAction = async (
       .select({
         id: workSource.id,
         version: workSource.version,
+        workId: work.id,
         workPublicId: work.publicId,
       })
       .from(workSource)
@@ -602,6 +606,8 @@ export const deleteWorkSourceAction = async (
       .update(workSource)
       .set({ deleted: true, version: nextVersion })
       .where(eq(workSource.id, current.id));
+
+    await recomputeWorkPrimaryPointers(tx, current.workId);
 
     await recordAudit(
       tx,

@@ -1,9 +1,7 @@
 import { ReconcileButton } from "@/features/sync/components/reconcile-button";
 import { UnpairButton } from "@/features/sync/components/unpair-button";
-import {
-  type PairedPeer,
-  listPairedPeersAction,
-} from "@/features/sync/server/actions";
+import { listPairedPeersAction } from "@/features/sync/server/actions";
+import type { PairedPeer } from "@/features/sync/server/actions";
 
 const formatPairedAt = (date: Date) =>
   new Intl.DateTimeFormat("en", {

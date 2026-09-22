@@ -8,11 +8,9 @@ import {
 import { enumCheck, jsonText } from "./_shared";
 
 /**
- * How a repair attempt (sync_repair_history below) was started. Only
- * "manual" is ever written today -- Phase 2's "Repair now" button is the
- * only trigger that exists. "auto" is reserved for Phase 3 (automatic
- * repair, not implemented yet) so that landing it doesn't need a second
- * migration just to widen this column.
+ * How a repair attempt (sync_repair_history below) was started: "manual"
+ * for the UI's "Repair now" button, "auto" for round.ts's periodic
+ * detect-then-repair cadence (server/sync/repair.ts).
  */
 export const REPAIR_TRIGGERS = ["manual", "auto"] as const;
 export type RepairTrigger = (typeof REPAIR_TRIGGERS)[number];
@@ -117,10 +115,12 @@ export const knownPeer = sqliteTable(
  * check found every synced table's digest agreeing with this peer's.
  *
  * `lastRepairAt`/`lastRepairResult` are Part 2's addition (repair.ts):
- * the outcome of the most recent manual "Repair now" run against this
- * peer, overwritten on each repair the same way the check fields are --
- * still no history, just "what happened last time." Null until a repair
- * has ever been run against this peer.
+ * the outcome of the most recent repair run against this peer, manual or
+ * automatic, overwritten on each repair the same way the check fields are
+ * -- still no history, just "what happened last time." Null until a repair
+ * has ever been run against this peer. sync_repair_history below is the
+ * append-only record of every attempt, this device's automatic one
+ * included.
  */
 export const syncIntegrityCheck = sqliteTable("sync_integrity_check", {
   checkedAt: integer("checked_at", { mode: "timestamp_ms" })
@@ -141,34 +141,43 @@ export const syncIntegrityCheck = sqliteTable("sync_integrity_check", {
  * sync_integrity_check's lastRepairAt/lastRepairResult (which stay as the
  * "what happened last time" summary the UI reads by default), this is
  * append-only history, never updated or deleted, same discipline as oplog.
- * It exists so Phase 3's gate -- "only after Phase 2 has proven reliable in
- * practice" -- can actually be evaluated from data instead of a single
- * overwritten row. Written on every attempt, success or failure: `error`
+ * It exists so how well automatic repair (the "auto" trigger, round.ts) is
+ * actually working can be evaluated from real attempt data instead of just
+ * the single most-recent outcome. Written on every attempt, success or
+ * failure: `error`
  * is null on success, `outcome`/`rowsRepaired`/`converged` reflect their
  * pre-error defaults on failure (see repair.ts).
  */
-export const syncRepairHistory = sqliteTable("sync_repair_history", {
-  attemptedAt: integer("attempted_at", { mode: "timestamp_ms" })
-    .notNull()
-    .$defaultFn(() => new Date()),
-  converged: integer("converged", { mode: "boolean" }).notNull(),
-  deviceId: text("device_id").notNull(),
-  error: text("error"),
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  // Per-table breakdown, same shape as syncIntegrityCheck.lastRepairResult
-  // -- null on failure, when reconciliation never got far enough to produce
-  // one.
-  outcome:
-    jsonText<{ table: string; rowsRepaired: number; converged: boolean }[]>(
-      "outcome"
+export const syncRepairHistory = sqliteTable(
+  "sync_repair_history",
+  {
+    attemptedAt: integer("attempted_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    converged: integer("converged", { mode: "boolean" }).notNull(),
+    deviceId: text("device_id").notNull(),
+    error: text("error"),
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    // Per-table breakdown, same shape as syncIntegrityCheck.lastRepairResult
+    // -- null on failure, when reconciliation never got far enough to produce
+    // one.
+    outcome:
+      jsonText<{ table: string; rowsRepaired: number; converged: boolean }[]>(
+        "outcome"
+      ),
+    rowsRepaired: integer("rows_repaired").notNull(),
+    // The table(s) this attempt targeted, not the table(s) that actually
+    // converged -- outcome (when present) has the per-table breakdown.
+    tables: jsonText<string[]>("tables").notNull(),
+    trigger: text("trigger", { enum: REPAIR_TRIGGERS })
+      .notNull()
+      .default("manual"),
+  },
+  (table) => [
+    enumCheck(
+      "sync_repair_history_trigger_check",
+      table.trigger,
+      REPAIR_TRIGGERS
     ),
-  rowsRepaired: integer("rows_repaired").notNull(),
-  // The table(s) this attempt targeted, not the table(s) that actually
-  // converged -- outcome (when present) has the per-table breakdown.
-  tables: jsonText<string[]>("tables").notNull(),
-  trigger: text("trigger", { enum: REPAIR_TRIGGERS })
-    .notNull()
-    .default("manual"),
-}, (table) => [
-  enumCheck("sync_repair_history_trigger_check", table.trigger, REPAIR_TRIGGERS),
-]);
+  ]
+);

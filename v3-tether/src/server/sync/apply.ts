@@ -4,6 +4,7 @@ import type { SQL } from "drizzle-orm";
 import type { SQLiteColumn, SQLiteTable } from "drizzle-orm/sqlite-core";
 
 import type { db as dbClient } from "@/server/db/client";
+import { recomputeWorkPrimaryPointers } from "@/server/db/primary-pointers";
 import {
   libraryEntry,
   readingState,
@@ -72,6 +73,29 @@ const upsertRow = async (
 };
 
 /**
+ * work_source's incoming columnDiffs doesn't reliably carry workId (an
+ * update-shaped diff, e.g. a URL/platform change, only lists the columns
+ * that actually changed -- see upsertRow's doc), so the owning work has to
+ * be looked up after the write rather than read off the diff.
+ * work_contributor has no sync-applied equivalent of this: it isn't a
+ * synced table (deleteWorkAction's doc), so it's never one of applyToTable's
+ * cases in the first place.
+ */
+const recomputeWorkPrimaryPointersForSourceRow = async (
+  tx: Tx,
+  workSourceRowId: string
+): Promise<void> => {
+  const [row] = await tx
+    .select({ workId: workSource.workId })
+    .from(workSource)
+    .where(eq(workSource.id, workSourceRowId))
+    .limit(1);
+  if (row) {
+    await recomputeWorkPrimaryPointers(tx, row.workId);
+  }
+};
+
+/**
  * Every table a remote oplog row can legally target, as one explicit
  * branch each rather than a generic string-keyed table/column lookup with
  * raw SQL -- see upsertRow's doc for the insert/update split, and this
@@ -129,6 +153,7 @@ export const applyToTable = async (
     }
     case "work_source": {
       await upsertRow(tx, workSource, workSource.id, "id", rowId, columnDiffs);
+      await recomputeWorkPrimaryPointersForSourceRow(tx, rowId);
       return true;
     }
     default: {
@@ -186,6 +211,7 @@ const applyTombstoneToTable = async (
         .update(workSource)
         .set({ deleted: true })
         .where(eq(workSource.id, rowId));
+      await recomputeWorkPrimaryPointersForSourceRow(tx, rowId);
       return true;
     }
     default: {

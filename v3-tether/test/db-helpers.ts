@@ -54,6 +54,18 @@ const APP_TABLES_CHILD_TO_PARENT = [
  * ever needs it.
  */
 export const truncateAppData = async () => {
+  // work.primary_source_id/primary_author_id (server/db/primary-pointers.ts)
+  // point *into* work_source/contributor, the reverse of every other FK in
+  // this list -- a genuine two-table cycle, not something a single
+  // children-before-parents order can resolve. Clearing them first breaks
+  // the cycle so work_source/work/contributor can still be deleted in the
+  // fixed order below.
+  await db.run(
+    sql.raw(
+      `update "work" set "primary_source_id" = null, "primary_author_id" = null`
+    )
+  );
+
   for (const table of APP_TABLES_CHILD_TO_PARENT) {
     // Table names come only from the fixed list above, not external input --
     // sql.raw is safe here. Sequential, not Promise.all, because deletion

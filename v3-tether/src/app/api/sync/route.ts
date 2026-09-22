@@ -28,7 +28,10 @@ const syncRequestSchema = z.object({
 export const POST = async (request: NextRequest) => {
   const parsed = syncRequestSchema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: "Malformed sync request." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Malformed sync request." },
+      { status: 400 }
+    );
   }
   const { deviceId, signature, sinceHlc } = parsed.data;
 

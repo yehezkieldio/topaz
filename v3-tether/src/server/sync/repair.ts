@@ -2,7 +2,8 @@ import "server-only";
 import { eq } from "drizzle-orm";
 
 import type { db as dbClient } from "@/server/db/client";
-import { syncIntegrityCheck } from "@/server/db/schema/sync";
+import type { RepairTrigger } from "@/server/db/schema/sync";
+import { syncIntegrityCheck, syncRepairHistory } from "@/server/db/schema/sync";
 
 import { applyToTable } from "./apply";
 import type {
@@ -30,6 +31,14 @@ export interface RepairResult {
   repairedAt: Date;
   outcomes: RepairTableOutcome[];
 }
+
+// One repair at a time per peer -- guards against the periodic automatic
+// trigger (round.ts) and a manual "Repair now" click landing on the same
+// peer at once, which would otherwise run two concurrent reconcileTable
+// passes against the same rows. Keyed by deviceId, not a single flag, since
+// repairs against different peers are independent and shouldn't block each
+// other. In-memory only, same reasoning as compaction.ts's compactionInFlight.
+const peersCurrentlyRepairing = new Set<string>();
 
 /**
  * Resolves one mismatched table against one peer's full row state -- the
@@ -142,48 +151,118 @@ const reconcileTable = async (
  * e.g. via a normal oplog round that landed between the check and this
  * click), that table is skipped entirely rather than paying for a
  * whole-table scan that would apply nothing.
+ *
+ * `trigger` records why this attempt is happening -- "manual" for the UI's
+ * "Repair now" button (actions.ts), "auto" for round.ts's periodic
+ * detect-then-repair cadence. Every attempt, success or failure, is
+ * appended to sync_repair_history (schema/sync.ts) with this trigger and
+ * its outcome or error -- that table is append-only and was built
+ * specifically so a future decision about widening automatic repair
+ * further can be evaluated from real attempt data instead of guessed at;
+ * leaving it unwritten now that an "auto" trigger actually exists would
+ * defeat the reason it was added. Split out from
+ * repairMismatchedTablesWithPeer below only so that function's in-flight
+ * guard can wrap it in a try/finally without also swallowing this one's own
+ * try/catch around the sync_repair_history write.
+ */
+const attemptRepair = async (
+  database: typeof dbClient,
+  peer: IntegrityCheckPeer,
+  tables: SyncedTableName[],
+  trigger: RepairTrigger
+): Promise<RepairResult> => {
+  try {
+    const remoteDigests = await fetchPeerDigests(database, peer);
+    const remoteDigestByTable = new Map<SyncedTableName, TableDigest>(
+      remoteDigests.map((entry) => [entry.table, entry])
+    );
+
+    const rowsRepairedByTable = new Map<SyncedTableName, number>();
+
+    for (const table of tables) {
+      // biome-ignore lint/performance/noAwaitInLoops: each table's bucket diff and reconciliation depend on this device's current state, evaluated one table at a time
+      const localDigest = await computeTableDigest(table);
+      const remoteDigest = remoteDigestByTable.get(table);
+      const mismatchedBuckets = remoteDigest
+        ? diffMismatchedBuckets(localDigest, remoteDigest)
+        : null;
+
+      // biome-ignore lint/performance/noAwaitInLoops: each table's reconciliation runs its own transaction against this device's local tables and shouldn't overlap with the next
+      const rowsRepaired =
+        mismatchedBuckets !== null && mismatchedBuckets.length === 0
+          ? 0
+          : await reconcileTable(database, peer, table, mismatchedBuckets);
+      rowsRepairedByTable.set(table, rowsRepaired);
+    }
+
+    const recheck = await checkIntegrityWithPeer(database, peer);
+    const stillMismatched = new Set(recheck.mismatchedTables);
+
+    const outcomes: RepairTableOutcome[] = tables.map((table) => ({
+      converged: !stillMismatched.has(table),
+      rowsRepaired: rowsRepairedByTable.get(table) ?? 0,
+      table,
+    }));
+
+    await database
+      .update(syncIntegrityCheck)
+      .set({ lastRepairAt: recheck.checkedAt, lastRepairResult: outcomes })
+      .where(eq(syncIntegrityCheck.deviceId, peer.deviceId));
+
+    await database.insert(syncRepairHistory).values({
+      attemptedAt: recheck.checkedAt,
+      converged: outcomes.every((outcome) => outcome.converged),
+      deviceId: peer.deviceId,
+      outcome: outcomes,
+      rowsRepaired: outcomes.reduce((sum, o) => sum + o.rowsRepaired, 0),
+      tables,
+      trigger,
+    });
+
+    return {
+      deviceId: peer.deviceId,
+      outcomes,
+      repairedAt: recheck.checkedAt,
+    };
+  } catch (error) {
+    await database.insert(syncRepairHistory).values({
+      converged: false,
+      deviceId: peer.deviceId,
+      error: error instanceof Error ? error.message : String(error),
+      outcome: null,
+      rowsRepaired: 0,
+      tables,
+      trigger,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Phase 2's "Repair now" action (spec: "A 'Repair now' action next to a
+ * flagged mismatch runs the full-table pull and reconciliation... on
+ * demand, with a visible result"), plus round.ts's automatic "auto"-
+ * triggered call on a detected mismatch. Guards attemptRepair above with
+ * the peersCurrentlyRepairing in-flight check, so a manual click and an
+ * automatic trigger landing on the same peer at once can't run two
+ * concurrent reconciliation passes against it.
  */
 export const repairMismatchedTablesWithPeer = async (
   database: typeof dbClient,
   peer: IntegrityCheckPeer,
-  tables: SyncedTableName[]
+  tables: SyncedTableName[],
+  trigger: RepairTrigger
 ): Promise<RepairResult> => {
-  const remoteDigests = await fetchPeerDigests(database, peer);
-  const remoteDigestByTable = new Map<SyncedTableName, TableDigest>(
-    remoteDigests.map((entry) => [entry.table, entry])
-  );
-
-  const rowsRepairedByTable = new Map<SyncedTableName, number>();
-
-  for (const table of tables) {
-    // biome-ignore lint/performance/noAwaitInLoops: each table's bucket diff and reconciliation depend on this device's current state, evaluated one table at a time
-    const localDigest = await computeTableDigest(table);
-    const remoteDigest = remoteDigestByTable.get(table);
-    const mismatchedBuckets = remoteDigest
-      ? diffMismatchedBuckets(localDigest, remoteDigest)
-      : null;
-
-    // biome-ignore lint/performance/noAwaitInLoops: each table's reconciliation runs its own transaction against this device's local tables and shouldn't overlap with the next
-    const rowsRepaired =
-      mismatchedBuckets !== null && mismatchedBuckets.length === 0
-        ? 0
-        : await reconcileTable(database, peer, table, mismatchedBuckets);
-    rowsRepairedByTable.set(table, rowsRepaired);
+  if (peersCurrentlyRepairing.has(peer.deviceId)) {
+    throw new Error(
+      `A repair against ${peer.deviceId} is already in progress.`
+    );
   }
+  peersCurrentlyRepairing.add(peer.deviceId);
 
-  const recheck = await checkIntegrityWithPeer(database, peer);
-  const stillMismatched = new Set(recheck.mismatchedTables);
-
-  const outcomes: RepairTableOutcome[] = tables.map((table) => ({
-    converged: !stillMismatched.has(table),
-    rowsRepaired: rowsRepairedByTable.get(table) ?? 0,
-    table,
-  }));
-
-  await database
-    .update(syncIntegrityCheck)
-    .set({ lastRepairAt: recheck.checkedAt, lastRepairResult: outcomes })
-    .where(eq(syncIntegrityCheck.deviceId, peer.deviceId));
-
-  return { deviceId: peer.deviceId, outcomes, repairedAt: recheck.checkedAt };
+  try {
+    return await attemptRepair(database, peer, tables, trigger);
+  } finally {
+    peersCurrentlyRepairing.delete(peer.deviceId);
+  }
 };
