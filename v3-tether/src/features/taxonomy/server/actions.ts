@@ -21,6 +21,7 @@ import {
 import { appendOplogEntry } from "@/server/sync/oplog";
 
 import { taxonomyTermTag, workTaxonomyEffectiveTag } from "./cache-tags";
+import { rankFuzzyMatches } from "./fuzzy-match";
 import { rebuildEffectiveTaxonomyForWorks } from "./repository/effective-taxonomy";
 import {
   deleteLabel,
@@ -150,12 +151,49 @@ const searchTaxonomyTermsByLike = async (
   `);
 
 /**
+ * Typo-tolerant fallback for when the substring-precise FTS/LIKE paths find
+ * nothing -- pulls every active term (this table is a personal library's
+ * taxonomy set, at most a few thousand rows, same scale assumption as
+ * FTS_MATCH_MIN_LENGTH's comment in server/query/search-text.ts) and ranks
+ * them in JS by bigram-Dice similarity, since FTS5's trigram phrase MATCH
+ * can't express "close, not exact" without the spellfix1 extension.
+ */
+const searchTaxonomyTermsByFuzzyMatch = async (
+  trimmed: string,
+  kindSlug: string | undefined
+): Promise<TaxonomySearchRow[]> => {
+  const activeTerms = await db
+    .select({
+      id: taxonomyTerm.publicId,
+      kind: taxonomyKind.slug,
+      label: taxonomyTerm.name,
+    })
+    .from(taxonomyTerm)
+    .innerJoin(taxonomyKind, eq(taxonomyKind.id, taxonomyTerm.taxonomyKindId))
+    .where(
+      kindSlug
+        ? and(eq(taxonomyTerm.status, "active"), eq(taxonomyKind.slug, kindSlug))
+        : eq(taxonomyTerm.status, "active")
+    );
+
+  return rankFuzzyMatches(
+    trimmed,
+    activeTerms.map((term) => ({ item: term, name: term.label })),
+    MAX_RESULTS
+  );
+};
+
+/**
  * Free-text search over active taxonomy terms -- surfaced by the taxonomy
  * picker before a duplicate term is created, per the roadmap's
  * "taxonomy-suggestion" requirement. Admin-only: the picker only ever
  * renders inside an authoring form. `kindSlug` scopes the search to one
  * taxonomy kind (topaz-v3-specs/06_library/04_taxonomy_picker.md); omit it
  * to search across every kind.
+ *
+ * Falls back to a fuzzy (typo-tolerant) match when the precise substring
+ * path finds nothing -- a one-character typo shouldn't block the
+ * "suggest before you create a duplicate" flow this exists for.
  */
 export const searchTaxonomyTermsAction = async (
   query: string,
@@ -168,9 +206,14 @@ export const searchTaxonomyTermsAction = async (
     return [];
   }
 
-  return trimmed.length >= FTS_MATCH_MIN_LENGTH
-    ? await searchTaxonomyTermsByFts(trimmed, kindSlug)
-    : await searchTaxonomyTermsByLike(trimmed, kindSlug);
+  const preciseResults =
+    trimmed.length >= FTS_MATCH_MIN_LENGTH
+      ? await searchTaxonomyTermsByFts(trimmed, kindSlug)
+      : await searchTaxonomyTermsByLike(trimmed, kindSlug);
+
+  return preciseResults.length > 0
+    ? preciseResults
+    : await searchTaxonomyTermsByFuzzyMatch(trimmed, kindSlug);
 };
 
 const MAX_HOT_TERMS = 20;
