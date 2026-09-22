@@ -1,8 +1,21 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { Trash2Icon } from "lucide-react";
+import { startTransition, useEffect, useState } from "react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -13,6 +26,7 @@ import {
 } from "@/components/ui/sheet";
 import { DiscardChangesDialog } from "@/features/library/components/discard-changes-dialog";
 import { EditWorkForm } from "@/features/library/forms/work-form/edit-work-form";
+import { deleteLibraryEntryAction } from "@/features/library/server/actions";
 import { getWorkEditDetailAction } from "@/features/library/server/update-work-action";
 import type { WorkEditDetail } from "@/features/library/server/update-work-action";
 import { useCloseGuard } from "@/hooks/use-close-guard";
@@ -33,6 +47,8 @@ export const EditWorkSheet = ({
   const [isDirty, setIsDirty] = useState(false);
   const [detail, setDetail] = useState<WorkEditDetail | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Refetches the list's own query cache in place rather than
   // router.refresh(): a full RSC refresh re-suspends LibraryResults (its
@@ -90,6 +106,38 @@ export const EditWorkSheet = ({
     refreshLibraryList();
   };
 
+  const handleDelete = () => {
+    if (!detail) {
+      return;
+    }
+    setDeleteError(null);
+    startTransition(async () => {
+      setIsDeleting(true);
+      const result = await deleteLibraryEntryAction(
+        detail.libraryEntryPublicId,
+        detail.libraryEntryVersion
+      );
+      setIsDeleting(false);
+
+      if (result.status === "success") {
+        setIsDirty(false);
+        setOpen(false);
+        refreshLibraryList();
+        return;
+      }
+      if (
+        result.status === "version-conflict" ||
+        result.status === "not-found"
+      ) {
+        setDeleteError(
+          "This work changed elsewhere since you opened it -- close and reopen the sheet to try again."
+        );
+        return;
+      }
+      setDeleteError("Couldn't remove this work from your library.");
+    });
+  };
+
   return (
     <>
       <Sheet
@@ -116,12 +164,52 @@ export const EditWorkSheet = ({
           side="right"
         >
           <SheetHeader>
-            <SheetTitle>Edit work</SheetTitle>
-            <SheetDescription>
-              Update this story&apos;s details, source, and tags.
-            </SheetDescription>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <SheetTitle>Edit work</SheetTitle>
+                <SheetDescription>
+                  Update this story&apos;s details, source, and tags.
+                </SheetDescription>
+              </div>
+              {detail && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      aria-label="Remove from library"
+                      className="text-destructive hover:text-destructive size-8 shrink-0 p-0"
+                      disabled={isDeleting}
+                      size="sm"
+                      variant="ghost"
+                    >
+                      <Trash2Icon className="size-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Remove this work from your library?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Your reading progress and rating for it will no longer
+                        be shown, and this removal will sync to your other
+                        devices.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep it</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete}>
+                        Remove
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           </SheetHeader>
           <div className="px-4 pb-6">
+            {deleteError && (
+              <p className="text-destructive mb-4 text-sm">{deleteError}</p>
+            )}
             {loadError && (
               <p className="text-destructive text-sm">
                 Couldn&apos;t load this work for editing -- you may not have

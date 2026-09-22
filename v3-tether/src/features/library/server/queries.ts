@@ -24,7 +24,10 @@ import {
   paginateRows,
   resolvePageSize,
 } from "@/server/query/paginate";
-import { escapeLikeWildcards, sanitizeSearchText } from "@/server/query/search-text";
+import {
+  escapeLikeWildcards,
+  sanitizeSearchText,
+} from "@/server/query/search-text";
 
 import {
   libraryEntryTag,
@@ -172,6 +175,7 @@ const fetchLibraryList = async ({
 
   const condition = and(
     eq(libraryEntry.private, false),
+    eq(libraryEntry.deleted, false),
     ...filterConditions,
     keysetCondition({
       // libraryEntry.updatedAt is a timestamp column -- its driver-value
@@ -199,9 +203,10 @@ const fetchLibraryList = async ({
   // just to preserve an ordering nothing depends on.
   const taxonomyAgg = db
     .select({
-      terms: sql<string>`json_group_array(json_object('id', ${taxonomyTerm.publicId}, 'label', ${taxonomyTerm.name}))`.as(
-        "terms"
-      ),
+      terms:
+        sql<string>`json_group_array(json_object('id', ${taxonomyTerm.publicId}, 'label', ${taxonomyTerm.name}))`.as(
+          "terms"
+        ),
       workId: workTaxonomyEffective.workId,
     })
     .from(workTaxonomyEffective)
@@ -233,7 +238,10 @@ const fetchLibraryList = async ({
       workId: workSource.workId,
     })
     .from(workSource)
-    .innerJoin(sourcePlatform, eq(sourcePlatform.id, workSource.sourcePlatformId))
+    .innerJoin(
+      sourcePlatform,
+      eq(sourcePlatform.id, workSource.sourcePlatformId)
+    )
     .as("ranked_source");
 
   /** One row per work: its earliest-added source, for a compact source pill. */

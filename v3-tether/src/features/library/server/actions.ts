@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
 
 import { requireAdmin } from "@/server/auth/require-admin";
@@ -34,7 +34,12 @@ export const toggleFavoriteAction = async (
         version: libraryEntry.version,
       })
       .from(libraryEntry)
-      .where(eq(libraryEntry.publicId, libraryEntryPublicId))
+      .where(
+        and(
+          eq(libraryEntry.publicId, libraryEntryPublicId),
+          eq(libraryEntry.deleted, false)
+        )
+      )
       .limit(1);
 
     if (!current) {
@@ -63,13 +68,15 @@ export const toggleFavoriteAction = async (
     });
 
     if (plan) {
-      await tx.insert(readingEvent).values([{
-        eventType: plan.eventType,
-        fromSnapshot: plan.fromSnapshot,
-        libraryEntryId: current.id,
-        metadata: { action: "toggle-favorite", actorId: session.user.id },
-        toSnapshot: plan.toSnapshot,
-      }]);
+      await tx.insert(readingEvent).values([
+        {
+          eventType: plan.eventType,
+          fromSnapshot: plan.fromSnapshot,
+          libraryEntryId: current.id,
+          metadata: { action: "toggle-favorite", actorId: session.user.id },
+          toSnapshot: plan.toSnapshot,
+        },
+      ]);
       await recordAudit(
         tx,
         { action: "toggle-favorite", actorId: session.user.id },
@@ -116,7 +123,12 @@ export const toggleFeaturedAction = async (
         version: libraryEntry.version,
       })
       .from(libraryEntry)
-      .where(eq(libraryEntry.publicId, libraryEntryPublicId))
+      .where(
+        and(
+          eq(libraryEntry.publicId, libraryEntryPublicId),
+          eq(libraryEntry.deleted, false)
+        )
+      )
       .limit(1);
 
     if (!current) {
@@ -138,7 +150,12 @@ export const toggleFeaturedAction = async (
           maxOrder: sql<number | null>`max(${libraryEntry.displayOrder})`,
         })
         .from(libraryEntry)
-        .where(eq(libraryEntry.isFeatured, true));
+        .where(
+          and(
+            eq(libraryEntry.isFeatured, true),
+            eq(libraryEntry.deleted, false)
+          )
+        );
       nextDisplayOrder = (maxOrder ?? -1) + 1;
     }
 
@@ -196,7 +213,12 @@ export const updateStatusAction = async (
         version: libraryEntry.version,
       })
       .from(libraryEntry)
-      .where(eq(libraryEntry.publicId, libraryEntryPublicId))
+      .where(
+        and(
+          eq(libraryEntry.publicId, libraryEntryPublicId),
+          eq(libraryEntry.deleted, false)
+        )
+      )
       .limit(1);
 
     if (!current) {
@@ -233,13 +255,15 @@ export const updateStatusAction = async (
     });
 
     if (plan) {
-      await tx.insert(readingEvent).values([{
-        eventType: plan.eventType,
-        fromSnapshot: plan.fromSnapshot,
-        libraryEntryId: current.id,
-        metadata: { action: "update-status", actorId: session.user.id },
-        toSnapshot: plan.toSnapshot,
-      }]);
+      await tx.insert(readingEvent).values([
+        {
+          eventType: plan.eventType,
+          fromSnapshot: plan.fromSnapshot,
+          libraryEntryId: current.id,
+          metadata: { action: "update-status", actorId: session.user.id },
+          toSnapshot: plan.toSnapshot,
+        },
+      ]);
       await recordAudit(
         tx,
         { action: "update-status", actorId: session.user.id },
@@ -289,7 +313,12 @@ export const updateRatingAction = async (
     const [entry] = await tx
       .select({ id: libraryEntry.id })
       .from(libraryEntry)
-      .where(eq(libraryEntry.publicId, libraryEntryPublicId))
+      .where(
+        and(
+          eq(libraryEntry.publicId, libraryEntryPublicId),
+          eq(libraryEntry.deleted, false)
+        )
+      )
       .limit(1);
 
     if (!entry) {
@@ -334,13 +363,15 @@ export const updateRatingAction = async (
     });
 
     if (plan) {
-      await tx.insert(readingEvent).values([{
-        eventType: plan.eventType,
-        fromSnapshot: plan.fromSnapshot,
-        libraryEntryId: entry.id,
-        metadata: { action: "update-rating", actorId: session.user.id },
-        toSnapshot: plan.toSnapshot,
-      }]);
+      await tx.insert(readingEvent).values([
+        {
+          eventType: plan.eventType,
+          fromSnapshot: plan.fromSnapshot,
+          libraryEntryId: entry.id,
+          metadata: { action: "update-rating", actorId: session.user.id },
+          toSnapshot: plan.toSnapshot,
+        },
+      ]);
       await recordAudit(
         tx,
         { action: "update-rating", actorId: session.user.id },
@@ -393,7 +424,12 @@ export const updateProgressAction = async (
     const [entry] = await tx
       .select({ id: libraryEntry.id })
       .from(libraryEntry)
-      .where(eq(libraryEntry.publicId, libraryEntryPublicId))
+      .where(
+        and(
+          eq(libraryEntry.publicId, libraryEntryPublicId),
+          eq(libraryEntry.deleted, false)
+        )
+      )
       .limit(1);
 
     if (!entry) {
@@ -456,13 +492,15 @@ export const updateProgressAction = async (
     });
 
     if (plan) {
-      await tx.insert(readingEvent).values([{
-        eventType: plan.eventType,
-        fromSnapshot: plan.fromSnapshot,
-        libraryEntryId: entry.id,
-        metadata: { action: "update-progress", actorId: session.user.id },
-        toSnapshot: plan.toSnapshot,
-      }]);
+      await tx.insert(readingEvent).values([
+        {
+          eventType: plan.eventType,
+          fromSnapshot: plan.fromSnapshot,
+          libraryEntryId: entry.id,
+          metadata: { action: "update-progress", actorId: session.user.id },
+          toSnapshot: plan.toSnapshot,
+        },
+      ]);
       await recordAudit(
         tx,
         { action: "update-progress", actorId: session.user.id },
@@ -493,6 +531,125 @@ export const updateProgressAction = async (
   });
 
   if (result.status === "success") {
+    revalidateTag(readingStateTag(libraryEntryPublicId), "max");
+    revalidateTag(libraryStatsTag, "max");
+    revalidateTag(libraryListTag, "max");
+  }
+
+  return result;
+};
+
+/**
+ * Removes a work from the library -- soft-delete only (libraryEntry.deleted,
+ * reading_state.deleted), never a hard DELETE, so a late-arriving update
+ * from another device can't silently resurrect a row the admin deliberately
+ * removed (08_sync/00_oplog_and_clock.md's tombstone discipline, the same
+ * one oplog rows themselves already follow). Cascades to this entry's
+ * reading_state row when one exists -- they're 1:1, and leaving an orphaned
+ * reading_state behind would mean a future re-add of the same work resurrects
+ * old progress/rating that the admin never asked to keep.
+ *
+ * Two separate recordAudit calls, not one: library_entry and reading_state
+ * are two different physical tables with two different row ids, so each
+ * needs its own oplog tombstone row to relay correctly to a peer (same
+ * reasoning as updateRatingAction/updateProgressAction's oplog override
+ * above) -- the reading_state one just also uses `after: null` to mark it,
+ * but must still be framed under entityType "library_entry" since
+ * "reading_state" isn't itself a valid audit entity type
+ * (schema/audit.ts's auditEntityTypeValues).
+ */
+export const deleteLibraryEntryAction = async (
+  libraryEntryPublicId: string,
+  expectedVersion: number
+): Promise<MutationResult<{ deleted: true }>> => {
+  const session = await requireAdmin();
+
+  const result = await db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({ id: libraryEntry.id, version: libraryEntry.version })
+      .from(libraryEntry)
+      .where(
+        and(
+          eq(libraryEntry.publicId, libraryEntryPublicId),
+          eq(libraryEntry.deleted, false)
+        )
+      )
+      .limit(1);
+
+    if (!current) {
+      return { status: "not-found" as const };
+    }
+    if (current.version !== expectedVersion) {
+      return {
+        currentVersion: current.version,
+        status: "version-conflict" as const,
+      };
+    }
+
+    const nextVersion = current.version + 1;
+
+    await tx
+      .update(libraryEntry)
+      .set({ deleted: true, version: nextVersion })
+      .where(eq(libraryEntry.publicId, libraryEntryPublicId));
+
+    await recordAudit(
+      tx,
+      { action: "delete-library-entry", actorId: session.user.id },
+      {
+        after: null,
+        before: { deleted: false },
+        changedColumns: ["deleted"],
+        entityId: current.id,
+        entityType: "library_entry",
+        version: nextVersion,
+      }
+    );
+
+    const [existingReadingState] = await tx
+      .select({ version: readingState.version })
+      .from(readingState)
+      .where(
+        and(
+          eq(readingState.libraryEntryId, current.id),
+          eq(readingState.deleted, false)
+        )
+      )
+      .limit(1);
+
+    if (existingReadingState) {
+      const nextReadingStateVersion = existingReadingState.version + 1;
+
+      await tx
+        .update(readingState)
+        .set({ deleted: true, version: nextReadingStateVersion })
+        .where(eq(readingState.libraryEntryId, current.id));
+
+      await recordAudit(
+        tx,
+        { action: "delete-library-entry", actorId: session.user.id },
+        {
+          after: null,
+          before: { deleted: false },
+          changedColumns: ["deleted"],
+          entityId: current.id,
+          entityType: "library_entry",
+          oplog: {
+            columnDiffs: {},
+            rowId: current.id,
+            tableName: "reading_state",
+            tombstone: true,
+          },
+          version: nextReadingStateVersion,
+        }
+      );
+    }
+
+    return { data: { deleted: true as const }, status: "success" as const };
+  });
+
+  if (result.status === "success") {
+    revalidateTag(libraryEntryTag(libraryEntryPublicId), "max");
     revalidateTag(readingStateTag(libraryEntryPublicId), "max");
     revalidateTag(libraryStatsTag, "max");
     revalidateTag(libraryListTag, "max");

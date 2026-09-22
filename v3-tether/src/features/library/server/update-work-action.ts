@@ -107,7 +107,12 @@ export const getWorkEditDetailAction = async (
     })
     .from(libraryEntry)
     .leftJoin(readingState, eq(readingState.libraryEntryId, libraryEntry.id))
-    .where(eq(libraryEntry.publicId, libraryEntryPublicId))
+    .where(
+      and(
+        eq(libraryEntry.publicId, libraryEntryPublicId),
+        eq(libraryEntry.deleted, false)
+      )
+    )
     .limit(1);
 
   if (!entryRow) {

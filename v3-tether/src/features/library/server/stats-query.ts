@@ -1,5 +1,5 @@
 import "server-only";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { cache } from "react";
 
@@ -52,7 +52,9 @@ const fetchAggregateStats = () => {
     .from(libraryEntry)
     .leftJoin(readingState, eq(readingState.libraryEntryId, libraryEntry.id))
     .leftJoin(workTotals, sql`work_totals."work_id" = ${libraryEntry.workId}`)
-    .where(eq(libraryEntry.private, false));
+    .where(
+      and(eq(libraryEntry.private, false), eq(libraryEntry.deleted, false))
+    );
 };
 
 const fetchTaxonomyTermCount = () =>
@@ -132,7 +134,7 @@ const fetchFeaturedWorks = async (): Promise<FeaturedWorkRow[]> => {
     .from(libraryEntry)
     .innerJoin(work, eq(work.id, libraryEntry.workId))
     .where(
-      sql`${libraryEntry.isFeatured} = true and ${libraryEntry.private} = false`
+      sql`${libraryEntry.isFeatured} = true and ${libraryEntry.private} = false and ${libraryEntry.deleted} = false`
     )
     .orderBy(
       sql`${libraryEntry.displayOrder} asc nulls last`,

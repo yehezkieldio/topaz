@@ -1,6 +1,6 @@
 "use server";
 
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 
 import { db } from "@/server/db/client";
 import {
@@ -71,7 +71,12 @@ export const getWorkDetailAction = async (
     .from(libraryEntry)
     .innerJoin(work, eq(libraryEntry.workId, work.id))
     .leftJoin(readingState, eq(readingState.libraryEntryId, libraryEntry.id))
-    .where(eq(libraryEntry.publicId, libraryEntryPublicId))
+    .where(
+      and(
+        eq(libraryEntry.publicId, libraryEntryPublicId),
+        eq(libraryEntry.deleted, false)
+      )
+    )
     .limit(1);
 
   if (!entryRow || entryRow.private) {

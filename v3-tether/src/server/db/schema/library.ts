@@ -40,6 +40,14 @@ export const libraryEntry = sqliteTable(
   "library_entry",
   {
     ...idColumns(),
+    // Soft-delete flag (08_sync/03_data_integrity_and_reconciliation.md,
+    // 08_sync/00_oplog_and_clock.md's tombstone doc) -- never a hard DELETE,
+    // so a late-arriving update from another device can't silently
+    // resurrect a row the admin deliberately removed. Every read path must
+    // filter this; there is no database-level enforcement (a partial index
+    // filters query plans, not correctness) since Drizzle relations() and
+    // joins can't express "always add this predicate" generically.
+    deleted: integer("deleted", { mode: "boolean" }).default(false).notNull(),
     displayOrder: integer("display_order"),
     favorite: integer("favorite", { mode: "boolean" }).default(false).notNull(),
     isFeatured: integer("is_featured", { mode: "boolean" })
@@ -68,7 +76,11 @@ export const libraryEntry = sqliteTable(
     index("library_entry_display_order_idx")
       .on(table.isFeatured, table.displayOrder)
       .where(sql`${table.isFeatured} = true`),
-    enumCheck("library_entry_status_valid", table.status, libraryEntryStatusValues),
+    enumCheck(
+      "library_entry_status_valid",
+      table.status,
+      libraryEntryStatusValues
+    ),
   ]
 );
 
@@ -77,6 +89,11 @@ export const readingState = sqliteTable(
   {
     completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     currentChapter: integer("current_chapter"),
+    // Mirrors libraryEntry.deleted above -- reading_state is 1:1 with its
+    // library_entry and is tombstoned alongside it (actions.ts's
+    // deleteLibraryEntryAction), as its own separate oplog row since it's a
+    // physically separate synced table with its own row id.
+    deleted: integer("deleted", { mode: "boolean" }).default(false).notNull(),
     lastReadAt: integer("last_read_at", { mode: "timestamp_ms" }),
     libraryEntryId: text("library_entry_id")
       .primaryKey()

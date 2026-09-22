@@ -137,6 +137,48 @@ export const applyToTable = async (
   }
 };
 
+/**
+ * Applies a tombstoned oplog row -- update-only, never insert. If this
+ * device has never seen the row before, there's nothing to soft-delete
+ * (the row can't have existed here), so this is a correct no-op rather
+ * than an error: an INSERT here would hit the exact NOT NULL problem
+ * upsertRow's own doc describes for a partial-column update, since a
+ * tombstone's columnDiffs carries no more than {deleted: true} -- nowhere
+ * near a full row's required columns.
+ *
+ * Only library_entry and reading_state support this today (actions.ts's
+ * deleteLibraryEntryAction is the only mutation that produces a tombstoned
+ * oplog row) -- work/work_source/taxonomy_term have no `deleted` column,
+ * same as applyToTable's closed set, and a tombstone naming one of them is
+ * still a real bug or forward-incompatible payload, not a case to silently
+ * drop.
+ */
+const applyTombstoneToTable = async (
+  tx: Tx,
+  tableName: string,
+  rowId: string
+): Promise<boolean> => {
+  switch (tableName) {
+    case "library_entry": {
+      await tx
+        .update(libraryEntry)
+        .set({ deleted: true })
+        .where(eq(libraryEntry.id, rowId));
+      return true;
+    }
+    case "reading_state": {
+      await tx
+        .update(readingState)
+        .set({ deleted: true })
+        .where(eq(readingState.libraryEntryId, rowId));
+      return true;
+    }
+    default: {
+      return false;
+    }
+  }
+};
+
 const latestHlcKey = (tableName: string, rowId: string): string =>
   `${tableName}\u0000${rowId}`;
 
@@ -214,25 +256,23 @@ export const getLatestLocalHlcByRow = async (
  * omitted, this falls back to the original single-row lookup so any other
  * caller doesn't need to know about batching to stay correct.
  *
- * Throws on a tombstoned row (no synced table has a soft-delete column
- * defined yet -- there is no delete path in the app that produces one) and
- * on an oplog row naming a table outside the closed set above, rather than
- * silently dropping either: both are either a real bug or a
- * forward-incompatible payload from a newer build, and a sync round should
- * stop and surface that, not apply a partial, undetectable state.
+ * A tombstoned row goes through this exact same staleness gate as any other
+ * write, not a separate path -- a delete is just another kind of change in
+ * HLC order, and an older tombstone arriving after a newer edit must lose
+ * the same way an older edit would. Only once it's confirmed not stale does
+ * it soft-delete via applyTombstoneToTable instead of writing columnDiffs.
+ * Throws on an oplog row naming a table outside the closed set above (for a
+ * tombstone, the closed set is narrower still -- see
+ * applyTombstoneToTable's doc), rather than silently dropping it: that's
+ * either a real bug or a forward-incompatible payload from a newer build,
+ * and a sync round should stop and surface that, not apply a partial,
+ * undetectable state.
  */
 export const applyRemoteOplogRow = async (
   tx: Tx,
   row: OplogEntry,
   latestLocalByRow?: Map<string, string>
 ): Promise<void> => {
-  if (row.tombstone) {
-    throw new Error(
-      `Cannot apply tombstoned oplog row for ${row.tableName}/${row.rowId}: ` +
-        "no synced table has a soft-delete column defined yet."
-    );
-  }
-
   let latestHlc: string | undefined;
   if (latestLocalByRow) {
     latestHlc = latestLocalByRow.get(latestHlcKey(row.tableName, row.rowId));
@@ -252,14 +292,15 @@ export const applyRemoteOplogRow = async (
     latestHlc !== undefined && latestHlc >= row.hlcTimestamp;
 
   if (!isStaleOrDuplicate) {
-    const applied = await applyToTable(
-      tx,
-      row.tableName,
-      row.rowId,
-      row.columnDiffs
-    );
+    const applied = row.tombstone
+      ? await applyTombstoneToTable(tx, row.tableName, row.rowId)
+      : await applyToTable(tx, row.tableName, row.rowId, row.columnDiffs);
     if (!applied) {
-      throw new Error(`Unknown synced table in oplog row: "${row.tableName}".`);
+      throw new Error(
+        row.tombstone
+          ? `Cannot apply tombstoned oplog row for "${row.tableName}": no soft-delete column defined for this table.`
+          : `Unknown synced table in oplog row: "${row.tableName}".`
+      );
     }
   }
 
