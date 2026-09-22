@@ -7,14 +7,17 @@ import { toDataURL } from "qrcode";
 import {
   auth,
   captureNextMagicLink,
+  hasExistingUser,
   MOBILE_CONNECT_EXPIRY_SECONDS,
 } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { requireAdmin } from "@/server/auth/require-admin";
+import { requireAdminOrFreshDevice } from "@/server/auth/require-admin-or-fresh-device";
 import { db } from "@/server/db/client";
 import { user as userTable } from "@/server/db/schema/auth";
 import { knownPeer } from "@/server/db/schema/sync";
 import type { MutationResult } from "@/server/query/mutation-result";
+import { pullAccountFromPeer } from "@/server/sync/account-bootstrap";
 import { getDeviceIdentity } from "@/server/sync/device-identity";
 import {
   computeKeyFingerprint,
@@ -24,6 +27,7 @@ import {
 import { syncWithAllKnownPeers } from "@/server/sync/round";
 
 const MOBILE_CONNECT_CALLBACK_PATH = "/library";
+const ACCOUNT_RESTORE_CALLBACK_PATH = "/sync?justRestored=1";
 
 export interface PairingCode {
   code: string;
@@ -37,9 +41,14 @@ export interface PairingCode {
  * device (08_sync/01_transport_and_pairing.md). Generating it never
  * touches known_peer; nothing is trusted until the *other* device's code
  * is captured here via pairWithPeerAction.
+ *
+ * Guarded by requireAdminOrFreshDevice, not requireAdmin: a brand-new
+ * device with no account yet still needs to hand its own code to an
+ * existing device before bootstrapAccountFromPeerAction can trust it back
+ * (see require-admin-or-fresh-device.ts).
  */
 export const generatePairingCodeAction = async (): Promise<PairingCode> => {
-  await requireAdmin();
+  await requireAdminOrFreshDevice();
 
   const identity = await getDeviceIdentity(db);
   const code = encodePairingCode({
@@ -139,11 +148,16 @@ export interface PairedPeer {
  * already-known device updates its stored hostname/port/key without
  * resetting its sync checkpoint -- rotating where a device lives on the
  * tailnet shouldn't force a full resync against it.
+ *
+ * Guarded by requireAdminOrFreshDevice, not requireAdmin -- see
+ * generatePairingCodeAction and bootstrapAccountFromPeerAction, which calls
+ * this directly as the first half of restoring an account on a fresh
+ * device.
  */
 export const pairWithPeerAction = async (
   code: string
 ): Promise<MutationResult<PairedPeer>> => {
-  await requireAdmin();
+  await requireAdminOrFreshDevice();
 
   const payload = decodePairingCode(code.trim());
   if (!payload) {
@@ -200,6 +214,83 @@ export const pairWithPeerAction = async (
     },
     status: "success",
   };
+};
+
+export interface AccountRestoreResult {
+  verifyUrl: string;
+}
+
+/**
+ * Restores this device's account from an already-set-up peer, in one paste
+ * (docs/GETTING_STARTED_SYNC.md, "Restoring an account on a new device") --
+ * the same pairing code doing double duty: pairWithPeerAction establishes
+ * peer trust, then pullAccountFromPeer (account-bootstrap.ts) uses that
+ * trust to pull just the admin's identity (never a password or session) so
+ * this device can mint its own local session for it via a magic link. Only
+ * ever runs when this device has no account yet -- once it does, pairing
+ * additional peers goes through the plain pairWithPeerAction path above,
+ * with no bootstrap attempt.
+ */
+export const bootstrapAccountFromPeerAction = async (
+  code: string
+): Promise<MutationResult<AccountRestoreResult>> => {
+  if (await hasExistingUser()) {
+    return {
+      fieldErrors: {
+        code: ["This device already has an account -- nothing to restore."],
+      },
+      status: "validation-error",
+    };
+  }
+
+  const pairResult = await pairWithPeerAction(code);
+  if (pairResult.status !== "success") {
+    return pairResult;
+  }
+  const peer = pairResult.data;
+
+  let remoteUser: Awaited<ReturnType<typeof pullAccountFromPeer>>;
+  try {
+    remoteUser = await pullAccountFromPeer(db, {
+      port: peer.port,
+      tailnetHostname: peer.tailnetHostname,
+    });
+  } catch (error) {
+    return {
+      fieldErrors: {
+        code: [
+          error instanceof Error
+            ? error.message
+            : "Couldn't reach that device to restore the account.",
+        ],
+      },
+      status: "validation-error",
+    };
+  }
+
+  await db.insert(userTable).values({
+    email: remoteUser.email,
+    emailVerified: remoteUser.emailVerified,
+    id: remoteUser.id,
+    name: remoteUser.name,
+    role: remoteUser.role,
+  });
+
+  const capture = captureNextMagicLink();
+  await auth.api.signInMagicLink({
+    body: {
+      callbackURL: ACCOUNT_RESTORE_CALLBACK_PATH,
+      email: remoteUser.email,
+    },
+    headers: await headers(),
+  });
+  const { token } = await capture;
+
+  const verifyUrl = `/api/auth/magic-link/verify?token=${encodeURIComponent(
+    token
+  )}&callbackURL=${encodeURIComponent(ACCOUNT_RESTORE_CALLBACK_PATH)}`;
+
+  return { data: { verifyUrl }, status: "success" };
 };
 
 /**

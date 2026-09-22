@@ -2,29 +2,52 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { AutoSyncOnRestore } from "@/features/sync/components/auto-sync-on-restore";
 import { MobileConnectCard } from "@/features/sync/components/mobile-connect-card";
-import { PairingCodeCard } from "@/features/sync/components/pairing-code-card";
 import { PairWithPeerForm } from "@/features/sync/components/pair-with-peer-form";
+import { PairingCodeCard } from "@/features/sync/components/pairing-code-card";
 import { PeerList } from "@/features/sync/components/peer-list";
+import { RestoreAccountForm } from "@/features/sync/components/restore-account-form";
 import { SyncNowButton } from "@/features/sync/components/sync-now-button";
-import { getIsAdmin } from "@/server/auth/get-is-admin";
+import { getHasAccount, getIsAdmin } from "@/server/auth/get-is-admin";
 
 const CardSkeleton = () => <Skeleton className="h-40 w-full rounded-md" />;
 
 /**
- * The whole /sync route is admin-only -- there's no public view of it, so
- * this redirects rather than conditionally rendering (06_library's pattern
- * of "show admin controls if isAdmin" doesn't apply to a page that has no
- * non-admin content at all).
+ * The whole /sync route is otherwise admin-only -- except a device with no
+ * account at all yet, which needs to reach this same page to restore one
+ * from a peer (RestoreAccountForm/bootstrapAccountFromPeerAction) before it
+ * can ever have an admin session to redirect from. Everything past that
+ * check keeps the original "no public view, redirect rather than
+ * conditionally render" behavior.
  */
 export const SyncPanel = async () => {
-  const isAdmin = await getIsAdmin();
+  const [isAdmin, hasAccount] = await Promise.all([
+    getIsAdmin(),
+    getHasAccount(),
+  ]);
+
+  if (!hasAccount) {
+    return (
+      <div className="space-y-6">
+        <Suspense fallback={<CardSkeleton />}>
+          <PairingCodeCard />
+        </Suspense>
+        <RestoreAccountForm />
+      </div>
+    );
+  }
+
   if (!isAdmin) {
     redirect("/auth");
   }
 
   return (
     <div className="space-y-6">
+      <Suspense fallback={null}>
+        <AutoSyncOnRestore />
+      </Suspense>
+
       <MobileConnectCard />
 
       <Suspense fallback={<CardSkeleton />}>
