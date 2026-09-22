@@ -47,6 +47,7 @@ import {
   addTermLabelAction,
   changeTermKindAction,
   deleteRelationAction,
+  deleteTermAction,
   deleteTermLabelAction,
   getTermVersionAction,
   listTaxonomyKindsAction,
@@ -618,6 +619,82 @@ const MergeDialog = ({
   );
 };
 
+const DeleteTermDialog = ({
+  onClose,
+  termId,
+  termLabel,
+}: {
+  termId: string;
+  termLabel: string;
+  onClose: () => void;
+}) => {
+  const [version, setVersion] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const value = await getTermVersionAction(termId);
+      if (!cancelled) {
+        setVersion(value);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [termId]);
+
+  const [deleteState, dispatchDelete, isDeletePending] = useActionState<
+    MutationResult<{ id: string }> | null,
+    undefined
+  >(async () => {
+    if (version === null) {
+      return null;
+    }
+    const result = await deleteTermAction(termId, version);
+    if (result.status === "success") {
+      onClose();
+    }
+    return result;
+  }, null);
+
+  return (
+    <AlertDialog onOpenChange={(open) => !open && onClose()} open>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete &ldquo;{termLabel}&rdquo;?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Every work tagged with &ldquo;{termLabel}&rdquo; will lose this tag,
+            and any relations to other terms will be removed. This cannot be
+            undone. If you meant to fold this term into another one instead, use
+            &ldquo;Merge into...&rdquo;.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        {(deleteState?.status === "not-found" ||
+          deleteState?.status === "version-conflict") && (
+          <p className="text-destructive text-xs">
+            This term changed elsewhere -- close and reopen to try again.
+          </p>
+        )}
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={isDeletePending || version === null}
+            onClick={(event) => {
+              event.preventDefault();
+              startTransition(() => {
+                dispatchDelete(undefined);
+              });
+            }}
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
 /**
  * The one shared chip context menu -- rendered identically everywhere a
  * taxonomy term chip appears (06_library/05_taxonomy_in_sheets.md), backed
@@ -632,7 +709,7 @@ export const TermChipMenu = ({
   termLabel: string;
 }) => {
   const [openPanel, setOpenPanel] = useState<
-    "none" | "edit" | "relations" | "merge" | "labels" | "kind"
+    "none" | "edit" | "relations" | "merge" | "labels" | "kind" | "delete"
   >("none");
 
   return (
@@ -663,6 +740,12 @@ export const TermChipMenu = ({
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setOpenPanel("merge")}>
             Merge into...
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onSelect={() => setOpenPanel("delete")}
+          >
+            Delete term
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -697,6 +780,13 @@ export const TermChipMenu = ({
       )}
       {openPanel === "merge" && (
         <MergeDialog
+          onClose={() => setOpenPanel("none")}
+          termId={termId}
+          termLabel={termLabel}
+        />
+      )}
+      {openPanel === "delete" && (
+        <DeleteTermDialog
           onClose={() => setOpenPanel("none")}
           termId={termId}
           termLabel={termLabel}

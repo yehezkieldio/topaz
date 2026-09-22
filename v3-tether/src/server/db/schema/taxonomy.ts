@@ -12,7 +12,11 @@ import {
 import { enumCheck, idColumns, nocaseText, timestampColumns } from "./_shared";
 import { work } from "./catalog";
 
-export const taxonomyTermStatusValues = ["active", "merged"] as const;
+export const taxonomyTermStatusValues = [
+  "active",
+  "merged",
+  "deleted",
+] as const;
 export type TaxonomyTermStatus = (typeof taxonomyTermStatusValues)[number];
 
 export const taxonomyRelationTypeValues = [
@@ -62,7 +66,11 @@ export const taxonomyTerm = sqliteTable(
     ),
     index("taxonomy_term_normalized_name_idx").on(table.normalizedName),
     index("taxonomy_term_merged_into_id_idx").on(table.mergedIntoId),
-    enumCheck("taxonomy_term_status_valid", table.status, taxonomyTermStatusValues),
+    enumCheck(
+      "taxonomy_term_status_valid",
+      table.status,
+      taxonomyTermStatusValues
+    ),
   ]
 );
 

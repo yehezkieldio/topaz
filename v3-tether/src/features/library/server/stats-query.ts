@@ -34,6 +34,7 @@ const fetchAggregateStats = () => {
       workId: workSource.workId,
     })
     .from(workSource)
+    .where(eq(workSource.deleted, false))
     .groupBy(workSource.workId)
     .as("work_totals");
 
@@ -63,7 +64,8 @@ const fetchTaxonomyTermCount = () =>
       taxonomyTermCount: sql<number>`count(distinct ${workTaxonomyEffective.taxonomyTermId})`,
     })
     .from(workTaxonomyEffective)
-    .innerJoin(work, eq(work.id, workTaxonomyEffective.workId));
+    .innerJoin(work, eq(work.id, workTaxonomyEffective.workId))
+    .where(eq(work.deleted, false));
 
 type AggregateRow = Awaited<ReturnType<typeof fetchAggregateStats>>[number];
 
@@ -134,7 +136,7 @@ const fetchFeaturedWorks = async (): Promise<FeaturedWorkRow[]> => {
     .from(libraryEntry)
     .innerJoin(work, eq(work.id, libraryEntry.workId))
     .where(
-      sql`${libraryEntry.isFeatured} = true and ${libraryEntry.private} = false and ${libraryEntry.deleted} = false`
+      sql`${libraryEntry.isFeatured} = true and ${libraryEntry.private} = false and ${libraryEntry.deleted} = false and ${work.deleted} = false`
     )
     .orderBy(
       sql`${libraryEntry.displayOrder} asc nulls last`,

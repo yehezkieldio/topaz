@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AutoSyncOnRestore } from "@/features/sync/components/auto-sync-on-restore";
 import { CheckIntegrityButton } from "@/features/sync/components/check-integrity-button";
+import { CompactOplogButton } from "@/features/sync/components/compact-oplog-button";
 import { IntegrityStatus } from "@/features/sync/components/integrity-status";
 import { MobileConnectCard } from "@/features/sync/components/mobile-connect-card";
 import { PairWithPeerForm } from "@/features/sync/components/pair-with-peer-form";
@@ -108,6 +109,24 @@ export const SyncPanel = async () => {
           <div className="border-border/50 border-t pt-4">
             <CheckIntegrityButton />
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-medium tracking-tight">
+            Oplog compaction
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            Collapses each row&apos;s change history into one current snapshot,
+            so the oplog doesn&apos;t grow without bound. Safe to run any time
+            -- a peer still catches up correctly afterward. Manual only -- this
+            doesn&apos;t run automatically yet.
+          </p>
+        </div>
+
+        <div className="border-border/60 bg-card/40 rounded-md border p-6 backdrop-blur-md">
+          <CompactOplogButton />
         </div>
       </section>
     </div>

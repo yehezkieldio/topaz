@@ -39,6 +39,8 @@ import {
 } from "@/server/db/schema";
 import { appendOplogEntry } from "@/server/sync/oplog";
 
+import { insertWorkFts } from "./work-fts";
+
 const normalize = (value: string) => value.trim().toLowerCase();
 
 /**
@@ -128,6 +130,8 @@ export const createWorkAction = async (
       if (!createdWork) {
         throw new Error("Failed to create work.");
       }
+
+      await insertWorkFts(tx, createdWork.id);
 
       await appendOplogEntry(tx, {
         columnDiffs: {

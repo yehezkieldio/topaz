@@ -18,6 +18,8 @@ import { user as userTable } from "@/server/db/schema/auth";
 import { knownPeer } from "@/server/db/schema/sync";
 import type { MutationResult } from "@/server/query/mutation-result";
 import { pullAccountFromPeer } from "@/server/sync/account-bootstrap";
+import type { CompactionResult } from "@/server/sync/compaction";
+import { compactOplog } from "@/server/sync/compaction";
 import { getDeviceIdentity } from "@/server/sync/device-identity";
 import type {
   RepairOutcomeSummary,
@@ -699,4 +701,18 @@ export const repairPeerMismatchAction = async (
       status: "validation-error",
     };
   }
+};
+
+/**
+ * Manual "Compact oplog" trigger (server/sync/compaction.ts) -- collapses
+ * each (table, row)'s history into one fresh full-row snapshot entry and
+ * removes the now-redundant older rows. Deliberately manual only, not
+ * folded into a sync round or the periodic integrity-check cadence: this
+ * is new and unproven, the same restraint the spec applies to Phase 3
+ * auto-repair. Never throws for the run itself -- compactRowHistory skips
+ * a group it can't safely compact rather than failing the whole sweep.
+ */
+export const compactOplogAction = async (): Promise<CompactionResult> => {
+  await requireAdmin();
+  return await compactOplog(db);
 };

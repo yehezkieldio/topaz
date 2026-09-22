@@ -5,15 +5,12 @@ import { db as dbClient } from "@/server/db/client";
 import { oplog } from "@/server/db/schema/sync";
 
 import { getDeviceIdentity } from "./device-identity";
-import {
-  decodeHlc,
-  encodeHlc,
-  type HlcState,
-  mergeRemote,
-  tickLocal,
-} from "./hlc";
+import { decodeHlc, encodeHlc, mergeRemote, tickLocal } from "./hlc";
+import type { HlcState } from "./hlc";
 
-type Tx = Parameters<Parameters<typeof dbClient.transaction>[0]>[0] | typeof dbClient;
+type Tx =
+  | Parameters<Parameters<typeof dbClient.transaction>[0]>[0]
+  | typeof dbClient;
 
 /**
  * Fixed per-round cap on oplog rows exchanged in one sync request
@@ -95,23 +92,31 @@ export interface AppendOplogEntryInput {
  * call every feature mutation that touches a synced table makes, in the
  * same transaction as the row write itself (08_sync/00_oplog_and_clock.md:
  * "one commit produces both the row mutation and its oplog record").
+ *
+ * Returns the new row's encoded HLC timestamp -- most callers ignore it
+ * (the write itself is the point), but compaction.ts needs it to know
+ * exactly which older rows for the same (table, row) its fresh snapshot
+ * just made redundant.
  */
 export const appendOplogEntry = async (
   tx: Tx,
   input: AppendOplogEntryInput
-): Promise<void> => {
+): Promise<string> => {
   const state = await ensureClockState();
   const nextClock = tickLocal(state.clock, Date.now());
   state.clock = nextClock;
+  const hlcTimestamp = encodeHlc(nextClock, state.deviceId);
 
   await tx.insert(oplog).values({
     columnDiffs: input.columnDiffs,
     deviceId: state.deviceId,
-    hlcTimestamp: encodeHlc(nextClock, state.deviceId),
+    hlcTimestamp,
     rowId: input.rowId,
     tableName: input.tableName,
     tombstone: input.tombstone ?? false,
   });
+
+  return hlcTimestamp;
 };
 
 export interface OplogEntry {

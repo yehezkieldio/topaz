@@ -254,27 +254,25 @@ const digestWork = async (): Promise<TableDigest> => {
 };
 
 /**
- * work_source has no `version` column today (unlike the other four synced
- * tables, which already carry one for optimistic concurrency --
- * 03_data/00_schema_contract.md). Decision: hash on `updated_at` alone
- * rather than adding a version column here. `updated_at` already has an
- * `$onUpdate` trigger (see _shared.ts's timestampColumns) that advances on
- * every column write, the same drift signal a version bump would give for
- * this detection-only phase -- adding a real version column would mean
- * plumbing optimistic-concurrency bumps through work_source's write paths
- * in features/catalog, which is out of scope for Phase 1 (detection) and
- * not needed just to compute a digest.
+ * work_source now carries a real `version` column (schema/catalog.ts,
+ * added alongside deleteWorkSourceAction), same as every other synced
+ * table -- this used to hash on `updated_at` alone since no version column
+ * existed yet, but that workaround is gone now that one does.
  */
 const digestWorkSource = async (): Promise<TableDigest> => {
   const rows = await db
-    .select({ id: workSource.id, updatedAt: workSource.updatedAt })
+    .select({
+      id: workSource.id,
+      updatedAt: workSource.updatedAt,
+      version: workSource.version,
+    })
     .from(workSource);
   return combineRows(
     "work_source",
     rows.map((row) => ({
       id: row.id,
       updatedAtMs: row.updatedAt.getTime(),
-      version: null,
+      version: row.version,
     }))
   );
 };

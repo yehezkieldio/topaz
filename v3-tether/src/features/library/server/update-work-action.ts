@@ -32,8 +32,11 @@ import {
   workSourceObservation,
   workTaxonomyAssignment,
 } from "@/server/db/schema";
+import type { MutationResult } from "@/server/query/mutation-result";
 
 import { libraryListTag, libraryStatsTag, workTag } from "./cache-tags";
+import { softDeleteLibraryEntry } from "./delete-library-entry";
+import { insertWorkFts, removeWorkFromFts } from "./work-fts";
 
 const normalize = (value: string) => value.trim().toLowerCase();
 
@@ -89,7 +92,7 @@ export const getWorkEditDetailAction = async (
       version: work.version,
     })
     .from(work)
-    .where(eq(work.publicId, workPublicId))
+    .where(and(eq(work.publicId, workPublicId), eq(work.deleted, false)))
     .limit(1);
 
   if (!workRow) {
@@ -134,7 +137,9 @@ export const getWorkEditDetailAction = async (
         sourcePlatform,
         eq(sourcePlatform.id, workSource.sourcePlatformId)
       )
-      .where(eq(workSource.workId, workRow.id))
+      .where(
+        and(eq(workSource.workId, workRow.id), eq(workSource.deleted, false))
+      )
       .orderBy(asc(workSource.createdAt))
       .limit(1),
     db
@@ -248,7 +253,7 @@ export const updateWorkAction = async (
         version: work.version,
       })
       .from(work)
-      .where(eq(work.publicId, workPublicId))
+      .where(and(eq(work.publicId, workPublicId), eq(work.deleted, false)))
       .limit(1);
 
     if (!current) {
@@ -260,6 +265,10 @@ export const updateWorkAction = async (
         status: "version-conflict" as const,
       };
     }
+
+    // Must run before the update below, not after -- see
+    // work-fts.ts's removeWorkFromFts doc.
+    await removeWorkFromFts(tx, current.id);
 
     await tx
       .update(work)
@@ -273,6 +282,8 @@ export const updateWorkAction = async (
         version: current.version + 1,
       })
       .where(eq(work.id, current.id));
+
+    await insertWorkFts(tx, current.id);
 
     const normalizedUrl = normalize(value.sourceUrl);
     const [platform] = await tx
@@ -288,7 +299,9 @@ export const updateWorkAction = async (
     const [primarySource] = await tx
       .select({ id: workSource.id })
       .from(workSource)
-      .where(eq(workSource.workId, current.id))
+      .where(
+        and(eq(workSource.workId, current.id), eq(workSource.deleted, false))
+      )
       .orderBy(asc(workSource.createdAt))
       .limit(1);
 
@@ -447,4 +460,174 @@ export const updateWorkAction = async (
     status: "not-found" as const,
     values: value,
   };
+};
+
+/**
+ * Removes a work from the catalog outright -- soft-delete only
+ * (work.deleted), never a hard DELETE, same tombstone discipline as
+ * deleteLibraryEntryAction. Distinct from that action: this purges the
+ * canonical catalog entry itself, not just this admin's library record of
+ * it. Cascades to soft-delete every library_entry (and its reading_state)
+ * still referencing this work via softDeleteLibraryEntry -- in this
+ * single-user app there is at most one (library_entry_user_work_uidx), but
+ * the loop stays general rather than assuming that constraint here too.
+ *
+ * work_source, work_contributor, and work_taxonomy_assignment rows for this
+ * work are left as-is, not cleaned up -- they're not synced tables (only
+ * work_source is, and it has its own independent delete path,
+ * deleteWorkSourceAction) and every read path already joins through
+ * work.deleted, so an orphaned join row is inert, never displayed.
+ */
+export const deleteWorkAction = async (
+  workPublicId: string,
+  expectedVersion: number
+): Promise<MutationResult<{ deleted: true }>> => {
+  const session = await requireAdmin();
+
+  const result = await db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({ id: work.id, version: work.version })
+      .from(work)
+      .where(and(eq(work.publicId, workPublicId), eq(work.deleted, false)))
+      .limit(1);
+
+    if (!current) {
+      return { status: "not-found" as const };
+    }
+    if (current.version !== expectedVersion) {
+      return {
+        currentVersion: current.version,
+        status: "version-conflict" as const,
+      };
+    }
+
+    const affectedEntries = await tx
+      .select({ id: libraryEntry.id, version: libraryEntry.version })
+      .from(libraryEntry)
+      .where(
+        and(
+          eq(libraryEntry.workId, current.id),
+          eq(libraryEntry.deleted, false)
+        )
+      );
+
+    for (const entry of affectedEntries) {
+      // biome-ignore lint/performance/noAwaitInLoops: each entry's cascade runs its own oplog writes and must stay ordered against the work's own delete below
+      await softDeleteLibraryEntry(
+        tx,
+        session.user.id,
+        entry.id,
+        entry.version
+      );
+    }
+
+    const nextVersion = current.version + 1;
+
+    // A deleted work shouldn't be searchable -- remove it from work_fts
+    // before the update below, not after (removeWorkFromFts's doc).
+    await removeWorkFromFts(tx, current.id);
+
+    await tx
+      .update(work)
+      .set({ deleted: true, version: nextVersion })
+      .where(eq(work.id, current.id));
+
+    await recordAudit(
+      tx,
+      { action: "delete-work", actorId: session.user.id },
+      {
+        after: null,
+        before: { deleted: false },
+        changedColumns: ["deleted"],
+        entityId: current.id,
+        entityType: "work",
+        version: nextVersion,
+      }
+    );
+
+    return { data: { deleted: true as const }, status: "success" as const };
+  });
+
+  if (result.status === "success") {
+    revalidateTag(workTag(workPublicId), "max");
+    revalidateTag(libraryStatsTag, "max");
+    revalidateTag(libraryListTag, "max");
+  }
+
+  return result;
+};
+
+/**
+ * Removes one source link from a work -- soft-delete only
+ * (work_source.deleted), same discipline as deleteWorkAction above. Does
+ * not touch the parent work or its library_entry; a work can have sources
+ * on multiple platforms, and removing one is independent of the others.
+ */
+export const deleteWorkSourceAction = async (
+  workSourcePublicId: string,
+  expectedVersion: number
+): Promise<MutationResult<{ deleted: true }>> => {
+  const session = await requireAdmin();
+
+  const result = await db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({
+        id: workSource.id,
+        version: workSource.version,
+        workPublicId: work.publicId,
+      })
+      .from(workSource)
+      .innerJoin(work, eq(work.id, workSource.workId))
+      .where(
+        and(
+          eq(workSource.publicId, workSourcePublicId),
+          eq(workSource.deleted, false)
+        )
+      )
+      .limit(1);
+
+    if (!current) {
+      return { status: "not-found" as const };
+    }
+    if (current.version !== expectedVersion) {
+      return {
+        currentVersion: current.version,
+        status: "version-conflict" as const,
+      };
+    }
+
+    const nextVersion = current.version + 1;
+
+    await tx
+      .update(workSource)
+      .set({ deleted: true, version: nextVersion })
+      .where(eq(workSource.id, current.id));
+
+    await recordAudit(
+      tx,
+      { action: "delete-work-source", actorId: session.user.id },
+      {
+        after: null,
+        before: { deleted: false },
+        changedColumns: ["deleted"],
+        entityId: current.id,
+        entityType: "work_source",
+        version: nextVersion,
+      }
+    );
+
+    return {
+      data: { deleted: true as const },
+      status: "success" as const,
+      workPublicId: current.workPublicId,
+    };
+  });
+
+  if (result.status === "success") {
+    revalidateTag(workTag(result.workPublicId), "max");
+    revalidateTag(libraryStatsTag, "max");
+    revalidateTag(libraryListTag, "max");
+  }
+
+  return result;
 };

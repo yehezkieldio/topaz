@@ -74,7 +74,8 @@ export const getWorkDetailAction = async (
     .where(
       and(
         eq(libraryEntry.publicId, libraryEntryPublicId),
-        eq(libraryEntry.deleted, false)
+        eq(libraryEntry.deleted, false),
+        eq(work.deleted, false)
       )
     )
     .limit(1);
@@ -102,7 +103,12 @@ export const getWorkDetailAction = async (
         sourcePlatform,
         eq(sourcePlatform.id, workSource.sourcePlatformId)
       )
-      .where(eq(workSource.workId, entryRow.workId))
+      .where(
+        and(
+          eq(workSource.workId, entryRow.workId),
+          eq(workSource.deleted, false)
+        )
+      )
       .orderBy(asc(workSource.createdAt)),
     db
       .select({ id: taxonomyTerm.publicId, label: taxonomyTerm.name })

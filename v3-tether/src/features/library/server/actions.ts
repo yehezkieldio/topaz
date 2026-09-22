@@ -15,6 +15,7 @@ import {
   libraryStatsTag,
   readingStateTag,
 } from "./cache-tags";
+import { softDeleteLibraryEntry } from "./delete-library-entry";
 import { toReadingEvent } from "./reading-events";
 
 type LibraryEntryStatus = (typeof libraryEntry.status.enumValues)[number];
@@ -586,64 +587,12 @@ export const deleteLibraryEntryAction = async (
       };
     }
 
-    const nextVersion = current.version + 1;
-
-    await tx
-      .update(libraryEntry)
-      .set({ deleted: true, version: nextVersion })
-      .where(eq(libraryEntry.publicId, libraryEntryPublicId));
-
-    await recordAudit(
+    await softDeleteLibraryEntry(
       tx,
-      { action: "delete-library-entry", actorId: session.user.id },
-      {
-        after: null,
-        before: { deleted: false },
-        changedColumns: ["deleted"],
-        entityId: current.id,
-        entityType: "library_entry",
-        version: nextVersion,
-      }
+      session.user.id,
+      current.id,
+      current.version
     );
-
-    const [existingReadingState] = await tx
-      .select({ version: readingState.version })
-      .from(readingState)
-      .where(
-        and(
-          eq(readingState.libraryEntryId, current.id),
-          eq(readingState.deleted, false)
-        )
-      )
-      .limit(1);
-
-    if (existingReadingState) {
-      const nextReadingStateVersion = existingReadingState.version + 1;
-
-      await tx
-        .update(readingState)
-        .set({ deleted: true, version: nextReadingStateVersion })
-        .where(eq(readingState.libraryEntryId, current.id));
-
-      await recordAudit(
-        tx,
-        { action: "delete-library-entry", actorId: session.user.id },
-        {
-          after: null,
-          before: { deleted: false },
-          changedColumns: ["deleted"],
-          entityId: current.id,
-          entityType: "library_entry",
-          oplog: {
-            columnDiffs: {},
-            rowId: current.id,
-            tableName: "reading_state",
-            tombstone: true,
-          },
-          version: nextReadingStateVersion,
-        }
-      );
-    }
 
     return { data: { deleted: true as const }, status: "success" as const };
   });

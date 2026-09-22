@@ -1,5 +1,5 @@
 import "server-only";
-import { asc, gt } from "drizzle-orm";
+import { asc, eq, gt } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { SQLiteColumn, SQLiteTable } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
@@ -89,11 +89,72 @@ const TABLE_CONFIG: Record<SyncedTableName, TableConfig> = {
     table: work,
   },
   work_source: {
-    hasVersion: false,
+    hasVersion: true,
     idColumn: workSource.id,
     idKey: "id",
     table: workSource,
   },
+};
+
+/**
+ * Maps one raw DB row (whatever shape a select() against config.table
+ * returns) into the FullTableRow shape every reader of a synced table's
+ * full state shares -- fetchTablePage's per-page mapping and
+ * fetchRowById's single-row read both go through this so there is exactly
+ * one place that knows how to strip the id column and normalize
+ * updatedAt/version.
+ */
+const mapDbRow = (
+  config: TableConfig,
+  row: Record<string, unknown>
+): FullTableRow => {
+  // Computed-key destructure (not `delete`) so the id column is dropped
+  // from columnDiffs without a dynamic delete -- config.idKey is only
+  // ever one of this closed config's own fixed id keys, never
+  // attacker-influenced.
+  const { [config.idKey]: rowIdValue, ...columnDiffs } = row;
+  // SAFETY: idKey always names a NOT NULL text primary/unique key column
+  // on this table (idColumns()/readingState.libraryEntryId in schema/).
+  const rowId = rowIdValue as string;
+  // SAFETY: every synced table spreads timestampColumns(), whose
+  // updatedAt is always mode: "timestamp_ms" -- Drizzle deserializes that
+  // to a JS Date on every select, never a raw number or string.
+  const updatedAt = row.updatedAt as Date;
+  // SAFETY: hasVersion is only true for a table whose version column is
+  // `integer(...).notNull()` (library_entry/reading_state/taxonomy_term/work/work_source).
+  const version = config.hasVersion ? (row.version as number) : null;
+  return {
+    columnDiffs,
+    rowId,
+    updatedAtMs: updatedAt.getTime(),
+    version,
+  };
+};
+
+/**
+ * This device's current full state for exactly one row, or null if it
+ * doesn't exist locally -- used by compaction.ts to read a row's live
+ * state before collapsing its oplog history into one fresh snapshot entry.
+ * Unlike fetchTablePage, this is a plain indexed lookup by id, not a
+ * cursor-paginated scan.
+ */
+export const fetchRowById = async (
+  tableName: SyncedTableName,
+  rowId: string
+): Promise<FullTableRow | null> => {
+  const config = TABLE_CONFIG[tableName];
+
+  const [row] = await db
+    .select()
+    .from(config.table)
+    .where(eq(config.idColumn, rowId) as SQL)
+    .limit(1);
+
+  // SAFETY: every one of the five closed SYNCED_TABLES config.table can
+  // resolve to selects into a plain object keyed by that table's own
+  // Drizzle column names -- the generic SQLiteTable type on TABLE_CONFIG
+  // only erases that at the type level, not at runtime.
+  return row ? mapDbRow(config, row as Record<string, unknown>) : null;
 };
 
 /**
@@ -141,34 +202,13 @@ export const fetchTablePage = async (
     .orderBy(asc(config.idColumn))
     .limit(limit);
 
-  const mapped: FullTableRow[] = rows.map((row) => {
-    // SAFETY: every one of the five closed SYNCED_TABLES config.table can
-    // resolve to selects into a plain object keyed by that table's own
-    // Drizzle column names -- the generic SQLiteTable type on TABLE_CONFIG
-    // only erases that at the type level, not at runtime.
-    const record = row as Record<string, unknown>;
-    // Computed-key destructure (not `delete`) so the id column is dropped
-    // from columnDiffs without a dynamic delete -- config.idKey is only
-    // ever one of this closed config's own fixed id keys, never
-    // attacker-influenced.
-    const { [config.idKey]: rowIdValue, ...columnDiffs } = record;
-    // SAFETY: idKey always names a NOT NULL text primary/unique key column
-    // on this table (idColumns()/readingState.libraryEntryId in schema/).
-    const rowId = rowIdValue as string;
-    // SAFETY: every synced table spreads timestampColumns(), whose
-    // updatedAt is always mode: "timestamp_ms" -- Drizzle deserializes that
-    // to a JS Date on every select, never a raw number or string.
-    const updatedAt = record.updatedAt as Date;
-    // SAFETY: hasVersion is only true for a table whose version column is
-    // `integer(...).notNull()` (library_entry/reading_state/taxonomy_term/work).
-    const version = config.hasVersion ? (record.version as number) : null;
-    return {
-      columnDiffs,
-      rowId,
-      updatedAtMs: updatedAt.getTime(),
-      version,
-    };
-  });
+  // SAFETY: every one of the five closed SYNCED_TABLES config.table can
+  // resolve to selects into a plain object keyed by that table's own
+  // Drizzle column names -- the generic SQLiteTable type on TABLE_CONFIG
+  // only erases that at the type level, not at runtime.
+  const mapped: FullTableRow[] = rows.map((row) =>
+    mapDbRow(config, row as Record<string, unknown>)
+  );
 
   const atEnd = mapped.length === 0;
   // SAFETY: atEnd is false exactly when mapped.length > 0, so .at(-1) is

@@ -146,10 +146,14 @@ export const applyToTable = async (
  * tombstone's columnDiffs carries no more than {deleted: true} -- nowhere
  * near a full row's required columns.
  *
- * Only library_entry and reading_state support this today (actions.ts's
- * deleteLibraryEntryAction is the only mutation that produces a tombstoned
- * oplog row) -- work/work_source/taxonomy_term have no `deleted` column,
- * same as applyToTable's closed set, and a tombstone naming one of them is
+ * library_entry, reading_state, work, and work_source support this
+ * (deleteLibraryEntryAction, deleteWorkAction, deleteWorkSourceAction) via
+ * their own `deleted` column, same as applyToTable's closed set.
+ * taxonomy_term deletion is modeled differently -- it reuses its existing
+ * `status` column (already "active"/"merged" from mergeTermsAction) with a
+ * new "deleted" value, so it flows through the normal, non-tombstoned
+ * applyToTable path instead of this one (terms.ts's deleteTerm). A
+ * tombstone naming taxonomy_term, or any table outside this closed set, is
  * still a real bug or forward-incompatible payload, not a case to silently
  * drop.
  */
@@ -171,6 +175,17 @@ const applyTombstoneToTable = async (
         .update(readingState)
         .set({ deleted: true })
         .where(eq(readingState.libraryEntryId, rowId));
+      return true;
+    }
+    case "work": {
+      await tx.update(work).set({ deleted: true }).where(eq(work.id, rowId));
+      return true;
+    }
+    case "work_source": {
+      await tx
+        .update(workSource)
+        .set({ deleted: true })
+        .where(eq(workSource.id, rowId));
       return true;
     }
     default: {

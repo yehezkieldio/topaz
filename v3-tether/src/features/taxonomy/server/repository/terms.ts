@@ -1,11 +1,18 @@
 import "server-only";
-import { eq, sql } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 
 import type { db as dbClient } from "@/server/db/client";
-import { taxonomyKind, taxonomyTerm } from "@/server/db/schema";
+import {
+  taxonomyKind,
+  taxonomyRelation,
+  taxonomyTerm,
+  workTaxonomyAssignment,
+} from "@/server/db/schema";
 import { appendOplogEntry } from "@/server/sync/oplog";
 
-type Tx = Parameters<Parameters<typeof dbClient.transaction>[0]>[0] | typeof dbClient;
+type Tx =
+  | Parameters<Parameters<typeof dbClient.transaction>[0]>[0]
+  | typeof dbClient;
 
 const normalize = (value: string) => value.trim().toLowerCase();
 
@@ -118,6 +125,67 @@ export const renameTerm = async (
     tableName: "taxonomy_term",
   });
   return rows;
+};
+
+/**
+ * Retires a term: drops every work_taxonomy_assignment and taxonomy_relation
+ * row that references it (a deleted term should tag nothing and infer
+ * nothing, unlike mergeTerms's reassign-don't-drop behavior, since there's
+ * no winning term here to reassign onto), removes its FTS entry, and marks
+ * it `status: "deleted"` rather than a hard DELETE -- taxonomy_term's status
+ * column already carries "merged" for exactly this "retired, not gone"
+ * shape (mergeTerms), so "deleted" reuses the same column instead of a
+ * second, parallel boolean. Every existing `status = 'active'` filter
+ * (searchTaxonomyTermsAction, listHotTaxonomyTermsAction, and any future
+ * one) already excludes this with no further change needed.
+ *
+ * Returns every work id whose effective taxonomy needs a rebuild -- direct
+ * assignments only, the same scope mergeTerms itself uses (a term only
+ * reachable through inference via this term's now-deleted relation edges,
+ * never directly assigned, is not tracked here either -- an existing
+ * limitation shared with merge, not a new gap this introduces).
+ */
+export const deleteTerm = async (
+  tx: Tx,
+  termId: string,
+  currentVersion: number
+): Promise<string[]> => {
+  const assignedRows = await tx
+    .select({ workId: workTaxonomyAssignment.workId })
+    .from(workTaxonomyAssignment)
+    .where(eq(workTaxonomyAssignment.taxonomyTermId, termId));
+  const affectedWorkIds = assignedRows.map((row) => row.workId);
+
+  await tx
+    .delete(workTaxonomyAssignment)
+    .where(eq(workTaxonomyAssignment.taxonomyTermId, termId));
+
+  await tx
+    .delete(taxonomyRelation)
+    .where(
+      or(
+        eq(taxonomyRelation.fromTermId, termId),
+        eq(taxonomyRelation.toTermId, termId)
+      )
+    );
+
+  // Must run before the status update below, not after -- see
+  // removeTermFromFts's doc.
+  await removeTermFromFts(tx, termId);
+
+  const version = currentVersion + 1;
+  await tx
+    .update(taxonomyTerm)
+    .set({ status: "deleted", version })
+    .where(eq(taxonomyTerm.id, termId));
+
+  await appendOplogEntry(tx, {
+    columnDiffs: { status: "deleted", version },
+    rowId: termId,
+    tableName: "taxonomy_term",
+  });
+
+  return affectedWorkIds;
 };
 
 export const changeTermKind = async (

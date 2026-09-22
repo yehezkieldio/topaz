@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { cache } from "react";
 
@@ -26,7 +26,9 @@ import {
 } from "@/server/query/paginate";
 import {
   escapeLikeWildcards,
+  FTS_MATCH_MIN_LENGTH,
   sanitizeSearchText,
+  toFtsPhraseQuery,
 } from "@/server/query/search-text";
 
 import {
@@ -89,19 +91,40 @@ interface LibraryListFilters {
 }
 
 /**
- * A plain LIKE substring match, case-insensitive via `title`'s COLLATE
- * NOCASE (03_data/00_schema_contract.md's citext translation) -- an interim
- * stand-in for the FTS5 trigram/bm25 path from
- * 07_backend/03_search_and_filtering.md, which searchTaxonomyTermsAction
- * (taxonomy/server/actions.ts) already uses. Wiring this list query through
- * work_fts (src/server/db/search-index.ts) the same way is real follow-up
- * work, not done here -- this at least searches correctly today rather
- * than emitting Postgres-only `<%` syntax that isn't valid SQL under
- * SQLite at all.
+ * The shared "does this row's title or body match" fragment -- built once,
+ * used both as a WHERE membership check (libraryFilterSpec.search below)
+ * and, unchanged, as the middle rung of buildSearchRank's confidence
+ * ladder, so the two can never quietly drift out of sync with each other.
  *
- * `search` also matches against effective taxonomy term names -- tags don't
- * have their own filter UI (they can grow without bound), so the one search
- * box is the only way to narrow by tag as well as by title.
+ * FTS5 trigram MATCH against work_fts (title, description, summary --
+ * server/db/search-index.ts, now actually maintained by create/update/
+ * delete work actions via work-fts.ts, which it wasn't before). Below
+ * FTS_MATCH_MIN_LENGTH a trigram can't be formed at all, so a LIKE
+ * substring scan over title stands in instead, same reasoning as
+ * taxonomy/server/actions.ts's searchTaxonomyTermsByFts/ByLike split.
+ *
+ * FTS5's MATCH/bm25() magic column resolution only recognizes the FTS
+ * table's real name, not an alias (verified empirically -- see the
+ * identical note on searchTaxonomyTermsByFts) -- work_fts is referenced
+ * directly here, not aliased.
+ */
+const buildTitleOrBodyMatch = (value: string) =>
+  value.length >= FTS_MATCH_MIN_LENGTH
+    ? sql`${work.id} in (
+        select w.id from work_fts
+        inner join ${work} w on w.rowid = work_fts.rowid
+        where work_fts match ${toFtsPhraseQuery(value)}
+      )`
+    : sql`${work.title} like ${`%${escapeLikeWildcards(value)}%`} escape '\\'`;
+
+/**
+ * Multi-tiered matching: three independent match sources (below), OR'd
+ * together into one WHERE membership check. Tier 1: an exact
+ * (case-insensitive, via title's COLLATE NOCASE) title match -- cheap, and
+ * catches the single most common search shape (typing the title verbatim).
+ * Tier 2: buildTitleOrBodyMatch above. Tier 3: effective taxonomy term
+ * names -- tags don't have their own filter UI (they can grow without
+ * bound), so the search box is the only way to narrow by tag too.
  */
 const libraryFilterSpec: FilterSpec<LibraryListFilters> = {
   contentRating: (value) => eq(work.contentRating, value),
@@ -110,7 +133,8 @@ const libraryFilterSpec: FilterSpec<LibraryListFilters> = {
   search: (value) => {
     const pattern = `%${escapeLikeWildcards(value)}%`;
     return sql`(
-      ${work.title} like ${pattern} escape '\\'
+      ${work.title} = ${value} collate nocase
+      or ${buildTitleOrBodyMatch(value)}
       or exists (
         select 1 from ${workTaxonomyEffective}
         inner join ${taxonomyTerm} on ${taxonomyTerm.id} = ${workTaxonomyEffective.taxonomyTermId}
@@ -129,6 +153,24 @@ const libraryFilterSpec: FilterSpec<LibraryListFilters> = {
   )`,
   status: (value) => eq(libraryEntry.status, value),
 };
+
+/**
+ * A confidence-ladder rank for search mode: exact title match outranks a
+ * title/body match, which outranks a taxonomy-only match, which outranks
+ * no match at all (0 -- filtered out by libraryFilterSpec.search before
+ * this ever matters, but the CASE still needs an else). Used only to pick
+ * an ORDER BY when a search is active -- see fetchLibraryList's
+ * isRankedSearch branch for why this intentionally doesn't try to also
+ * satisfy the normal updatedAt-keyset cursor.
+ */
+const buildSearchRank = (value: string) =>
+  sql<number>`
+    case
+      when ${work.title} = ${value} collate nocase then 2
+      when ${buildTitleOrBodyMatch(value)} then 1
+      else 0
+    end
+  `;
 
 interface FetchLibraryListArgs {
   cursor?: string;
@@ -154,12 +196,22 @@ const fetchLibraryList = async ({
   "use cache";
   cacheLife("minutes");
 
-  const decoded = decodeCursor(cursor, {
-    sortBy: SORT_BY,
-    sortOrder: SORT_ORDER,
-  });
   const pageSize = resolvePageSize(limit);
   const sanitizedSearch = sanitizeSearchText(search);
+
+  // A search query switches this page to relevance-ranked, single-page mode
+  // (see the orderBy/limit branch below) -- the updatedAt keyset a normal
+  // browse page paginates on doesn't mean anything once results are sorted
+  // by match confidence instead, and a personal library's search result
+  // count is small enough that "the top pageSize matches, no further
+  // scrolling" is a real answer, not a limitation. Any cursor passed in
+  // while a search is active is ignored: ranked mode never hands one back
+  // (nextCursor is always null below), so the client never generates a
+  // follow-up request with one while the search box stays populated.
+  const isRankedSearch = sanitizedSearch !== null;
+  const decoded = isRankedSearch
+    ? null
+    : decodeCursor(cursor, { sortBy: SORT_BY, sortOrder: SORT_ORDER });
 
   const filterConditions = buildConditions(
     {
@@ -176,23 +228,29 @@ const fetchLibraryList = async ({
   const condition = and(
     eq(libraryEntry.private, false),
     eq(libraryEntry.deleted, false),
+    eq(work.deleted, false),
     ...filterConditions,
-    keysetCondition({
-      // libraryEntry.updatedAt is a timestamp column -- its driver-value
-      // mapper expects a Date, not the cursor's JSON-safe ISO string.
-      cursor: decoded && {
-        id: decoded.id,
-        // SAFETY: decodeCursor already rejected any cursor whose sortBy
-        // doesn't match SORT_BY ("updatedAt"); every cursor minted for that
-        // sort encodes libraryEntry.updatedAt.toISOString() as sortValue
-        // (see the mappedRows/paginateRows below), so it's always a string
-        // here even though CursorPayload's sortValue is a wider union.
-        sortValue: new Date(decoded.sortValue as string),
-      },
-      direction: SORT_ORDER,
-      idColumn: libraryEntry.publicId,
-      sortColumn: libraryEntry.updatedAt,
-    })
+    isRankedSearch
+      ? undefined
+      : keysetCondition({
+          // libraryEntry.updatedAt is a timestamp column -- its
+          // driver-value mapper expects a Date, not the cursor's
+          // JSON-safe ISO string.
+          cursor: decoded && {
+            id: decoded.id,
+            // SAFETY: decodeCursor already rejected any cursor whose
+            // sortBy doesn't match SORT_BY ("updatedAt"); every cursor
+            // minted for that sort encodes
+            // libraryEntry.updatedAt.toISOString() as sortValue (see the
+            // mappedRows/paginateRows below), so it's always a string
+            // here even though CursorPayload's sortValue is a wider
+            // union.
+            sortValue: new Date(decoded.sortValue as string),
+          },
+          direction: SORT_ORDER,
+          idColumn: libraryEntry.publicId,
+          sortColumn: libraryEntry.updatedAt,
+        })
   );
 
   // json_agg/json_build_object (Postgres) -> json_group_array/json_object
@@ -242,6 +300,7 @@ const fetchLibraryList = async ({
       sourcePlatform,
       eq(sourcePlatform.id, workSource.sourcePlatformId)
     )
+    .where(eq(workSource.deleted, false))
     .as("ranked_source");
 
   /** One row per work: its earliest-added source, for a compact source pill. */
@@ -309,13 +368,25 @@ const fetchLibraryList = async ({
     .leftJoin(primaryAuthorAgg, eq(primaryAuthorAgg.workId, work.id))
     .where(condition)
     .orderBy(
-      ...orderByKeyset(
-        libraryEntry.updatedAt,
-        libraryEntry.publicId,
-        SORT_ORDER
-      )
+      // SAFETY: isRankedSearch is only true when sanitizedSearch is
+      // non-null (the check just above), so buildSearchRank always has a
+      // real value here.
+      ...(isRankedSearch
+        ? [
+            desc(buildSearchRank(sanitizedSearch as string)),
+            ...orderByKeyset(
+              libraryEntry.updatedAt,
+              libraryEntry.publicId,
+              SORT_ORDER
+            ),
+          ]
+        : orderByKeyset(
+            libraryEntry.updatedAt,
+            libraryEntry.publicId,
+            SORT_ORDER
+          ))
     )
-    .limit(pageSize + 1);
+    .limit(isRankedSearch ? pageSize : pageSize + 1);
 
   const mappedRows: LibraryListRow[] = rows.map((row) => ({
     ...row,
@@ -347,6 +418,13 @@ const fetchLibraryList = async ({
   // can never invalidate a list on creation. Same deliberate-broadness
   // rationale as library-stats in 02_stack/03_caching_and_streaming.md.
   cacheTag(libraryListTag, ...tags);
+
+  // Ranked search mode fetched exactly pageSize rows (no +1 probe -- see
+  // the limit() above), and never hands back a cursor: the top pageSize
+  // matches by confidence is the whole answer, not page one of more.
+  if (isRankedSearch) {
+    return { items: mappedRows, nextCursor: null } satisfies LibraryListPage;
+  }
 
   return paginateRows(mappedRows, pageSize, {
     getId: (row) => row.libraryEntryPublicId,

@@ -27,7 +27,8 @@
     "verify": "bun run verify:auth-roles && bun run verify:authoring-flow",
     "export-stats": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/export-stats.ts",
     "prune-observations": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/prune-observations.ts",
-    "import:reading-tracker": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/import-reading-tracker.ts"
+    "import:reading-tracker": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/import-reading-tracker.ts",
+    "backfill-work-fts": "bun --preload ./scripts/lib/next-runtime-mock.ts scripts/backfill-work-fts.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",

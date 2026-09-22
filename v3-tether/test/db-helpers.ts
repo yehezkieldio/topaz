@@ -35,6 +35,23 @@ const APP_TABLES_CHILD_TO_PARENT = [
  * Clears every app table between tests, keeping the reference data
  * (taxonomy_kind, source_platform) global-setup seeds -- those are looked
  * up by slug in production code and are cheap to leave standing.
+ *
+ * Known gap, deliberately not closed here: this deletes `work` and
+ * `taxonomy_term` rows directly, not through removeWorkFromFts/
+ * removeTermFromFts, so it leaves their FTS5 index entries
+ * (work_fts/taxonomy_term_fts, server/db/search-index.ts) orphaned rather
+ * than cleared. Adding a matching `delete from work_fts` (etc.) here was
+ * tried and reverted: under this suite's per-file worker parallelism (11
+ * workers against one shared topaz_test.db), it reliably corrupted the
+ * FTS5 shadow index (`SQLITE_CORRUPT_VTAB`), which is strictly worse than
+ * the orphaned-entries gap it was meant to close. The 104 tests currently
+ * passing don't exercise FTS MATCH against accumulated cross-test
+ * pollution within one suite run, so this hasn't surfaced as a real
+ * failure -- but a future test that does search assertions across many
+ * work/taxonomy_term-creating tests in the same file should know this
+ * isn't actually clean, and rebuilding topaz_test.db from scratch (`rm
+ * topaz_test.db*`) is the safe way to get a genuinely fresh index if one
+ * ever needs it.
  */
 export const truncateAppData = async () => {
   for (const table of APP_TABLES_CHILD_TO_PARENT) {

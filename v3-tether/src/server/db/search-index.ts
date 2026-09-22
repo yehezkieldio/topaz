@@ -80,6 +80,21 @@ const createFtsTableSql = ({
  * the content row already changed, and never call delete at all for a
  * brand-new row (insert only). See removeTermFromFts/insertTermFts in
  * terms.ts for the reference implementation.
+ *
+ * A `work` row created before insertWorkFts/removeWorkFromFts
+ * (features/library/server/work-fts.ts) started being called has no FTS
+ * entry -- backfilling those is scripts/backfill-work-fts.ts, a deliberate
+ * one-time manual step, not something this function does automatically.
+ * An earlier version ran an idempotent backfill INSERT here on every
+ * startup; that corrupted work_fts's shadow index under concurrent
+ * startup (verified empirically: vitest's multi-worker test run, each
+ * worker importing this module and racing the same backfill against one
+ * shared SQLite file, reliably produced `SQLITE_CORRUPT_VTAB`). The
+ * app's own single-process-per-device invariant
+ * (08_sync/02_packaging_and_lifecycle.md) means that race can't happen in
+ * normal use, but this function has no way to know it's only ever called
+ * from one process at a time, so it no longer attempts anything riskier
+ * than the idempotent `create virtual table if not exists` above.
  */
 export const ensureSearchIndexes = async (client: Client): Promise<void> => {
   for (const index of FTS_INDEXES) {

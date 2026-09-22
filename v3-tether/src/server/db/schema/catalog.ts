@@ -9,7 +9,13 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
-import { enumCheck, idColumns, jsonText, nocaseText, timestampColumns } from "./_shared";
+import {
+  enumCheck,
+  idColumns,
+  jsonText,
+  nocaseText,
+  timestampColumns,
+} from "./_shared";
 
 // SQLite has no native enum type (03_data/00_schema_contract.md's pgEnum ->
 // SQLite translation) -- these are plain literal-value arrays, giving the
@@ -60,6 +66,13 @@ export const work = sqliteTable(
     contentRating: text("content_rating", { enum: contentRatingValues })
       .default("not_rated")
       .notNull(),
+    // Soft-delete flag, same discipline as library_entry.deleted
+    // (schema/library.ts) -- never a hard DELETE, so a late-arriving update
+    // from another device can't silently resurrect a work the admin
+    // deliberately removed. Deleting a work cascades to soft-delete every
+    // library_entry (and its reading_state) that references it -- see
+    // deleteWorkAction (features/library/server/update-work-action.ts).
+    deleted: integer("deleted", { mode: "boolean" }).default(false).notNull(),
     description: text("description"),
     isNsfw: integer("is_nsfw", { mode: "boolean" }).default(false).notNull(),
     publicationStatus: text("publication_status", {
@@ -74,7 +87,11 @@ export const work = sqliteTable(
     ...timestampColumns(),
   },
   (table) => [
-    enumCheck("work_content_rating_valid", table.contentRating, contentRatingValues),
+    enumCheck(
+      "work_content_rating_valid",
+      table.contentRating,
+      contentRatingValues
+    ),
     enumCheck(
       "work_publication_status_valid",
       table.publicationStatus,
@@ -88,6 +105,8 @@ export const workSource = sqliteTable(
   {
     ...idColumns(),
     chapterCount: integer("chapter_count"),
+    // Soft-delete flag, same discipline as work.deleted above.
+    deleted: integer("deleted", { mode: "boolean" }).default(false).notNull(),
     externalId: text("external_id"),
     normalizedUrl: text("normalized_url").notNull(),
     rawMetadata: jsonText<Record<string, unknown>>("raw_metadata"),
@@ -95,6 +114,14 @@ export const workSource = sqliteTable(
       .notNull()
       .references(() => sourcePlatform.id),
     url: text("url").notNull(),
+    // Optimistic-concurrency version, same as every other synced table
+    // (03_data/00_schema_contract.md) -- work_source didn't carry one
+    // before (digest.ts's own comment documented that as a deliberate
+    // Phase 1 scope decision for the digest specifically), but every
+    // mutation needs one regardless of digest scope, and
+    // deleteWorkSourceAction is the first work_source mutation to actually
+    // check it.
+    version: integer("version").default(1).notNull(),
     wordCount: integer("word_count"),
     workId: text("work_id")
       .notNull()

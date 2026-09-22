@@ -39,6 +39,7 @@ import {
 } from "./repository/relations";
 import {
   changeTermKind,
+  deleteTerm,
   findKindBySlug,
   findTermByPublicId,
   insertTermFts,
@@ -558,6 +559,52 @@ export const mergeTermsAction = async (
   if (result.status === "success") {
     revalidateTag(taxonomyTermTag(losingTermPublicId), "max");
     revalidateTag(taxonomyTermTag(winningTermPublicId), "max");
+    for (const workPublicId of result.affectedWorkPublicIds) {
+      revalidateTag(workTaxonomyEffectiveTag(workPublicId), "max");
+    }
+  }
+
+  return result;
+};
+
+/**
+ * Retires a term outright (deleteTerm's doc). Distinct from mergeTermsAction:
+ * there is no winning term here, so every work directly tagged with it
+ * simply loses the tag rather than getting retagged onto something else.
+ */
+export const deleteTermAction = async (
+  termPublicId: string,
+  expectedVersion: number
+): Promise<MutationResult<{ id: string }>> => {
+  await requireAdmin();
+
+  const result = await db.transaction(async (tx) => {
+    const term = await findTermByPublicId(tx, termPublicId);
+    if (!term) {
+      return { status: "not-found" as const };
+    }
+    if (term.version !== expectedVersion) {
+      return {
+        currentVersion: term.version,
+        status: "version-conflict" as const,
+      };
+    }
+
+    const affectedWorkIds = await deleteTerm(tx, term.id, term.version);
+    const affectedWorkPublicIds = await rebuildAndRevalidate(
+      tx,
+      affectedWorkIds
+    );
+
+    return {
+      affectedWorkPublicIds,
+      data: { id: termPublicId },
+      status: "success" as const,
+    };
+  });
+
+  if (result.status === "success") {
+    revalidateTag(taxonomyTermTag(termPublicId), "max");
     for (const workPublicId of result.affectedWorkPublicIds) {
       revalidateTag(workTaxonomyEffectiveTag(workPublicId), "max");
     }
