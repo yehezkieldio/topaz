@@ -69,7 +69,8 @@ export interface AuditPlan {
 /**
  * Inserts one audit_log row for a mutation, inside the same transaction as
  * the mutation itself. `before`/`after` must already be allow-listed by the
- * caller -- never pass a full-row dump (v3-tether/plan-work.md Slice C).
+ * caller -- never pass a full-row dump (see
+ * topaz-v3-tether-specs/07_backend/04_audit_logging.md).
  *
  * Also appends the matching oplog entry (08_sync/00_oplog_and_clock.md) --
  * see AuditPlan.oplog's doc for when the default derived from

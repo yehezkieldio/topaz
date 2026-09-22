@@ -21,7 +21,7 @@ export type WorkSourceObservationSource =
 /**
  * Append-only, insert-only-on-change time series. No publicId, no updatedAt
  * -- high-volume log tables skip idColumns()/timestampColumns() deliberately
- * to keep rows near ~64 bytes (v3-tether/plan-work.md Design Principle 2).
+ * to keep rows near ~64 bytes.
  */
 export const workSourceObservation = sqliteTable(
   "work_source_observation",

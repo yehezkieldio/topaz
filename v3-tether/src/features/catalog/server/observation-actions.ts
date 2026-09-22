@@ -29,8 +29,8 @@ const countsEqual = (a: ObservationCounts, b: ObservationCounts): boolean =>
 /**
  * Insert-only-on-change: writes an observation row only when the reported
  * counts actually differ from the latest one on file, and additionally
- * coalesces identical values reported again within an hour (v3/plan-work.md
- * Slice B). Both guards write zero bytes on a no-op refresh.
+ * coalesces identical values reported again within an hour. Both guards
+ * write zero bytes on a no-op refresh.
  */
 export const recordSourceObservationAction = async (
   workSourcePublicId: string,

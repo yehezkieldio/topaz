@@ -13,7 +13,7 @@ const MS_PER_DAY = 86_400_000;
  * L2: reading velocity + lifecycle stats derived from reading_event pairs.
  * One row per library entry that has reached "started"; completion/drop are
  * left null until the corresponding event exists. Single SQL, no app-side
- * joins across rows (v3-tether/plan-work.md Slice D).
+ * joins across rows.
  *
  * created_at is stored as integer epoch milliseconds
  * (03_data/00_schema_contract.md's timestamp -> SQLite translation), so a

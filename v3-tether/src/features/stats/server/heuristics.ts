@@ -1,7 +1,7 @@
 /**
  * L3 heuristics: pure functions over already-fetched rows, no DB access.
  * Kept separate from queries.ts so they stay unit-testable without a
- * database (v3/plan-work.md Slice D).
+ * database.
  */
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;

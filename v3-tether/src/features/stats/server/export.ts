@@ -9,7 +9,7 @@ const MS_PER_DAY = 86_400_000;
  * L4: one row per work, narrow and notebook-ready. Column list is
  * deliberately fixed and documented here for future simple->advanced models
  * (logistic regression on completion, embeddings on taxonomy slugs, etc --
- * out of scope for this slice, see v3-tether/plan-work.md Slice D).
+ * out of scope for now).
  */
 export interface MlExportRow {
   workPublicId: string;

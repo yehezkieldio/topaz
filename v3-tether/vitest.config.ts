@@ -17,7 +17,7 @@ export default defineConfig({
     env: parsed,
     environment: "node",
     exclude: ["**/node_modules/**", "**/e2e/**"],
-    // All test files share one Postgres DB and truncate it in beforeEach --
+    // All test files share one SQLite file and truncate it in beforeEach --
     // running files in parallel races truncation against fixture inserts
     // from another file's in-flight test.
     fileParallelism: false,

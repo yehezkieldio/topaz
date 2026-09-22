@@ -1,6 +1,6 @@
 import { config } from "dotenv";
 /**
- * Manual retention script -- never a cron job (v3-tether/plan-work.md Slice E).
+ * Manual retention script -- never a cron job.
  * Deletes work_source_observation rows older than 2 years. Refuses to run
  * (logs + exits 0) if the table is already below the row-count threshold,
  * since pruning below that point isn't worth a VACUUM. Run via:
@@ -18,8 +18,8 @@ config({ path: ".env.local" });
 // SQLite has no per-table size introspection without the dbstat virtual
 // table, which isn't compiled into Bun's bundled SQLite build -- a row
 // count is used as the threshold instead of a byte size. ~150 bytes/row
-// (v3-tether/plan-work.md's per-row size math) puts 65,000 rows at
-// roughly the same 10MB mark the original threshold targeted.
+// puts 65,000 rows at roughly the same 10MB mark the original threshold
+// targeted.
 const ROW_COUNT_THRESHOLD = 65_000;
 const RETENTION_MS = 1000 * 60 * 60 * 24 * 365 * 2; // 2 years
 

@@ -37,10 +37,9 @@ const parseCount = (raw: string): number | null => {
 };
 
 /**
- * Manual "record a refresh" control for work_source_observation
- * (v3/plan-work.md Slice B) -- a self-contained mutation, separate from the
- * work-edit TanStack form, since it targets a different table with its own
- * insert-only-on-change semantics.
+ * Manual "record a refresh" control for work_source_observation -- a
+ * self-contained mutation, separate from the work-edit TanStack form, since
+ * it targets a different table with its own insert-only-on-change semantics.
  */
 export const RecordObservationPanel = ({
   initialChapterCount,

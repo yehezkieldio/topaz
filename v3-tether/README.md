@@ -1,43 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Topaz Tether
 
-## Getting Started
+Topaz is local-first. See `topaz-v3-tether-specs/00_context/00_project_summary.md` for the full description. There is no shared server and no hosted database. Each device runs its own copy of this app against its own local SQLite file. When you want to use it, you start the app. It does not run as an always-on service.
 
-First, run the development server:
+The database driver is `@libsql/client`, not `bun:sqlite`. See `docs/BUN_SQLITE_NEXT_BUILD.md` for the reason. The command `bun run build` (through `next-bun-compile` and `next.config.ts`) produces one self-contained Bun executable per device. This binary is what you ship, not a Vercel deployment.
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+bun install
+bun run db:push   # creates the SQLite file and all tables
+bun run dev       # starts the app at http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+If you want to pair two or more of your own devices so they sync, follow `docs/GETTING_STARTED_SYNC.md`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Analytics log tables: storage and retention
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Three append-only log tables back the statistics ladder in `src/features/stats`: `reading_event`, `work_source_observation`, and `audit_log`. If a value changes, each table writes one new row. A refresh or an edit that finds no difference writes zero rows. See `topaz-v3-tether-specs/07_backend/04_audit_logging.md` for the design rationale.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Running It
-
-Topaz is local-first (see `topaz-v3-tether-specs/00_context/00_project_summary.md`): there is no shared server or hosted database. Each device runs its own copy of this app against its own local SQLite file (`bun:sqlite`), started when you want to use it, not as an always-on service. `bun run build` (via `next-bun-compile`, `next.config.ts`) produces a single self-contained Bun executable per device -- that binary is what actually ships, not a Vercel deployment.
-
-## Analytics log tables: storage & retention
-
-Three append-only log tables back the statistics ladder (`src/features/stats`): `reading_event`, `work_source_observation`, and `audit_log`. All three write only when a value actually changes -- a refresh or edit that finds nothing different writes zero rows. See `v3-tether/plan-work.md` §3 for the full design rationale and per-row size math (~64-250 bytes/row, <5 MB/year at personal scale).
-
-**Check current size** (run against the local SQLite file):
+To check the current size, run this query against the local SQLite file:
 
 ```sql
 select page_count * page_size as size_bytes from pragma_page_count(), pragma_page_size();
@@ -48,20 +29,20 @@ group by name
 order by size_bytes desc;
 ```
 
-**When to prune:** `work_source_observation` is the only log table that's safe to prune -- it's rebuildable from the current `work_source` row plus future refreshes. Never prune `reading_event` (irreplaceable user history) or `audit_log` (edit provenance). Run:
+You can safely prune `work_source_observation` because it can rebuild from the current `work_source` row plus future refreshes. Never prune `reading_event`, because it holds user history that you cannot replace. Never prune `audit_log`, because it holds edit history. To prune old observations, run:
 
 ```bash
 bun run prune-observations
 ```
 
-This deletes `work_source_observation` rows older than 2 years, but only runs the delete once the table has grown past a 10 MB threshold (logs and exits 0 otherwise). It never runs on a schedule -- no background worker -- and it never runs `VACUUM` itself; run `VACUUM;` manually afterward to reclaim space (SQLite's `VACUUM` operates on the whole file, not per-table, unlike Postgres's `VACUUM (ANALYZE) table_name`).
+This command deletes `work_source_observation` rows older than 2 years. It only deletes rows once the table grows past a 10 MB threshold. Below that threshold, it logs a message and exits with status 0. The command never runs on a schedule and has no background worker. It does not run `VACUUM` on its own. Run `VACUUM;` manually afterward to reclaim space.
 
-**`audit_log.before`/`after` must stay allow-listed.** Callers (`src/server/db/audit.ts`) pass only the specific changed columns, never a full-row dump or `raw_metadata` -- that's what keeps rows small on the local resource budget (`topaz-v3-tether-specs/07_backend/02_connections_and_scaling_limits.md`).
+Callers in `src/server/db/audit.ts` must keep `audit_log.before` and `audit_log.after` limited to an allow list of columns. A caller must pass only the specific changed columns, never a full-row dump and never `raw_metadata`. This keeps rows small under the local resource budget described in `topaz-v3-tether-specs/07_backend/02_connections_and_scaling_limits.md`.
 
-**L4 export** for notebook/ML exploration:
+To export data for notebook or ML exploration, run:
 
 ```bash
 bun run export-stats
 ```
 
-Writes `tmp/stats-export.json`, one row per work (ids, counts, status, rating, event counts, days active, taxonomy slugs) -- see `src/features/stats/server/export.ts` for the exact column list. Local-only; never exposed as a Route Handler.
+This command writes `tmp/stats-export.json`. The file holds one row per work: ids, counts, status, rating, event counts, days active, and taxonomy slugs. See `src/features/stats/server/export.ts` for the exact column list. This export stays local. The app never exposes it as a Route Handler.

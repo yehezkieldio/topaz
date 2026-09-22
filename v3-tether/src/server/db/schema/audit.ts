@@ -19,9 +19,9 @@ export type AuditEntityType = (typeof auditEntityTypeValues)[number];
 
 /**
  * Shared, generic audit trail for catalog/library/taxonomy edits. Append-only
- * -- no publicId, no updatedAt (v3-tether/plan-work.md Slice C). `before`/`after`
- * must stay allow-listed by callers (src/server/db/audit.ts), never a
- * full-row dump.
+ * -- no publicId, no updatedAt. `before`/`after` must stay allow-listed by
+ * callers (src/server/db/audit.ts), never a full-row dump. See
+ * topaz-v3-tether-specs/07_backend/04_audit_logging.md.
  */
 export const auditLog = sqliteTable(
   "audit_log",
