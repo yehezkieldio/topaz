@@ -1,22 +1,18 @@
-ALWAYS Use all available agent skills.
-
-<!-- BEGIN:nextjs-agent-rules -->
+This project specs exits in `../topaz-v3-tether-specs`.
 
 # This is NOT the Next.js you know
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` or via Context7.
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+Use the Next.js DevTools MCP to have application runtime acces for debugging and inspection.
 
-<!-- END:nextjs-agent-rules -->
-
-# Eliziel's Approach: The Browser Is Frenziedly Expensive
+# The browser is expensive
 
 The browser is not a simple runtime. It is a vast, stateful, concurrent mechanism composed of JavaScript execution, rendering, layout, style calculation, painting, compositing, input handling, networking, storage, scheduling, and numerous browser-managed subsystems.
 
 The browser's internal machinery is substantially more complex than any application, developer, or coding agent can fully assume.
 
-Therefore:
+Therefore, approach it like a systems programmer:
 
 - Never treat the browser as an infinitely cheap execution environment.
 - When code touches the browser, approach it with systems-engineering mechanical sympathy.
