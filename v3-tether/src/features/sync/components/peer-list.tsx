@@ -28,15 +28,12 @@ export const PeerList = async () => {
   const peers = await listPairedPeersAction();
 
   return (
-    <section className="border-border/60 bg-card/40 space-y-4 rounded-md border p-6 backdrop-blur-md">
-      <div>
-        <h2 className="text-sm font-medium">Paired devices</h2>
-        <p className="text-muted-foreground text-sm">
-          {peers.length === 0
-            ? "No devices paired yet."
-            : `${peers.length} device${peers.length === 1 ? "" : "s"} trusted for sync.`}
-        </p>
-      </div>
+    <div className="space-y-3">
+      <p className="text-muted-foreground text-sm">
+        {peers.length === 0
+          ? "No devices paired yet."
+          : `${peers.length} device${peers.length === 1 ? "" : "s"} trusted for sync.`}
+      </p>
 
       {peers.length > 0 && (
         <ul>
@@ -45,6 +42,6 @@ export const PeerList = async () => {
           ))}
         </ul>
       )}
-    </section>
+    </div>
   );
 };

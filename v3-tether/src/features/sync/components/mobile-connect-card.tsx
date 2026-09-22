@@ -5,10 +5,8 @@ import { useEffect, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  generateMobileConnectAction,
-  type MobileConnectLink,
-} from "@/features/sync/server/actions";
+import { generateMobileConnectAction } from "@/features/sync/server/actions";
+import type { MobileConnectLink } from "@/features/sync/server/actions";
 
 /**
  * "Connect a phone": a QR code that logs the scanning device straight into
@@ -47,17 +45,9 @@ export const MobileConnectCard = () => {
   }, []);
 
   return (
-    <section className="border-border/60 bg-card/40 space-y-4 rounded-md border p-6 backdrop-blur-md">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-medium">Connect a phone</h2>
-          <p className="text-muted-foreground text-sm">
-            Scan this with your phone's camera to open Topaz there, already
-            signed in. Your phone doesn't get its own copy of the library --
-            it just talks to this device over Tailscale, so this device
-            needs to stay running.
-          </p>
-        </div>
+    <section className="border-border/60 bg-card/40 flex h-full flex-col space-y-4 rounded-md border p-6 backdrop-blur-md">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-medium">Connect a phone</h3>
         <Button
           disabled={isPending}
           onClick={generate}
@@ -68,26 +58,31 @@ export const MobileConnectCard = () => {
           New code
         </Button>
       </div>
+      <p className="text-muted-foreground text-sm">
+        Scan this with your phone's camera to open Topaz there, already signed
+        in. Your phone doesn't get its own copy of the library -- it just talks
+        to this device over Tailscale, so this device needs to stay running.
+      </p>
 
       {link && !isPending && (
-        <div className="flex flex-col items-start gap-4 sm:flex-row">
+        <div className="flex items-center gap-4">
           <Image
             alt="Phone connect QR"
             className="border-border/60 shrink-0 rounded-md border bg-white p-2"
-            height={160}
+            height={112}
             src={link.qrDataUrl}
             unoptimized
-            width={160}
+            width={112}
           />
           <p className="text-muted-foreground text-xs">
-            Expires in {Math.round(link.expiresInSeconds / 60)} minutes, or
-            as soon as it's scanned once -- whichever comes first.
+            Expires in {Math.round(link.expiresInSeconds / 60)} minutes, or as
+            soon as it's scanned once, whichever comes first.
           </p>
         </div>
       )}
 
       {isPending && !link && (
-        <Skeleton className="size-[160px] shrink-0 rounded-md" />
+        <Skeleton className="size-[112px] shrink-0 rounded-md" />
       )}
 
       {error && <p className="text-destructive text-sm">{error}</p>}

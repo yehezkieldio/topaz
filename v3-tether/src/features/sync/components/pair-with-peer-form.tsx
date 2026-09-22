@@ -6,10 +6,8 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  type PairedPeer,
-  pairWithPeerAction,
-} from "@/features/sync/server/actions";
+import { pairWithPeerAction } from "@/features/sync/server/actions";
+import type { PairedPeer } from "@/features/sync/server/actions";
 
 type FormResult =
   | { kind: "success"; peer: PairedPeer }
@@ -50,7 +48,7 @@ export const PairWithPeerForm = () => {
   return (
     <section className="border-border/60 bg-card/40 space-y-4 rounded-md border p-6 backdrop-blur-md">
       <div>
-        <h2 className="text-sm font-medium">Pair with a device</h2>
+        <h3 className="text-sm font-medium">Pair with a device</h3>
         <p className="text-muted-foreground text-sm">
           Paste the pairing code shown on the other device.
         </p>
@@ -74,10 +72,9 @@ export const PairWithPeerForm = () => {
         {result?.kind === "success" && (
           <p className="text-sm text-emerald-600 dark:text-emerald-400">
             Paired with {result.peer.tailnetHostname}:{result.peer.port} --
-            confirm fingerprint <span className="font-mono">
-              {result.peer.fingerprint}
-            </span>{" "}
-            matches what that device shows.
+            confirm fingerprint{" "}
+            <span className="font-mono">{result.peer.fingerprint}</span> matches
+            what that device shows.
           </p>
         )}
 

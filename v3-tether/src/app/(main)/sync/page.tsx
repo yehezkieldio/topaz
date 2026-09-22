@@ -11,8 +11,8 @@ export const metadata = {
 
 const SyncPage = () => (
   <div className="bg-background min-h-dvh">
-    <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6">
-      <header className="mb-6 space-y-1">
+    <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
+      <header className="mb-8 space-y-1">
         <Link
           className="text-muted-foreground hover:text-foreground text-xs"
           href="/library"

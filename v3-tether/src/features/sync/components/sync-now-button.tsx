@@ -21,28 +21,22 @@ export const SyncNowButton = () => {
   const [results, setResults] = useState<SyncRoundResult[] | null>(null);
 
   return (
-    <section className="border-border/60 bg-card/40 space-y-4 rounded-md border p-6 backdrop-blur-md">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-medium">Sync now</h2>
-          <p className="text-muted-foreground text-sm">
-            Pull changes from every paired, reachable device.
-          </p>
-        </div>
-        <Button
-          disabled={isPending}
-          onClick={() => {
-            startTransition(async () => {
-              const outcomes = await triggerSyncRoundAction();
-              setResults(outcomes);
-              router.refresh();
-            });
-          }}
-          type="button"
-        >
-          {isPending ? "Syncing..." : "Sync now"}
-        </Button>
-      </div>
+    <div className="space-y-3">
+      <Button
+        className="w-full sm:w-auto"
+        disabled={isPending}
+        onClick={() => {
+          startTransition(async () => {
+            const outcomes = await triggerSyncRoundAction();
+            setResults(outcomes);
+            router.refresh();
+          });
+        }}
+        type="button"
+        variant="outline"
+      >
+        {isPending ? "Syncing..." : "Sync now"}
+      </Button>
 
       {results && (
         <ul className="space-y-1.5 text-sm">
@@ -65,6 +59,6 @@ export const SyncNowButton = () => {
           ))}
         </ul>
       )}
-    </section>
+    </div>
   );
 };

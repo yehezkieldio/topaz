@@ -41,7 +41,7 @@ export const RestoreAccountForm = () => {
   return (
     <section className="border-border/60 bg-card/40 space-y-4 rounded-md border p-6 backdrop-blur-md">
       <div>
-        <h2 className="text-sm font-medium">Restore from another device</h2>
+        <h3 className="text-sm font-medium">Restore from another device</h3>
         <p className="text-muted-foreground text-sm">
           Paste the pairing code shown on your other Topaz device to sign in as
           the same account and pull its library -- no sign-up needed.

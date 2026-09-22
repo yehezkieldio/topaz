@@ -43,24 +43,49 @@ export const SyncPanel = async () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <Suspense fallback={null}>
         <AutoSyncOnRestore />
       </Suspense>
 
-      <MobileConnectCard />
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-medium tracking-tight">
+            Share this device
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            Let another laptop pair as a full peer, or let a phone sign in
+            without keeping its own copy of the library.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Suspense fallback={<CardSkeleton />}>
+            <PairingCodeCard />
+          </Suspense>
+          <MobileConnectCard />
+        </div>
+      </section>
 
-      <Suspense fallback={<CardSkeleton />}>
-        <PairingCodeCard />
-      </Suspense>
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-medium tracking-tight">Devices</h2>
+          <p className="text-muted-foreground text-sm">
+            Pair with a device using its code, then pull whatever changed on it.
+          </p>
+        </div>
 
-      <PairWithPeerForm />
+        <PairWithPeerForm />
 
-      <Suspense fallback={<CardSkeleton />}>
-        <PeerList />
-      </Suspense>
-
-      <SyncNowButton />
+        <div className="border-border/60 bg-card/40 space-y-4 rounded-md border p-6 backdrop-blur-md">
+          <h3 className="text-sm font-medium">Paired devices</h3>
+          <Suspense fallback={<Skeleton className="h-16 w-full" />}>
+            <PeerList />
+          </Suspense>
+          <div className="border-border/50 border-t pt-4">
+            <SyncNowButton />
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

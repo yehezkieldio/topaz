@@ -19,23 +19,23 @@ export const PairingCodeCard = async () => {
   ]);
 
   return (
-    <section className="border-border/60 bg-card/40 space-y-4 rounded-md border p-6 backdrop-blur-md">
+    <section className="border-border/60 bg-card/40 flex h-full flex-col space-y-4 rounded-md border p-6 backdrop-blur-md">
       <div>
-        <h2 className="text-sm font-medium">This device's pairing code</h2>
+        <h3 className="text-sm font-medium">This device's pairing code</h3>
         <p className="text-muted-foreground text-sm">
           Scan or copy this on the <em>other</em> device, then pair with its
           code here too -- pairing only works once both directions are done.
         </p>
       </div>
 
-      <div className="flex flex-col items-start gap-4 sm:flex-row">
+      <div className="flex items-center gap-4">
         <Image
           alt="Pairing code QR"
           className="border-border/60 shrink-0 rounded-md border bg-white p-2"
-          height={160}
+          height={112}
           src={qrDataUrl}
           unoptimized
-          width={160}
+          width={112}
         />
 
         <div className="min-w-0 flex-1 space-y-2">
