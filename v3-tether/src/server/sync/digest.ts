@@ -34,10 +34,45 @@ export const SYNCED_TABLES = [
 export type SyncedTableName = (typeof SYNCED_TABLES)[number];
 const syncedTableNameSchema = z.enum(SYNCED_TABLES);
 
+/**
+ * Fixed number of id-hash buckets every table's rows are split into for
+ * digest purposes (08_sync/03_data_integrity_and_reconciliation.md's Part 1
+ * gives a flat per-table digest; this partitions it further so Part 2's
+ * repair can narrow a mismatch to the rows that actually diverged instead
+ * of always re-pulling the whole table). 64 is a starting point sized for
+ * a personal-library row count (a few thousand rows), not a constant with
+ * any other significance -- each bucket then holds roughly rowCount/64
+ * rows, bounding how much a repair has to re-pull per mismatch found.
+ */
+export const BUCKET_COUNT = 64;
+
+/**
+ * Assigns a row to a bucket from its id alone, never its content --
+ * bucket membership has to be identical on both devices for the same row
+ * regardless of whether their copies of that row currently agree, or the
+ * bucket-level comparison below breaks. A separate hash from
+ * hashRowLanes's content hash, deliberately: hashing on id only means a
+ * row's bucket never moves just because the row was edited.
+ */
+export const bucketForRowId = (rowId: string): number => {
+  const digestBytes = createHash("sha256").update(rowId).digest();
+  return digestBytes.readUInt32BE(0) % BUCKET_COUNT;
+};
+
+export interface BucketDigest {
+  bucket: number;
+  rowCount: number;
+  digest: string;
+}
+
 export interface TableDigest {
   table: SyncedTableName;
   rowCount: number;
   digest: string;
+  // Only buckets that actually hold at least one row on this side --
+  // sparse, not a fixed 64-length array, so an empty table's digest stays
+  // a tiny payload rather than 64 zeroed entries.
+  buckets: BucketDigest[];
 }
 
 interface DigestRowInput {
@@ -73,6 +108,9 @@ const hashRowLanes = (
 // suppression for no actual benefit over the spec's own alternative.
 const DIGEST_MODULUS = 4_294_967_291;
 
+const laneDigest = (hi: number, lo: number): string =>
+  `${hi.toString(16).padStart(8, "0")}${lo.toString(16).padStart(8, "0")}`;
+
 /**
  * Sum-mod-prime-combines every row's two hash lanes into one table-level
  * digest, independently per lane -- order-independent (spec's Part 1:
@@ -83,20 +121,60 @@ const DIGEST_MODULUS = 4_294_967_291;
  * running total < 2^32 too, so one addition per row never risks precision
  * loss). Rendered as two zero-padded hex lanes concatenated, giving ~64
  * bits of digest space like a single 64-bit hash would.
+ *
+ * Rows are first grouped into BUCKET_COUNT id-hash buckets (bucketForRowId)
+ * and combined per bucket, then the bucket sums are combined again the same
+ * way into the table-level digest -- modular addition is associative, so
+ * this produces the exact same table-level digest a flat combine over every
+ * row would, while also exposing each bucket's own digest for a repair step
+ * to diff against a peer's buckets and find which rows actually diverged
+ * without re-pulling the whole table.
  */
 const combineRows = (
   tableName: SyncedTableName,
   rows: DigestRowInput[]
 ): TableDigest => {
-  let hi = 0;
-  let lo = 0;
+  const rowsByBucket = new Map<number, DigestRowInput[]>();
   for (const row of rows) {
-    const [rowHi, rowLo] = hashRowLanes(tableName, row);
-    hi = (hi + rowHi) % DIGEST_MODULUS;
-    lo = (lo + rowLo) % DIGEST_MODULUS;
+    const bucket = bucketForRowId(row.id);
+    const bucketRows = rowsByBucket.get(bucket);
+    if (bucketRows) {
+      bucketRows.push(row);
+    } else {
+      rowsByBucket.set(bucket, [row]);
+    }
   }
-  const digest = `${hi.toString(16).padStart(8, "0")}${lo.toString(16).padStart(8, "0")}`;
-  return { digest, rowCount: rows.length, table: tableName };
+
+  const buckets: BucketDigest[] = [];
+  let tableHi = 0;
+  let tableLo = 0;
+
+  for (const bucket of [...rowsByBucket.keys()].toSorted((a, b) => a - b)) {
+    // SAFETY: bucket comes from rowsByBucket.keys() itself, so get() here
+    // always hits.
+    const bucketRows = rowsByBucket.get(bucket) as DigestRowInput[];
+    let hi = 0;
+    let lo = 0;
+    for (const row of bucketRows) {
+      const [rowHi, rowLo] = hashRowLanes(tableName, row);
+      hi = (hi + rowHi) % DIGEST_MODULUS;
+      lo = (lo + rowLo) % DIGEST_MODULUS;
+    }
+    buckets.push({
+      bucket,
+      digest: laneDigest(hi, lo),
+      rowCount: bucketRows.length,
+    });
+    tableHi = (tableHi + hi) % DIGEST_MODULUS;
+    tableLo = (tableLo + lo) % DIGEST_MODULUS;
+  }
+
+  return {
+    buckets,
+    digest: laneDigest(tableHi, tableLo),
+    rowCount: rows.length,
+    table: tableName,
+  };
 };
 
 /**
@@ -215,15 +293,82 @@ export const computeAllTableDigests = async (): Promise<TableDigest[]> =>
     digestWorkSource(),
   ]);
 
+const DIGEST_FNS_BY_TABLE: Record<SyncedTableName, () => Promise<TableDigest>> =
+  {
+    library_entry: digestLibraryEntry,
+    reading_state: digestReadingState,
+    taxonomy_term: digestTaxonomyTerm,
+    work: digestWork,
+    work_source: digestWorkSource,
+  };
+
+/**
+ * One table's fresh digest, computed the same way computeAllTableDigests
+ * does for all five -- used by repair.ts to find a mismatched table's
+ * divergent buckets without paying for the other four tables' digests too,
+ * when only one table is actually being repaired.
+ */
+export const computeTableDigest = async (
+  tableName: SyncedTableName
+): Promise<TableDigest> => await DIGEST_FNS_BY_TABLE[tableName]();
+
+const bucketDigestSchema = z.object({
+  bucket: z.number(),
+  digest: z.string(),
+  rowCount: z.number(),
+});
+
 const digestResponseSchema = z.object({
   digests: z.array(
     z.object({
+      buckets: z.array(bucketDigestSchema),
       digest: z.string(),
       rowCount: z.number(),
       table: syncedTableNameSchema,
     })
   ),
 });
+
+/**
+ * Which bucket indices disagree between two TableDigests for the same
+ * table -- present on only one side, or present on both with a different
+ * digest/rowCount, both count. This is what turns a table-level "these
+ * mismatch" (Part 1) into "these specific rows are the ones worth pulling"
+ * (Part 2's repair.ts): a bucket missing entirely from `local` and
+ * present on `remote` still needs to be flagged, since that's exactly the
+ * "a row exists on the peer but never made it here" case the spec calls
+ * out as the common repair scenario.
+ */
+export const diffMismatchedBuckets = (
+  local: TableDigest,
+  remote: TableDigest
+): number[] => {
+  const localByBucket = new Map(
+    local.buckets.map((entry) => [entry.bucket, entry])
+  );
+  const remoteByBucket = new Map(
+    remote.buckets.map((entry) => [entry.bucket, entry])
+  );
+  const allBuckets = new Set([
+    ...localByBucket.keys(),
+    ...remoteByBucket.keys(),
+  ]);
+
+  const mismatched: number[] = [];
+  for (const bucket of allBuckets) {
+    const localEntry = localByBucket.get(bucket);
+    const remoteEntry = remoteByBucket.get(bucket);
+    const isMismatch =
+      !localEntry ||
+      !remoteEntry ||
+      localEntry.digest !== remoteEntry.digest ||
+      localEntry.rowCount !== remoteEntry.rowCount;
+    if (isMismatch) {
+      mismatched.push(bucket);
+    }
+  }
+  return mismatched.toSorted((a, b) => a - b);
+};
 
 const FETCH_TIMEOUT_MS = 10_000;
 

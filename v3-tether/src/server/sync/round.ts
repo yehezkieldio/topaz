@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import type { db as dbClient } from "@/server/db/client";
 import { knownPeer } from "@/server/db/schema/sync";
 
-import { applyRemoteOplogRow } from "./apply";
+import { applyRemoteOplogRow, getLatestLocalHlcByRow } from "./apply";
 import { pullFromPeer } from "./client";
 import { checkIntegrityWithPeer } from "./digest";
 import { observeRemoteHlc } from "./oplog";
@@ -39,9 +39,14 @@ const syncOnceWithPeer = async (
   }
 
   await db.transaction(async (tx) => {
+    // One query for the whole batch's staleness lookup instead of one per
+    // row (apply.ts's getLatestLocalHlcByRow doc) -- rows still apply
+    // strictly in HLC order below, this only removes the redundant
+    // per-row SELECT that order never actually depended on.
+    const latestLocalByRow = await getLatestLocalHlcByRow(tx, rows);
     for (const row of rows) {
       // biome-ignore lint/performance/noAwaitInLoops: rows must apply in the HLC order they were returned in, not concurrently
-      await applyRemoteOplogRow(tx, row);
+      await applyRemoteOplogRow(tx, row, latestLocalByRow);
       // biome-ignore lint/performance/noAwaitInLoops: the clock must observe each row's HLC in that same order
       await observeRemoteHlc(row.hlcTimestamp);
     }

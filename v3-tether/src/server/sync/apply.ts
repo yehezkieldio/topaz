@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { SQLiteColumn, SQLiteTable } from "drizzle-orm/sqlite-core";
 
@@ -137,6 +137,66 @@ export const applyToTable = async (
   }
 };
 
+const latestHlcKey = (tableName: string, rowId: string): string =>
+  `${tableName}\u0000${rowId}`;
+
+/**
+ * One query's worth of "this device's latest recorded HLC per (table, row)"
+ * for every row in a sync batch, instead of applyRemoteOplogRow running that
+ * lookup itself once per row -- a 500-row batch (oplog.ts's SYNC_BATCH_SIZE)
+ * otherwise means 500 sequential round trips to SQLite just to find out
+ * which rows are even stale before applying anything.
+ *
+ * Filters by tableName IN (...) AND rowId IN (...) rather than the exact
+ * (table, row) pairs -- SQLite has no clean composite-IN syntax via Drizzle,
+ * and this candidate set is still bounded by the batch size, so resolving
+ * the exact pair via the returned map (keyed on both) below is cheap and
+ * correct: a candidate row whose (table, row) pair isn't actually in this
+ * batch simply never gets looked up.
+ *
+ * Safe to compute once up front rather than per row within the batch: a
+ * sync batch is already ordered ascending by hlc_timestamp
+ * (oplog.ts's getOplogEntriesSince), so two rows in the same batch that
+ * target the same (table, row) always have increasing hlc_timestamp -- an
+ * earlier same-row entry in this batch can never be >= a later one, so it
+ * can never itself cause that later row to read as stale. Only history that
+ * already existed before this batch started can do that, and that's exactly
+ * what this pre-batch snapshot captures.
+ */
+export const getLatestLocalHlcByRow = async (
+  tx: Tx,
+  rows: { tableName: string; rowId: string }[]
+): Promise<Map<string, string>> => {
+  const latest = new Map<string, string>();
+  if (rows.length === 0) {
+    return latest;
+  }
+
+  const tableNames = [...new Set(rows.map((row) => row.tableName))];
+  const rowIds = [...new Set(rows.map((row) => row.rowId))];
+
+  const candidates = await tx
+    .select({
+      hlcTimestamp: oplog.hlcTimestamp,
+      rowId: oplog.rowId,
+      tableName: oplog.tableName,
+    })
+    .from(oplog)
+    .where(
+      and(inArray(oplog.tableName, tableNames), inArray(oplog.rowId, rowIds))
+    );
+
+  for (const candidate of candidates) {
+    const key = latestHlcKey(candidate.tableName, candidate.rowId);
+    const current = latest.get(key);
+    if (current === undefined || candidate.hlcTimestamp > current) {
+      latest.set(key, candidate.hlcTimestamp);
+    }
+  }
+
+  return latest;
+};
+
 /**
  * Applies one remote oplog row to this device's own copy of the row
  * (08_sync/00_oplog_and_clock.md), upserting so this works identically
@@ -149,6 +209,11 @@ export const applyToTable = async (
  * are likely to touch independently) is not implemented -- every column in
  * a given oplog row currently wins or loses together.
  *
+ * `latestLocalByRow`, when passed (round.ts precomputes it once per batch
+ * via getLatestLocalHlcByRow above), is used instead of a per-row query --
+ * omitted, this falls back to the original single-row lookup so any other
+ * caller doesn't need to know about batching to stay correct.
+ *
  * Throws on a tombstoned row (no synced table has a soft-delete column
  * defined yet -- there is no delete path in the app that produces one) and
  * on an oplog row naming a table outside the closed set above, rather than
@@ -158,7 +223,8 @@ export const applyToTable = async (
  */
 export const applyRemoteOplogRow = async (
   tx: Tx,
-  row: OplogEntry
+  row: OplogEntry,
+  latestLocalByRow?: Map<string, string>
 ): Promise<void> => {
   if (row.tombstone) {
     throw new Error(
@@ -167,15 +233,23 @@ export const applyRemoteOplogRow = async (
     );
   }
 
-  const [latestLocal] = await tx
-    .select({ hlcTimestamp: oplog.hlcTimestamp })
-    .from(oplog)
-    .where(and(eq(oplog.tableName, row.tableName), eq(oplog.rowId, row.rowId)))
-    .orderBy(desc(oplog.hlcTimestamp))
-    .limit(1);
+  let latestHlc: string | undefined;
+  if (latestLocalByRow) {
+    latestHlc = latestLocalByRow.get(latestHlcKey(row.tableName, row.rowId));
+  } else {
+    const [latestLocal] = await tx
+      .select({ hlcTimestamp: oplog.hlcTimestamp })
+      .from(oplog)
+      .where(
+        and(eq(oplog.tableName, row.tableName), eq(oplog.rowId, row.rowId))
+      )
+      .orderBy(desc(oplog.hlcTimestamp))
+      .limit(1);
+    latestHlc = latestLocal?.hlcTimestamp;
+  }
 
   const isStaleOrDuplicate =
-    latestLocal !== undefined && latestLocal.hlcTimestamp >= row.hlcTimestamp;
+    latestHlc !== undefined && latestHlc >= row.hlcTimestamp;
 
   if (!isStaleOrDuplicate) {
     const applied = await applyToTable(

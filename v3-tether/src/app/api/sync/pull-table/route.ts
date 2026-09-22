@@ -27,6 +27,7 @@ import { verifySignature } from "@/server/sync/protocol";
  * unbounded response").
  */
 const pullTableRequestSchema = z.object({
+  buckets: z.array(z.number()).nullable(),
   cursor: z.string().nullable(),
   deviceId: z.string().min(1),
   signature: z.string().min(1),
@@ -41,7 +42,7 @@ export const POST = async (request: NextRequest) => {
       { status: 400 }
     );
   }
-  const { cursor, deviceId, signature, table } = parsed.data;
+  const { buckets, cursor, deviceId, signature, table } = parsed.data;
 
   const [peer] = await db
     .select({ publicKey: knownPeer.publicKey })
@@ -53,7 +54,7 @@ export const POST = async (request: NextRequest) => {
     peer &&
     (await verifySignature(
       peer.publicKey,
-      { cursor, deviceId, table },
+      { buckets, cursor, deviceId, table },
       signature
     ));
 
@@ -61,11 +62,12 @@ export const POST = async (request: NextRequest) => {
     return NextResponse.json({ error: "Not a paired peer." }, { status: 403 });
   }
 
-  const { rows, nextCursor } = await fetchTablePage(
+  const { atEnd, rows, nextCursor } = await fetchTablePage(
     table,
     cursor,
-    PULL_TABLE_BATCH_SIZE
+    PULL_TABLE_BATCH_SIZE,
+    buckets
   );
 
-  return NextResponse.json({ nextCursor, rows });
+  return NextResponse.json({ atEnd, nextCursor, rows });
 };

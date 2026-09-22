@@ -1,11 +1,13 @@
-import { createClient } from "@libsql/client";
+import { mkdirSync } from "node:fs";
+import path from "node:path";
 
+import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 
 import { env } from "@/lib/env";
 
-import { ensureSearchIndexes } from "./search-index";
 import * as schema from "./schema";
+import { ensureSearchIndexes } from "./search-index";
 
 // @libsql/client, not bun:sqlite: bun:sqlite does not survive Next.js's
 // jest-worker-based page-data-collection phase (dev *and* build) --
@@ -15,6 +17,13 @@ import * as schema from "./schema";
 // and keeps every SQLite-specific piece of this schema (FTS5 trigram,
 // json1, math functions) working unchanged. See docs/BUN_SQLITE_NEXT_BUILD.md
 // for the full investigation this decision is based on.
+//
+// DATABASE_PATH now defaults to a platform data directory
+// (lib/default-database-path.ts) that may not exist yet on first run --
+// unlike an explicit path an admin already created, libsql's client never
+// creates missing parent directories itself, so this is created up front
+// rather than surfacing as an opaque "unable to open database file" error.
+mkdirSync(path.dirname(env.DATABASE_PATH), { recursive: true });
 const client = createClient({ url: `file:${env.DATABASE_PATH}` });
 
 // Explicit, deliberate ceilings -- never left at SQLite's defaults

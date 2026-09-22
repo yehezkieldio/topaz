@@ -5,8 +5,17 @@ import type { db as dbClient } from "@/server/db/client";
 import { syncIntegrityCheck } from "@/server/db/schema/sync";
 
 import { applyToTable } from "./apply";
-import type { IntegrityCheckPeer, SyncedTableName } from "./digest";
-import { checkIntegrityWithPeer } from "./digest";
+import type {
+  IntegrityCheckPeer,
+  SyncedTableName,
+  TableDigest,
+} from "./digest";
+import {
+  checkIntegrityWithPeer,
+  computeTableDigest,
+  diffMismatchedBuckets,
+  fetchPeerDigests,
+} from "./digest";
 import { fetchAllLocalTableRows, fetchAllPeerTableRows } from "./full-table";
 import { appendOplogEntry } from "./oplog";
 
@@ -53,15 +62,22 @@ export interface RepairResult {
  *   onward to a third device the same as any other oplog change (spec:
  *   "must itself be written as a new oplog entry on the device being
  *   corrected").
+ *
+ * `buckets`, when given, scopes both the local and peer full-table pulls to
+ * only the id-hash buckets (digest.ts's bucketForRowId) a fresh digest
+ * comparison already found mismatched -- repairMismatchedTablesWithPeer
+ * computes this before calling in. `null` falls back to pulling the whole
+ * table, used when no peer digest was available to diff against.
  */
 const reconcileTable = async (
   database: typeof dbClient,
   peer: IntegrityCheckPeer,
-  table: SyncedTableName
+  table: SyncedTableName,
+  buckets: number[] | null
 ): Promise<number> => {
   const [localRows, remoteRows] = await Promise.all([
-    fetchAllLocalTableRows(table),
-    fetchAllPeerTableRows(database, peer, table),
+    fetchAllLocalTableRows(table, buckets),
+    fetchAllPeerTableRows(database, peer, table, buckets),
   ]);
 
   const localByRowId = new Map(localRows.map((row) => [row.rowId, row]));
@@ -112,17 +128,46 @@ const reconcileTable = async (
  * retried automatically (spec: "stop and report failure rather than
  * looping -- a repair that can't converge after one pass indicates a bug
  * worth surfacing, not something to retry silently").
+ *
+ * Before pulling any rows, fetches this device's and the peer's digests
+ * fresh (never the possibly-stale ones a Part 1 check happened to store)
+ * and diffs their buckets (digest.ts's diffMismatchedBuckets) to find which
+ * id-hash buckets actually disagree for each table being repaired -- the
+ * pull below is scoped to just those buckets rather than the whole table.
+ * If the peer's response is missing a table entirely (shouldn't happen
+ * against another build of this same closed five-table set, but not
+ * assumed), that table's pull falls back to unscoped -- correctness over a
+ * best-effort narrowing that can't be verified. If the fresh diff finds
+ * zero mismatched buckets for a table (the drift already resolved itself,
+ * e.g. via a normal oplog round that landed between the check and this
+ * click), that table is skipped entirely rather than paying for a
+ * whole-table scan that would apply nothing.
  */
 export const repairMismatchedTablesWithPeer = async (
   database: typeof dbClient,
   peer: IntegrityCheckPeer,
   tables: SyncedTableName[]
 ): Promise<RepairResult> => {
+  const remoteDigests = await fetchPeerDigests(database, peer);
+  const remoteDigestByTable = new Map<SyncedTableName, TableDigest>(
+    remoteDigests.map((entry) => [entry.table, entry])
+  );
+
   const rowsRepairedByTable = new Map<SyncedTableName, number>();
 
   for (const table of tables) {
+    // biome-ignore lint/performance/noAwaitInLoops: each table's bucket diff and reconciliation depend on this device's current state, evaluated one table at a time
+    const localDigest = await computeTableDigest(table);
+    const remoteDigest = remoteDigestByTable.get(table);
+    const mismatchedBuckets = remoteDigest
+      ? diffMismatchedBuckets(localDigest, remoteDigest)
+      : null;
+
     // biome-ignore lint/performance/noAwaitInLoops: each table's reconciliation runs its own transaction against this device's local tables and shouldn't overlap with the next
-    const rowsRepaired = await reconcileTable(database, peer, table);
+    const rowsRepaired =
+      mismatchedBuckets !== null && mismatchedBuckets.length === 0
+        ? 0
+        : await reconcileTable(database, peer, table, mismatchedBuckets);
     rowsRepairedByTable.set(table, rowsRepaired);
   }
 
