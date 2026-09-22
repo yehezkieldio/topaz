@@ -19,6 +19,11 @@ import { knownPeer } from "@/server/db/schema/sync";
 import type { MutationResult } from "@/server/query/mutation-result";
 import { pullAccountFromPeer } from "@/server/sync/account-bootstrap";
 import { getDeviceIdentity } from "@/server/sync/device-identity";
+import type {
+  RepairOutcomeSummary,
+  SyncedTableName,
+} from "@/server/sync/digest";
+import { getLatestIntegrityChecks } from "@/server/sync/digest";
 import {
   discoverTailnetPeers,
   fetchPeerIdentity,
@@ -31,7 +36,11 @@ import {
 } from "@/server/sync/pairing";
 import type { PairingPayload } from "@/server/sync/pairing";
 import { signPayload } from "@/server/sync/protocol";
-import { syncWithAllKnownPeers } from "@/server/sync/round";
+import { repairMismatchedTablesWithPeer } from "@/server/sync/repair";
+import {
+  checkIntegrityWithAllKnownPeers,
+  syncWithAllKnownPeers,
+} from "@/server/sync/round";
 
 const PAIR_REQUEST_FETCH_TIMEOUT_MS = 10_000;
 
@@ -583,4 +592,111 @@ export const reconcilePeerAction = async (
   }
 
   return { data: { status: "unreachable" }, status: "success" };
+};
+
+export interface IntegrityStatus {
+  deviceId: string;
+  mismatchedTables: SyncedTableName[];
+  checkedAt: Date;
+  lastRepairAt: Date | null;
+  lastRepairResult: RepairOutcomeSummary[] | null;
+}
+
+/**
+ * The sync UI's read path for the last recorded digest comparison against
+ * each peer (08_sync/03_data_integrity_and_reconciliation.md's Part 1 --
+ * "which table, which peer, when last checked"). A peer with no row yet has
+ * simply never had a check run against it -- there's no periodic job on a
+ * fresh install until INTEGRITY_CHECK_EVERY_N_ROUNDS worth of sync rounds
+ * have happened, or the admin presses "Check integrity" themselves.
+ */
+export const getIntegrityStatusAction = async (): Promise<
+  IntegrityStatus[]
+> => {
+  await requireAdmin();
+  return await getLatestIntegrityChecks(db);
+};
+
+/**
+ * The UI's manual "Check integrity" action -- runs a digest comparison
+ * against every paired peer right now, instead of waiting for the periodic
+ * trigger folded into syncWithAllKnownPeers (round.ts). Returns the
+ * refreshed statuses directly so the button doesn't need a second
+ * round-trip just to show its own result.
+ */
+export const checkIntegrityNowAction = async (): Promise<IntegrityStatus[]> => {
+  await requireAdmin();
+  await checkIntegrityWithAllKnownPeers(db);
+  return await getLatestIntegrityChecks(db);
+};
+
+export interface RepairSummary {
+  deviceId: string;
+  repairedAt: Date;
+  outcomes: RepairOutcomeSummary[];
+}
+
+/**
+ * Phase 2's manual "Repair now" trigger (08_sync/03_data_integrity_and_reconciliation.md:
+ * "A 'Repair now' action next to a flagged mismatch runs the full-table
+ * pull and reconciliation... on demand, with a visible result"). Repairs
+ * only whatever the most recent integrity check against this peer actually
+ * flagged -- if nothing is currently flagged (stale click, or a check
+ * already cleared it), this is a validation error rather than a full
+ * unconditional resync of all five tables.
+ *
+ * Deliberately manual, not triggered automatically from round.ts on a
+ * detected mismatch -- that's Phase 3, which the spec is explicit hasn't
+ * been earned yet ("only after Phase 2 has proven reliable in practice").
+ */
+export const repairPeerMismatchAction = async (
+  deviceId: string
+): Promise<MutationResult<RepairSummary>> => {
+  await requireAdmin();
+
+  const [peer] = await db
+    .select({
+      deviceId: knownPeer.deviceId,
+      port: knownPeer.port,
+      tailnetHostname: knownPeer.tailnetHostname,
+    })
+    .from(knownPeer)
+    .where(eq(knownPeer.deviceId, deviceId))
+    .limit(1);
+
+  if (!peer) {
+    return { status: "not-found" };
+  }
+
+  const checks = await getLatestIntegrityChecks(db);
+  const latestCheck = checks.find((check) => check.deviceId === deviceId);
+
+  if (!latestCheck || latestCheck.mismatchedTables.length === 0) {
+    return {
+      fieldErrors: {
+        deviceId: ["No known mismatch to repair -- run a check first."],
+      },
+      status: "validation-error",
+    };
+  }
+
+  try {
+    const result = await repairMismatchedTablesWithPeer(
+      db,
+      peer,
+      latestCheck.mismatchedTables
+    );
+    return { data: result, status: "success" };
+  } catch (error) {
+    return {
+      fieldErrors: {
+        deviceId: [
+          error instanceof Error
+            ? error.message
+            : "Couldn't reach that device to repair it.",
+        ],
+      },
+      status: "validation-error",
+    };
+  }
 };

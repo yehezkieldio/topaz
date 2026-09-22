@@ -8,6 +8,20 @@
       "when": 1789002525092,
       "tag": "0000_broad_anthem",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1790066340375,
+      "tag": "0001_conscious_gateway",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790067100309,
+      "tag": "0002_sour_ultron",
+      "breakpoints": true
     }
   ]
 }

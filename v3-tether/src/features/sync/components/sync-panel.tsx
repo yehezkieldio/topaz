@@ -3,6 +3,8 @@ import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { AutoSyncOnRestore } from "@/features/sync/components/auto-sync-on-restore";
+import { CheckIntegrityButton } from "@/features/sync/components/check-integrity-button";
+import { IntegrityStatus } from "@/features/sync/components/integrity-status";
 import { MobileConnectCard } from "@/features/sync/components/mobile-connect-card";
 import { PairWithPeerForm } from "@/features/sync/components/pair-with-peer-form";
 import { PairingCodeCard } from "@/features/sync/components/pairing-code-card";
@@ -83,6 +85,28 @@ export const SyncPanel = async () => {
           </Suspense>
           <div className="border-border/50 border-t pt-4">
             <SyncNowButton />
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-medium tracking-tight">
+            Data integrity
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            Per-table digest comparison against each paired peer -- detects
+            drift a normal sync round wouldn&apos;t notice. Detection only; a
+            mismatch is a warning, nothing here repairs it automatically.
+          </p>
+        </div>
+
+        <div className="border-border/60 bg-card/40 space-y-4 rounded-md border p-6 backdrop-blur-md">
+          <Suspense fallback={<Skeleton className="h-16 w-full" />}>
+            <IntegrityStatus />
+          </Suspense>
+          <div className="border-border/50 border-t pt-4">
+            <CheckIntegrityButton />
           </div>
         </div>
       </section>

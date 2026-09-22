@@ -15,7 +15,9 @@ import { oplog } from "@/server/db/schema/sync";
 
 import type { OplogEntry } from "./oplog";
 
-type Tx = Parameters<Parameters<typeof dbClient.transaction>[0]>[0] | typeof dbClient;
+type Tx =
+  | Parameters<Parameters<typeof dbClient.transaction>[0]>[0]
+  | typeof dbClient;
 
 /**
  * Applies a column diff to one row of `table`, inserting a fresh row if
@@ -49,7 +51,10 @@ const upsertRow = async (
     .limit(1);
 
   if (existing.length > 0) {
-    await tx.update(table).set(columnDiffs).where(eq(idColumn, rowId) as SQL);
+    await tx
+      .update(table)
+      .set(columnDiffs)
+      .where(eq(idColumn, rowId) as SQL);
     return;
   }
 
@@ -71,18 +76,32 @@ const upsertRow = async (
  * branch each rather than a generic string-keyed table/column lookup with
  * raw SQL -- see upsertRow's doc for the insert/update split, and this
  * file's original commit message for why raw SQL was rejected outright.
+ *
+ * Exported (not just used internally by applyRemoteOplogRow below) so
+ * Part 2's full-table repair (repair.ts, 08_sync/03_data_integrity_and_reconciliation.md)
+ * can write a reconciled row through the exact same table-write logic a
+ * normal oplog apply uses, rather than duplicating the insert/update split
+ * for a second time.
  */
-const applyToTable = async (
+export const applyToTable = async (
   tx: Tx,
   tableName: string,
   rowId: string,
   columnDiffs: Record<string, unknown>
 ): Promise<boolean> => {
   switch (tableName) {
-    case "library_entry":
-      await upsertRow(tx, libraryEntry, libraryEntry.id, "id", rowId, columnDiffs);
+    case "library_entry": {
+      await upsertRow(
+        tx,
+        libraryEntry,
+        libraryEntry.id,
+        "id",
+        rowId,
+        columnDiffs
+      );
       return true;
-    case "reading_state":
+    }
+    case "reading_state": {
       await upsertRow(
         tx,
         readingState,
@@ -92,17 +111,29 @@ const applyToTable = async (
         columnDiffs
       );
       return true;
-    case "taxonomy_term":
-      await upsertRow(tx, taxonomyTerm, taxonomyTerm.id, "id", rowId, columnDiffs);
+    }
+    case "taxonomy_term": {
+      await upsertRow(
+        tx,
+        taxonomyTerm,
+        taxonomyTerm.id,
+        "id",
+        rowId,
+        columnDiffs
+      );
       return true;
-    case "work":
+    }
+    case "work": {
       await upsertRow(tx, work, work.id, "id", rowId, columnDiffs);
       return true;
-    case "work_source":
+    }
+    case "work_source": {
       await upsertRow(tx, workSource, workSource.id, "id", rowId, columnDiffs);
       return true;
-    default:
+    }
+    default: {
       return false;
+    }
   }
 };
 
@@ -139,9 +170,7 @@ export const applyRemoteOplogRow = async (
   const [latestLocal] = await tx
     .select({ hlcTimestamp: oplog.hlcTimestamp })
     .from(oplog)
-    .where(
-      and(eq(oplog.tableName, row.tableName), eq(oplog.rowId, row.rowId))
-    )
+    .where(and(eq(oplog.tableName, row.tableName), eq(oplog.rowId, row.rowId)))
     .orderBy(desc(oplog.hlcTimestamp))
     .limit(1);
 

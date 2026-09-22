@@ -6,6 +6,7 @@ import { knownPeer } from "@/server/db/schema/sync";
 
 import { applyRemoteOplogRow } from "./apply";
 import { pullFromPeer } from "./client";
+import { checkIntegrityWithPeer } from "./digest";
 import { observeRemoteHlc } from "./oplog";
 
 interface KnownPeerRow {
@@ -86,18 +87,18 @@ export const syncWithPeer = async (
   try {
     for (let round = 0; round < MAX_ROUNDS_PER_PEER; round += 1) {
       // biome-ignore lint/performance/noAwaitInLoops: each round's request depends on the previous round's checkpoint
-      const { rowsApplied, nextHlc } = await syncOnceWithPeer(
-        db,
-        peer,
-        cursor
-      );
+      const { rowsApplied, nextHlc } = await syncOnceWithPeer(db, peer, cursor);
       totalApplied += rowsApplied;
       if (rowsApplied === 0) {
         break;
       }
       cursor = nextHlc;
     }
-    return { deviceId: peer.deviceId, rowsApplied: totalApplied, status: "synced" };
+    return {
+      deviceId: peer.deviceId,
+      rowsApplied: totalApplied,
+      status: "synced",
+    };
   } catch (error) {
     return {
       deviceId: peer.deviceId,
@@ -108,12 +109,32 @@ export const syncWithPeer = async (
   }
 };
 
+// Comparing digests touches every row of every synced table, not just rows
+// changed since the last checkpoint -- strictly heavier than a normal
+// oplog pull (08_sync/03_data_integrity_and_reconciliation.md's Part 1), so
+// it runs on a lower-frequency trigger rather than every round. This
+// in-memory counter (reset on process restart, same as oplog.ts's clock
+// cache) is enough given "there is exactly one process per device" and a
+// sync round already only fires on app open/close, not a timer -- losing
+// count across a restart just means the next open's round counts as 1
+// again, not a correctness problem.
+const INTEGRITY_CHECK_EVERY_N_ROUNDS = 10;
+let roundsSinceLastIntegrityCheck = 0;
+
 /**
  * One sync attempt against every known peer (08_sync/02_packaging_and_lifecycle.md
  * -- run on app open/close, not on a background timer or socket). Peers
  * are synced independently and concurrently: one unreachable peer never
  * blocks or fails the others, matching "devices don't need to be online
  * together."
+ *
+ * Every INTEGRITY_CHECK_EVERY_N_ROUNDS-th round, also runs a digest
+ * comparison against each peer after the normal oplog exchange completes
+ * (08_sync/03_data_integrity_and_reconciliation.md's Part 1). This is
+ * separate from, and never blocks or is blocked by, the oplog sync above --
+ * a digest mismatch (or an unreachable peer during the check) is recorded
+ * for the UI to surface, never thrown, so it can't turn a healthy oplog
+ * sync into a reported failure.
  */
 export const syncWithAllKnownPeers = async (
   db: typeof dbClient
@@ -127,5 +148,53 @@ export const syncWithAllKnownPeers = async (
     })
     .from(knownPeer);
 
-  return await Promise.all(peers.map((peer) => syncWithPeer(db, peer)));
+  const outcomes = await Promise.all(
+    peers.map((peer) => syncWithPeer(db, peer))
+  );
+
+  roundsSinceLastIntegrityCheck += 1;
+  if (roundsSinceLastIntegrityCheck >= INTEGRITY_CHECK_EVERY_N_ROUNDS) {
+    roundsSinceLastIntegrityCheck = 0;
+    await Promise.all(
+      peers.map((peer) =>
+        checkIntegrityWithPeer(db, peer).catch(() => {
+          // A peer being unreachable or the check itself failing is not a
+          // sync-round failure -- checkIntegrityWithPeer already recorded
+          // whatever it could; nothing else to do here.
+        })
+      )
+    );
+  }
+
+  return outcomes;
+};
+
+/**
+ * The UI's manual "Check integrity" trigger (spec's Part 1: "every Nth
+ * round, on a manual button, or both" -- this is the "both" half,
+ * alongside the periodic check folded into syncWithAllKnownPeers above).
+ * Runs immediately against every known peer, bypassing the round counter,
+ * and never throws for an individual peer -- one unreachable peer's check
+ * failing doesn't stop the others from completing.
+ */
+export const checkIntegrityWithAllKnownPeers = async (
+  db: typeof dbClient
+): Promise<void> => {
+  const peers = await db
+    .select({
+      deviceId: knownPeer.deviceId,
+      port: knownPeer.port,
+      tailnetHostname: knownPeer.tailnetHostname,
+    })
+    .from(knownPeer);
+
+  await Promise.all(
+    peers.map((peer) =>
+      checkIntegrityWithPeer(db, peer).catch(() => {
+        // A peer being unreachable or the check itself failing is not a
+        // sync-round failure -- checkIntegrityWithPeer already recorded
+        // whatever it could; nothing else to do here.
+      })
+    )
+  );
 };
