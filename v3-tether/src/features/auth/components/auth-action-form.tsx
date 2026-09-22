@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -109,6 +110,19 @@ const CredentialForm = ({ mode }: { mode: "sign-up" | "sign-in" }) => {
       <Button className="w-full" disabled={isPending} type="submit">
         {mode === "sign-up" ? "Create account" : "Sign in"}
       </Button>
+
+      {mode === "sign-up" && (
+        <p className="text-muted-foreground text-center text-xs">
+          Already set up on another device?{" "}
+          <Link
+            className="text-foreground underline underline-offset-2"
+            href="/sync"
+            prefetch={false}
+          >
+            Restore from another device
+          </Link>
+        </p>
+      )}
     </form>
   );
 };
